@@ -1,0 +1,33 @@
+"id": 2, 
+"subject": "Project Alpha Delay",
+"content": """
+From: mike.chen@company.com
+To: stakeholders@company.com
+Subject: URGENT: Project Alpha Timeline Update
+
+Dear Stakeholders,
+
+I'm writing to inform you of a significant delay in Project Alpha that will impact our Q4 deliverables.
+
+SITUATION:
+Due to unexpected technical challenges with the API integration, we're facing a 3-week delay. The third-party vendor (TechCorp) has identified compatibility issues with our current authentication system that require substantial rework.
+
+IMPACT:
+- Original launch date: November 15th
+- Revised launch date: December 6th  
+- Budget impact: Additional $45,000 for extended development
+- Resource reallocation needed for the QA team
+
+IMMEDIATE ACTIONS REQUIRED:
+1. Client communication: Marketing needs to update all external communications by Friday
+2. Resource planning: HR should pause hiring for the mobile team until January
+3. Budget approval: Finance needs to approve the additional $45,000 by Tuesday
+4. Vendor management: Legal should review the TechCorp contract for delay penalties
+
+I've scheduled a crisis management meeting for tomorrow at 10 AM to discuss mitigation strategies. Please prioritize attendance.
+
+Let me know if you have any questions or concerns.
+
+Mike Chen
+Project Manager
+Phone: (555) 123-4567

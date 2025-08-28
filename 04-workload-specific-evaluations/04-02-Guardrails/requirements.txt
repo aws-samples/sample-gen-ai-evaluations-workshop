@@ -1,0 +1,11 @@
+boto3
+awscli
+ipykernel
+ipywidgets
+PyPDF2
+pandas
+strands-agents>=1.5.0
+strands-agents-tools>=0.2.4
+python-jose>=3.3.0
+rich
+matplotlib

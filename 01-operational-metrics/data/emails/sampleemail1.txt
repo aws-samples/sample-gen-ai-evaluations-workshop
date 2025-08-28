@@ -1,0 +1,31 @@
+"id": 1,
+"subject": "Q4 Budget Planning Meeting",
+"content": """
+From: sarah.johnson@company.com
+To: team-leads@company.com
+Subject: Q4 Budget Planning Meeting - Action Required
+
+Hi Team,
+
+Hope everyone is doing well. I wanted to reach out regarding our upcoming Q4 budget planning session scheduled for next Friday, October 27th at 2:00 PM EST in Conference Room B.
+
+We need to review the following items:
+1. Department budget allocations for Q4
+2. Outstanding vendor contracts that need renewal
+3. New hiring requests and associated costs
+4. Technology infrastructure upgrades planned for Q4
+
+Please come prepared with:
+- Your department's current spend vs budget
+- Any urgent funding requests
+- Projected headcount changes
+
+Sarah mentioned that we're currently 15% over budget in the marketing department due to the unexpected campaign costs from the product launch. We need to discuss reallocating funds or adjusting our Q4 strategy.
+
+Also, the finance team flagged that our software licenses are up for renewal in November - we need to decide on the vendor negotiations by next week.
+
+Please confirm your attendance by Wednesday so we can finalize the agenda.
+
+Best regards,
+Sarah Johnson
+Finance Director
