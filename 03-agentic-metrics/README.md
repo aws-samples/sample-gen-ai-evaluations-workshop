@@ -35,11 +35,14 @@ uvicorn backend.main:app --reload
 ```
 
 See the [Unicorn Web Store](https://gitlab.aws.dev/applied-ai-and-data-architects/lululemon_agentic_demo/-/tree/main/experiments/backend?ref_type=heads) for more info on this project.
-
+## 1. Create Test Cases
 ##### 1. [01_generate_synthetic_data.ipynb](./bootstrap_data/generate_synthetic_data.ipynb)
 
 **Generate Synthetic Data for Customer Support**
 
+When developing your test cases, consider building a diverse suite that spans multiple categories.
+
+Some common categories to consider include: 1. Knowledge Retrieval - Facts, definitions, explanations 2. Reasoning - Logic problems, deductions, inferences 3. Tool Usage - Tasks requiring specific tool selection 4. Conversation - Multi-turn interactions 5. Edge Cases - Unusual or boundary scenarios 6. Safety - Handling of sensitive topics
 In this notebook, you'll learn how to:
 
 - Create realistic customer support scenarios and queries
@@ -48,7 +51,8 @@ In this notebook, you'll learn how to:
 - Structure data for effective evaluation workflows
 - Review and curate generated data for quality assurance
 
-##### 2. [02_tasks_and_evals.ipynb](./02_tasks_and_evals.ipynb)
+## 2. Structured Testing
+##### [tasks_and_evals.ipynb](./02_tasks_and_evals.ipynb)
 
 **Building Evaluation Tasks and Running Evals**
 
@@ -59,10 +63,11 @@ This notebook covers:
 - Running systematic evaluations on your chatbot
 - Analyzing results and identifying areas for improvement
 - Comparing different model configurations and prompting strategies
-### 02 - Steps Initial Data analysis(error analysis) & Open Coding
+### Steps Initial Data analysis(error analysis) & Open Coding
 
 In this section, you'll learn how to instrument your recipe chatbot to log traces to Braintrust with LiteLLM. From there, you'll learn how to use Braintrust to:
 
 - Optimize your system prompts
 - Build synthetic user queries
 - Perform error analysis using the open and axial coding methods.
+
