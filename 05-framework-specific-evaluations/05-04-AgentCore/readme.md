@@ -1,1 +1,1 @@
-Owned by Dave Thibault
+Stub for Sunita Koppar
