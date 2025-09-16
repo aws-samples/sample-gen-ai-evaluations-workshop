@@ -8,12 +8,14 @@ Comprehensive evaluation tools for AI agents deployed on Amazon Bedrock AgentCor
 05-04-AgentCore/
 ├── README.md                           # This guide
 ├── requirements.txt                    # Python dependencies
+├── clean_notebooks.py                 # Account ID masking script
 ├── Agentic-Metrics-AgentCore.ipynb    # Agent deployment and basic metrics
 ├── Agent-and-tool-evals-with-xray.ipynb # Advanced evaluation with X-Ray observability
 ├── AgentCore-Cleanup.ipynb           # Resource cleanup and account ID masking
 ├── citysearch.py                      # Generated city search agent
 ├── Dockerfile                         # Container configuration
 ├── .bedrock_agentcore.yaml            # AgentCore configuration
+├── .git/hooks/pre-commit              # Git hook for automatic account ID masking
 └── images/                            # AgentCore observability screenshots
     ├── Citysearch-AgentCore-Obs-1.png # Runtime overview dashboard
     ├── Citysearch-AgentCore-Obs-2.png # Performance metrics
@@ -164,4 +166,85 @@ Sample evaluation output:
 1. Use `AgentCore-Cleanup.ipynb` to clean up AWS resources after testing
 2. Always run cleanup before committing notebooks to GitHub
 3. Verify resource deletion in AWS Console to avoid unexpected costs
+
+## 🔒 Account ID Security & Masking
+
+This repository includes automated security measures to prevent AWS account IDs from being exposed in published notebooks.
+
+### How Account ID Masking Works
+
+**Automatic Masking Pipeline:**
+1. **Pre-commit Hook**: Git automatically runs `clean_notebooks.py` before each commit
+2. **Pattern Detection**: Scans notebook outputs for 12-digit numbers (AWS account ID format)
+3. **Safe Replacement**: Replaces account IDs with `XXXXXXXXXXXX` while preserving all other outputs
+4. **Re-staging**: Automatically adds cleaned notebooks back to the commit
+
+**Files Involved:**
+- `clean_notebooks.py` - Python script that masks account IDs in notebook outputs
+- `.git/hooks/pre-commit` - Git hook that runs the masking automatically
+
+### Setup Instructions
+
+The masking is already configured in this repository. For new repositories:
+
+```bash
+# 1. Copy the cleaning script
+cp clean_notebooks.py /path/to/new/repo/
+
+# 2. Copy the pre-commit hook
+cp .git/hooks/pre-commit /path/to/new/repo/.git/hooks/
+chmod +x /path/to/new/repo/.git/hooks/pre-commit
+```
+
+### Manual Cleaning
+
+To manually clean notebooks:
+
+```bash
+# Clean specific notebooks
+python3 clean_notebooks.py notebook1.ipynb notebook2.ipynb
+
+# Clean all notebooks in directory
+python3 clean_notebooks.py
+```
+
+### What Gets Masked
+
+**Before masking:**
+```json
+{
+  "text": [
+    "✅ Configured for agent citysearch, with endpoint arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/citysearch-abc123\n"
+  ]
+}
+```
+
+**After masking:**
+```json
+{
+  "text": [
+    "✅ Configured for agent citysearch, with endpoint arn:aws:bedrock-agentcore:us-east-1:XXXXXXXXXXXX:runtime/citysearch-abc123\n"
+  ]
+}
+```
+
+### Security Benefits
+
+- **Prevents Account Exposure**: AWS account IDs are automatically hidden from public repositories
+- **Preserves Functionality**: All other outputs remain intact for documentation and debugging
+- **Zero Maintenance**: Works automatically without manual intervention
+- **Git Integration**: Seamlessly integrated into the development workflow
+
+### Verification
+
+To verify masking is working:
+
+```bash
+# Check if account IDs exist in staged files
+git diff --cached | grep -E '[0-9]{12}'
+
+# Should return no results after pre-commit hook runs
+```
+
+**Note**: This repository uses account ID masking instead of complete output removal to maintain notebook functionality while ensuring security.
 
