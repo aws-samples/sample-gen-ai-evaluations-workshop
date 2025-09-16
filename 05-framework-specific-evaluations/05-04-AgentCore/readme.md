@@ -11,7 +11,6 @@ Comprehensive evaluation tools for AI agents deployed on Amazon Bedrock AgentCor
 ├── clean_notebooks.py                 # Account ID masking script
 ├── Agentic-Metrics-AgentCore.ipynb    # Agent deployment and basic metrics
 ├── Agent-and-tool-evals-with-xray.ipynb # Advanced evaluation with X-Ray observability
-├── AgentCore-Cleanup.ipynb           # Resource cleanup and account ID masking
 ├── citysearch.py                      # Generated city search agent
 ├── Dockerfile                         # Container configuration
 ├── .bedrock_agentcore.yaml            # AgentCore configuration
@@ -57,7 +56,7 @@ pip install -r requirements.txt
 ### Usage
 1. **Deploy Agent**: Run `Agentic-Metrics-AgentCore.ipynb`
 2. **Evaluate Agent**: Run `Agent-and-tool-evals-with-xray.ipynb` with your agent ARN
-3. **Clean Up Resources**: Run `AgentCore-Cleanup.ipynb` to remove all AWS resources and mask account IDs
+3. **Clean Up Resources**: Delete AWS resources manually in the AWS Console to avoid unexpected costs
 
 ## 🏙️ City Search Agent (citysearch.py)
 
@@ -163,8 +162,8 @@ Sample evaluation output:
 3. Maintain quality gates for deployment approval
 
 **Resource Management:**
-1. Use `AgentCore-Cleanup.ipynb` to clean up AWS resources after testing
-2. Always run cleanup before committing notebooks to GitHub
+1. Clean up AWS resources manually after testing
+2. Always mask account IDs before committing notebooks to GitHub
 3. Verify resource deletion in AWS Console to avoid unexpected costs
 
 ## 🔒 Account ID Security & Masking
