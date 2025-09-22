@@ -576,7 +576,7 @@ def _plot_score_distribution(ax, df, stats):
     ax.axvspan(df['numeric_score'].min(), stats['outlier_threshold'], alpha=0.3, color='red', 
                label=f'Outliers: {len(stats["outliers"])} cases')
     
-    ax.set_title('Step 1: Production Performance Distribution', fontweight='bold')
+    ax.set_title('Production Performance Distribution', fontweight='bold')
     ax.set_xlabel('Score')
     ax.set_ylabel('Frequency')
     ax.legend()
@@ -596,7 +596,7 @@ def _plot_performance_by_type(ax, stats):
     ax.axhline(stats['mean_score'], color='red', linestyle='-', linewidth=2, alpha=0.8, label='Overall Mean')
     ax.axhline(stats['outlier_threshold'], color='orange', linestyle='--', linewidth=2, alpha=0.8, label='Investigation Threshold')
     
-    ax.set_title('Step 2: Performance by Complexity & Context', fontweight='bold')
+    ax.set_title('Performance by Complexity & Context', fontweight='bold')
     ax.set_xticks(x_pos)
     ax.set_xticklabels([qt.replace('_', '\n') for qt in stats['question_stats'].index], rotation=0, fontsize=9)
     ax.set_ylabel('Score')
@@ -615,7 +615,7 @@ def _plot_quality_distribution(ax, stats):
     
     ax.pie(stats['quality_counts'], labels=['Excellent (9-10)', 'Good (7-9)', 'Needs Investigation (<7)'], 
            autopct='%1.1f%%', colors=colors, startangle=90, explode=explode)
-    ax.set_title('Step 3: Statistical Significance Assessment', fontweight='bold')
+    ax.set_title('Statistical Significance Assessment', fontweight='bold')
 
 def _plot_outlier_analysis(ax, df, stats):
     """Plot outlier analysis scatter plot."""
@@ -635,7 +635,7 @@ def _plot_outlier_analysis(ax, df, stats):
     ax.axhline(stats['mean_score'], color='red', linestyle='-', linewidth=2, alpha=0.8, label='Mean')
     ax.axhline(stats['outlier_threshold'], color='orange', linestyle='--', linewidth=2, alpha=0.8, label='Threshold')
     
-    ax.set_title('Step 4: Production Environment Factors', fontweight='bold')
+    ax.set_title('Production Environment Factors', fontweight='bold')
     ax.set_xlabel('Evaluation ID')
     ax.set_ylabel('Score')
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
@@ -657,7 +657,7 @@ def _plot_variance_analysis(ax, df, stats):
             patch.set_alpha(0.7)
     
     ax.axhline(stats['mean_score'], color='red', linestyle='-', linewidth=2, alpha=0.8, label='Overall Mean')
-    ax.set_title('Step 5: Judge Evaluation Variance Analysis', fontweight='bold')
+    ax.set_title('Judge Evaluation Variance Analysis', fontweight='bold')
     ax.set_xlabel('Question Type')
     ax.set_ylabel('Score')
     ax.grid(True, alpha=0.3)
@@ -685,7 +685,7 @@ def _plot_production_summary(ax, stats):
     
     ax.text(0.5, 0.5, summary_text, ha='center', va='center', fontsize=11, 
             family='monospace', bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.3))
-    ax.set_title('Step 6: Production Deployment Readiness', fontweight='bold')
+    ax.set_title('Production Deployment Readiness', fontweight='bold')
 
 def print_performance_summary(stats):
     """Print performance analysis summary."""
@@ -924,7 +924,7 @@ def display_evaluation_metrics(csv_file="cities_evaluation_summary.csv"):
         print("4. View this metrics summary")
         return None
 
-def analyze_model_performance(n_samples=1000, random_seed=42, show_plots=True):
+def analyze_model_performance(n_samples=1000, random_seed=42, show_plots=False):
     """
     Complete model performance analysis pipeline.
 
@@ -934,7 +934,7 @@ def analyze_model_performance(n_samples=1000, random_seed=42, show_plots=True):
         show_plots (bool): Whether to display the visualization
 
     Returns:
-        tuple: (DataFrame, stats_dict, matplotlib.figure.Figure)
+        tuple: (DataFrame, stats_dict, matplotlib.figure.Figure or None)
     """
     # Generate data
     df = generate_realistic_performance_data(n_samples, random_seed)
@@ -945,13 +945,13 @@ def analyze_model_performance(n_samples=1000, random_seed=42, show_plots=True):
     # Print basic stats
     print(f"Overall Performance: {stats['mean_score']:.2f} ± {stats['std_score']:.2f}")
     print(f"Outliers (< {stats['outlier_threshold']:.2f}): {len(stats['outliers'])} cases")
-    print("\nOutlier breakdown by question type:")
+    print("Outlier breakdown by question type:")
     print(stats['outliers'].groupby('question_type').size().sort_values(ascending=False))
 
-    # Create visualization
-    fig = create_performance_visualization(df, stats)
-
+    # Only create visualization if requested
+    fig = None
     if show_plots:
+        fig = create_performance_visualization(df, stats)
         plt.show()
 
     # Print summary
@@ -1136,6 +1136,36 @@ def validate_environment():
         validation['checks']['aws_credentials'] = '⚠️ Unable to verify'
 
     return validation
+
+
+
+def create_single_plot(plot_type, df, stats, figsize=(8, 6)):
+    """Create and display a single plot type."""
+    plt.figure(figsize=figsize)
+    
+    if plot_type == "score_distribution":
+        _plot_score_distribution(plt.gca(), df, stats)
+    elif plot_type == "performance_by_type":
+        _plot_performance_by_type(plt.gca(), stats)
+    elif plot_type == "quality_distribution":
+        _plot_quality_distribution(plt.gca(), stats)
+    elif plot_type == "outlier_analysis":
+        _plot_outlier_analysis(plt.gca(), df, stats)
+    elif plot_type == "variance_analysis":
+        _plot_variance_analysis(plt.gca(), df, stats)
+    elif plot_type == "production_summary":
+        _plot_production_summary(plt.gca(), stats)
+    
+    plt.tight_layout()
+    plt.show()
+
+def display_plot_with_analysis(plot_type, df, stats, analysis_text, figsize=(8, 6)):
+    """Display a single plot followed by analysis text."""
+    create_single_plot(plot_type, df, stats, figsize)
+    print(analysis_text)
+
+
+
 
 def format_progress_bar(current, total, width=50):
     """
