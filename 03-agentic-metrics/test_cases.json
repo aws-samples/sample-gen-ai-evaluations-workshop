@@ -1,0 +1,14 @@
+[
+  {
+    "id": "knowledge-1",
+    "query": "What is the capital of France?",
+    "expected": "The capital of France is Paris.",
+    "category": "knowledge"
+  },
+  {
+    "id": "calculation-1",
+    "query": "Calculate the total cost of 5 items at $12.99 each with 8% tax.",
+    "expected": "The total cost would be $70.15.",
+    "category": "calculation"
+  }
+]
