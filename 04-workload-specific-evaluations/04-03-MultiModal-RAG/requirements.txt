@@ -1,0 +1,44 @@
+# Core data science and ML libraries
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+
+# PyTorch ecosystem with CUDA 11.8 support
+torch==2.4.1+cu118
+torchaudio==2.4.1+cu118
+torchvision==0.19.1+cu118
+pytorchvideo==0.1.5
+
+# AWS and cloud services
+boto3==1.40.6
+
+# LangChain ecosystem
+langchain-aws==0.2.19
+langchain-core==0.3.74
+
+# ML evaluation and datasets
+ragas==0.3.1
+datasets==4.0.0
+
+# Vector search and similarity
+faiss-cpu==1.12.0
+
+# Visualization
+matplotlib==3.10.3
+seaborn==0.13.2
+
+# Utilities and progress tracking
+tqdm==4.67.1
+ipython==8.34.0
+
+# Media and file processing
+soundfile==0.13.1
+decord==0.6.0
+Pillow==11.2.1
+
+# Text processing
+ftfy==6.3.1
+regex==2024.11.6
+
+# PyTorch index URL for CUDA packages
+--index-url https://download.pytorch.org/whl/cu118

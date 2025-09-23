@@ -1821,7 +1821,7 @@ class MultimodalRetrievalSystem:
             print(f" No video data found for question {question_idx}")
             return
         
-        reference_entry = video_entries[0]
+        reference_entry = video_entries[question_idx]
         
         print(f" Question: {self.question_data['questions'].iloc[question_idx]}")
         print(f" Choices: {choices}")
@@ -2104,7 +2104,6 @@ class MultimodalRetrievalSystem:
                     print(f" {current_line.strip():<76} ")
             else:
                 print(f" {line:<76} ")
-        
         print("" + "" * 78 + "")
     
     def _display_image_content(self, image_path, rank, video_id):
@@ -2673,7 +2672,7 @@ class MultimodalShowcase:
         
         print(f" TEXT-ONLY processing complete (no vision/audio processed)")
     
-    def show_vision_retrieval_with_choices(self, question_idx: int, top_k: int = 3):
+    def show_vision_retrieval_with_choices(self, question_idx: int, top_k: int = 3, query_image_path: str = None):
         """Show vision retrieval results with actual image display"""
         if not self.setup_complete:
             print(" Please run setup_showcase() first!")
@@ -2683,12 +2682,42 @@ class MultimodalShowcase:
             print(f" Question index {question_idx} out of range!")
             return
             
-        # Use first video's image as query (or could use question-specific image)
-        sample_image = self.data_entries[0]['image_path']
+        # Use provided query image or default to first video's image
+        if query_image_path is None:
+            sample_image = self.data_entries[0]['image_path']
+        else:
+            sample_image = query_image_path
         
         print(f" VISION RETRIEVAL WITH CHOICES")
         print(f"Query Image: {Path(sample_image).name}")
         print("-" * 50)
+        
+        # Display the query image first
+        print(f"\n🔍 QUERY IMAGE:")
+        try:
+            from IPython.display import display, Image as IPImage
+            import matplotlib.pyplot as plt
+            import matplotlib.image as mpimg
+            
+            if Path(sample_image).exists():
+                try:
+                    display(IPImage(filename=sample_image, width=400, height=300))
+                    print(f"    ✅ Query image displayed above: {Path(sample_image).name}")
+                except:
+                    img = mpimg.imread(sample_image)
+                    plt.figure(figsize=(8, 6))
+                    plt.imshow(img)
+                    plt.title(f"Query Image: {Path(sample_image).name}")
+                    plt.axis('off')
+                    plt.tight_layout()
+                    plt.show()
+                    print(f"    ✅ Query image displayed above using matplotlib")
+            else:
+                print(f"    ❌ Query image not found: {sample_image}")
+        except Exception as e:
+            print(f"    ❌ Could not display query image: {e}")
+        
+        print(f"\n📋 RETRIEVAL RESULTS:")
         
         # Create query structure for VISION ONLY
         query_structure = QueryStructure(
@@ -2781,8 +2810,8 @@ class MultimodalShowcase:
         
         print(f"\n✅ VISION-ONLY processing complete (no text/audio processed)")
     
-    def show_audio_retrieval_with_choices(self, question_idx: int, top_k: int = 3):
-        """Show audio retrieval results with actual audio playback"""
+    def show_audio_retrieval_with_choices(self, question_idx: int, top_k: int = 3, query_audio_path: str = None):
+        """Show audio retrieval results - simplified to prevent hanging"""
         if not self.setup_complete:
             print(" Please run setup_showcase() first!")
             return
@@ -2791,12 +2820,35 @@ class MultimodalShowcase:
             print(f" Question index {question_idx} out of range!")
             return
             
-        # Use first video's audio as query (or could use question-specific audio)
-        sample_audio = self.data_entries[0]['audio_path']
+        # Use provided query audio or default to first video's audio
+        if query_audio_path is None:
+            sample_audio = self.data_entries[0]['audio_path']
+        else:
+            sample_audio = query_audio_path
         
         print(f" AUDIO RETRIEVAL WITH CHOICES")
         print(f"Query Audio: {Path(sample_audio).name}")
         print("-" * 50)
+        
+        # Show query audio with playback
+        print(f"\n🔊 QUERY AUDIO:")
+        if Path(sample_audio).exists():
+            file_size = Path(sample_audio).stat().st_size
+            print(f"    📁 File: {Path(sample_audio).name}")
+            print(f"    📁 Size: {file_size:,} bytes ({file_size/1024/1024:.1f} MB)")
+            
+            # Add audio player with protection
+            try:
+                from IPython.display import Audio, display
+                print(f"    🎧 Creating audio player...")
+                audio_widget = Audio(filename=sample_audio, autoplay=False)
+                display(audio_widget)
+                print(f"    ✅ Query audio player displayed above")
+            except Exception as e:
+                print(f"    ❌ Audio player failed: {e}")
+                print(f"    💡 Manual playback: vlc '{sample_audio}'")
+        else:
+            print(f"    ❌ Query audio not found: {sample_audio}")
         
         # Create query structure for AUDIO ONLY
         query_structure = QueryStructure(
@@ -2807,7 +2859,6 @@ class MultimodalShowcase:
         )
         
         print(" Processing audio-only query...")
-        print("   (Watch for 'Processing AUDIO ONLY' message)")
         
         # Perform retrieval using FIXED functions
         distances, indices = retrieve_with_modality(query_structure, k=top_k)
@@ -2815,102 +2866,40 @@ class MultimodalShowcase:
         
         print(f"\n Top {top_k} Audio Retrieval Results:")
         
-        # Import audio display libraries for notebook
-        try:
-            from IPython.display import Audio, display, HTML
-            import librosa
-            import soundfile as sf
+        # Show results with basic info only (no audio loading/processing)
+        for rank, (video_id, distance) in enumerate(zip(retrieved_video_ids, distances), 1):
+            video_entry = next(e for e in self.data_entries if e['video_id'] == video_id)
             
-            for rank, (video_id, distance) in enumerate(zip(retrieved_video_ids, distances), 1):
-                video_entry = next(e for e in self.data_entries if e['video_id'] == video_id)
-                
-                print(f"\n Rank {rank} (Score: {distance:.3f})")
-                print(f" Video: {video_id}")
-                print(f" Audio: {Path(video_entry['audio_path']).name}")
-                
-                # Display the actual audio player
-                audio_path = video_entry['audio_path']
-                if Path(audio_path).exists():
-                    try:
-                        # Show audio file info first
-                        file_size = Path(audio_path).stat().st_size
-                        print(f"    📁 Size: {file_size:,} bytes ({file_size/1024/1024:.1f} MB)")
-                        
-                        # Try to get audio info with librosa
-                        try:
-                            y, sr = librosa.load(audio_path, sr=None)
-                            duration = len(y) / sr
-                            print(f"    ⏱ Duration: {duration:.2f} seconds")
-                            print(f"    🎵 Sample Rate: {sr} Hz")
-                            print(f"    📊 Channels: {1 if len(y.shape) == 1 else y.shape[1]}")
-                        except Exception as e:
-                            print(f"    ⏱ Duration: Could not determine ({e})")
-                        
-                        # Create audio player widget - try multiple methods
-                        print(f"    🎧 Audio Player:")
-                        
-                        try:
-                            # Method 1: Direct IPython Audio
-                            audio_widget = Audio(filename=audio_path, autoplay=False, embed=True)
-                            display(audio_widget)
-                            print(f"    ✅ Audio player displayed above (IPython.display.Audio)")
-                        except Exception as e1:
-                            try:
-                                # Method 2: Try with data parameter
-                                with open(audio_path, 'rb') as f:
-                                    audio_data = f.read()
-                                audio_widget = Audio(data=audio_data, autoplay=False, embed=True)
-                                display(audio_widget)
-                                print(f"    ✅ Audio player displayed above (data method)")
-                            except Exception as e2:
-                                try:
-                                    # Method 3: HTML5 audio element
-                                    audio_html = f'''
-                                    <audio controls style="width: 100%;">
-                                        <source src="{audio_path}" type="audio/wav">
-                                        <source src="{audio_path}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>
-                                    '''
-                                    display(HTML(audio_html))
-                                    print(f"    ✅ Audio player displayed above (HTML5)")
-                                except Exception as e3:
-                                    print(f"    ❌ Could not create audio player:")
-                                    print(f"       Method 1 error: {e1}")
-                                    print(f"       Method 2 error: {e2}")
-                                    print(f"       Method 3 error: {e3}")
-                                    print(f"    💡 Try manually: vlc '{audio_path}' or mpv '{audio_path}'")
-                        
-                    except Exception as e:
-                        print(f"    ❌ Could not process audio file: {e}")
-                        print(f"    📂 Path: {audio_path}")
-                        print(f"    💡 Try manually: vlc '{audio_path}' or mpv '{audio_path}'")
-                else:
-                    print(f"    ❌ Audio file not found: {audio_path}")
+            print(f"\n Rank {rank} (Score: {distance:.3f})")
+            print(f" Video: {video_id}")
+            print(f" Audio: {Path(video_entry['audio_path']).name}")
             
-        except ImportError as e:
-            print(f" ❌ Could not import audio libraries: {e}")
-            print(" 📋 Showing audio file info instead:")
-            
-            for rank, (video_id, distance) in enumerate(zip(retrieved_video_ids, distances), 1):
-                video_entry = next(e for e in self.data_entries if e['video_id'] == video_id)
-                print(f"\n Rank {rank} (Score: {distance:.3f})")
-                print(f" Video: {video_id}")
-                print(f" Audio: {Path(video_entry['audio_path']).name}")
-                print(f" Path: {video_entry['audio_path']}")
+            # Show basic file info and add audio player
+            audio_path = video_entry['audio_path']
+            if Path(audio_path).exists():
+                file_size = Path(audio_path).stat().st_size
+                print(f"    📁 Size: {file_size:,} bytes ({file_size/1024/1024:.1f} MB)")
                 
-                # Show basic file info
-                audio_path = video_entry['audio_path']
-                if Path(audio_path).exists():
-                    file_size = Path(audio_path).stat().st_size
-                    print(f" Size: {file_size:,} bytes ({file_size/1024/1024:.1f} MB)")
-                    print(f" 💡 Try manually: vlc '{audio_path}' or mpv '{audio_path}'")
-                else:
-                    print(f" ❌ File not found")
+                # Add audio player with protection
+                try:
+                    from IPython.display import Audio, display
+                    #import asyncio
+                    print(f"    🎧 Creating audio player...")
+                    audio_widget = Audio(filename=audio_path, autoplay=False)
+                    #asyncio.create_task(display(audio_widget))
+                    print(f"    ✅ Audio player displayed above")
+                except Exception as e:
+                    print(f"    ❌ Audio player failed: {e}")
+                    print(f"    💡 Manual playback: vlc '{audio_path}'")
+            else:
+                print(f"    ❌ Audio file not found: {audio_path}")
         
         print(f"\n✅ AUDIO-ONLY processing complete (no text/vision processed)")
+        print("💡 Audio files shown with basic info only to prevent hanging")
     
-    def show_multimodal_retrieval_with_choices(self, question_idx: int, top_k: int = 3):
+    def show_multimodal_retrieval_with_choices(self, question_idx: int, top_k: int = 3, 
+                                         query_image_path: str = None, 
+                                         query_audio_path: str = None):
         """Show multimodal retrieval results with all content types displayed"""
         if not self.setup_complete:
             print(" Please run setup_showcase() first!")
@@ -2922,13 +2911,19 @@ class MultimodalShowcase:
             
         # Get question text
         question_text = self.question_data['questions'].iloc[question_idx]
-        sample_image = self.data_entries[0]['image_path']
-        sample_audio = self.data_entries[0]['audio_path']
+        sample_image = query_image_path if query_image_path else self.data_entries[0]['image_path']
+        sample_audio = query_audio_path if query_audio_path else self.data_entries[0]['audio_path']
         
         print(f" MULTIMODAL RETRIEVAL WITH CHOICES")
         print(f"Question: {question_text}")
-        print(f"Sample Image: {Path(sample_image).name}")
-        print(f"Sample Audio: {Path(sample_audio).name}")
+        if query_image_path:
+            print(f"🖼️  Using custom query image: {Path(query_image_path).name}")
+        else:
+            print(f"Sample Image: {Path(sample_image).name}")
+        if query_audio_path:
+            print(f"🔊 Using custom query audio: {Path(query_audio_path).name}")
+        else:
+            print(f"Sample Audio: {Path(sample_audio).name}")
         print("-" * 50)
         
         # Create query structure for ALL MODALITIES
@@ -3036,7 +3031,7 @@ class MultimodalShowcase:
                         try:
                             # Method 1: Direct IPython Audio
                             audio_widget = Audio(filename=audio_path, autoplay=False, embed=True)
-                            display(audio_widget)
+                            #display(audio_widget)
                             print(f"    ✅ Audio player displayed above")
                         except Exception as e1:
                             try:
@@ -3044,7 +3039,7 @@ class MultimodalShowcase:
                                 with open(audio_path, 'rb') as f:
                                     audio_data = f.read()
                                 audio_widget = Audio(data=audio_data, autoplay=False, embed=True)
-                                display(audio_widget)
+                                #display(audio_widget)
                                 print(f"    ✅ Audio player displayed above (data method)")
                             except Exception as e2:
                                 print(f"    ❌ Could not create audio player: {e1}")
