@@ -19,6 +19,7 @@ We strongly recommend going in order through the first 3 modules.  These cover t
 - 04 Workload Specific Metrics
   - Intelligent Document Processing
   - Guardrails
+  - Basic RAG
   - Multi-modal RAG
   - Tool calling Optimization
   - Synthetic Data Generation
