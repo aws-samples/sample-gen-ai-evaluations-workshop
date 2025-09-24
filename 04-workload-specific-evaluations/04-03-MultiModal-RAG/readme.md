@@ -235,6 +235,14 @@ for question_idx in demo_questions:
     
     # Multimodal retrieval (images + audio + text!)
     showcase.show_multimodal_retrieval_with_choices(question_idx, top_k=3)
+    
+    # NEW: Custom multimodal retrieval with your own image/audio
+    showcase.show_multimodal_retrieval_with_choices(
+        question_idx=question_idx, 
+        top_k=3,
+        query_image_path="./cinepile-dataset/yt_videos_frames/1_Wy4EfdnMZ5g/frame_118.jpg",
+        query_audio_path="./cinepile-dataset/yt_audios/1_Wy4EfdnMZ5g.wav"
+    )
 ```
 
 ## Dataset Structure
@@ -299,23 +307,25 @@ The `load_cinepile_data()` function automatically:
 
 ## Usage Examples
 
-### Basic Retrieval
+### Custom Multimodal Retrieval
 
 ```python
-from utils import load_cinepile_data, create_embeddings, build_indices
+from utils import MultimodalShowcase
 
-# Load data
-data_entries = load_cinepile_data()
+# Initialize showcase
+showcase = MultimodalShowcase()
+showcase.setup_showcase()
 
-# Create embeddings
-embeddings = create_embeddings(data_entries)
+# Standard multimodal retrieval
+showcase.show_multimodal_retrieval_with_choices(question_idx=0, top_k=3)
 
-# Build search indices
-text_index, vision_index, audio_index = build_indices(embeddings)
-
-# Perform search
-query = "action scene with explosions"
-results = search_multimodal(query, text_index, vision_index, audio_index)
+# Custom multimodal retrieval with your own image and audio
+showcase.show_multimodal_retrieval_with_choices(
+    question_idx=0, 
+    top_k=3,
+    query_image_path="./cinepile-dataset/yt_videos_frames/1_Wy4EfdnMZ5g/frame_118.jpg",
+    query_audio_path="./cinepile-dataset/yt_audios/1_Wy4EfdnMZ5g.wav"
+)
 ```
 
 ### Custom Evaluation
@@ -392,9 +402,9 @@ Interactive demonstration system with working media display.
 **Key Methods:**
 - `setup_showcase()`: Initialize the showcase system
 - `show_text_retrieval_with_choices(question_idx, top_k=3)`: Demo text retrieval
-- `show_vision_retrieval_with_choices(question_idx, top_k=3)`: Demo vision retrieval with images
-- `show_audio_retrieval_with_choices(question_idx, top_k=3)`: Demo audio retrieval with playback
-- `show_multimodal_retrieval_with_choices(question_idx, top_k=3)`: Demo multimodal retrieval
+- `show_vision_retrieval_with_choices(question_idx, top_k=3, query_image_path=None)`: Demo vision retrieval with images
+- `show_audio_retrieval_with_choices(question_idx, top_k=3, query_audio_path=None)`: Demo audio retrieval with playback
+- `show_multimodal_retrieval_with_choices(question_idx, top_k=3, query_image_path=None, query_audio_path=None)`: Demo multimodal retrieval with optional custom inputs
 
 ### Evaluation Classes
 
