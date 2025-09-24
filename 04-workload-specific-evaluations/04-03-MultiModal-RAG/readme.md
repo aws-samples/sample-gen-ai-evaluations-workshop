@@ -530,10 +530,6 @@ embeddings = embeddings.astype(np.float16)
 index = faiss.read_index("large_index.faiss", faiss.IO_FLAG_MMAP)
 ```
 
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
 ### Development Setup
 
 ```bash
@@ -560,22 +556,6 @@ black src/
 - **Documentation**: Improve tutorials and examples
 - **Bug Fixes**: Fix issues and improve stability
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Citation
-
-If you use this work in your research, please cite:
-
-```bibtex
-@misc{enhanced-multimodal-ragas-2024,
-  title={Enhanced Multimodal RAGAS: Comprehensive Evaluation of Multimodal Retrieval Systems},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/your-repo/enhanced-multimodal-ragas}
-}
-```
 
 ## References
 
@@ -585,13 +565,3 @@ If you use this work in your research, please cite:
 - [Multimodal AI Research](https://paperswithcode.com/task/multimodal-learning) - Latest developments
 - [PyTorch Documentation](https://pytorch.org/docs/) - Deep learning framework
 - [AWS SageMaker](https://docs.aws.amazon.com/sagemaker/) - Cloud ML platform
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/enhanced-multimodal-ragas/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/enhanced-multimodal-ragas/discussions)
-- **Email**: support@your-domain.com
-
----
-
-**Ready to get started? [Download the dataset](https://d22xjg1p9prwde.cloudfront.net/cinepile-dataset.tar.gz) and open the [Enhanced_Multimodal_RAGAS_Tutorial.ipynb](Enhanced_Multimodal_RAGAS_Tutorial.ipynb) notebook!**
