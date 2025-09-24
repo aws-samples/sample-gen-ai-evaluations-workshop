@@ -4,6 +4,8 @@
 
 This workshop teaches systematic approaches to evaluating Generative AI workloads for production use. You'll learn to build evaluation frameworks that go beyond basic metrics to ensure reliable model performance while optimizing cost and performance.
 
+Check [here](https://d2ot4ns4zf41bm.cloudfront.net/slides/Gen+AI+Evals+Workshop.pptx) for PowerPoint slides which cover the basics of evals and an overview of this workshop.
+
 ## How to use this repository
 
 We strongly recommend going in order through the first 3 modules.  These cover the core of generative AI evaluations which will be critical in all workloads.  After that, please feel free to select any of the workload and framework specific modules in any order, according to what is most relevant to you.
