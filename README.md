@@ -1,10 +1,9 @@
+![Workshop Structure](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/blob/main/evals%20workshop.png "Evals are so cool!")
 # Generative AI Evaluations Workshop
-
-## Overview
 
 This workshop teaches systematic approaches to evaluating Generative AI workloads for production use. You'll learn to build evaluation frameworks that go beyond basic metrics to ensure reliable model performance while optimizing cost and performance.
 
-Check [here](https://d2ot4ns4zf41bm.cloudfront.net/slides/Gen+AI+Evals+Workshop.pptx) for PowerPoint slides which cover the basics of evals and an overview of this workshop.
+Check [here](https://d2ot4ns4zf41bm.cloudfront.net/slides/Gen+AI+Evals+Workshop.pptx) for slides which cover the basics of evals and an overview of this workshop.
 
 ## How to use this repository
 
