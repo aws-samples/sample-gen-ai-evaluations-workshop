@@ -1,0 +1,472 @@
+query_text,ground_truth
+I'm using version 2.1 of open search and trying to use zstd compression. Why isn't it working? ,"The `zstd` and `zstd_no_dict` codecs were introduced in OpenSearch 2.9. They are not available in OpenSearch versions prior to 2.9.
+
+In OpenSearch 2.1, the supported index codecs are:
+
+- `default` (LZ4 compression)
+- `best_compression` (zlib compression)
+
+To use the `zstd` or `zstd_no_dict` codecs, you need to upgrade your OpenSearch cluster to version 2.9 or later."
+"I'm trying to set up this new aggregate view thing for saved objects in OpenSearch Dashboards, but I'm worried about messing up our existing multi-tenancy setup. The docs mention something about tenant indexes and a kibana_server role. How do I make sure I don't break anything when I turn this feature on? And what's the deal with not being able to turn it off once it's enabled","To ensure you don't break your existing multi-tenancy setup when enabling the aggregate view feature in OpenSearch Dashboards:
+
+1. Make sure multi-tenancy is enabled in your Dashboards configuration. The context states that multi-tenancy can be enabled or disabled dynamically, so verify the ""multitenancy_enabled"" setting is set to true.
+
+2. Ensure private tenants are also enabled. The context mentions that private tenants can be enabled or disabled, so check that the ""private_tenant_enabled"" setting is set to true.
+
+3. Set the default tenant to either the global tenant or a custom tenant that all your users have access to. This will prevent users from being logged out if the default tenant is changed to one they can't access.
+
+The context also mentions that once the aggregate view feature is enabled, it cannot be disabled. So be careful when enabling this feature, as it will be a permanent change."
+What software license does Opensearch use? ,"According to the context provided, the OpenSearch documentation repository is licensed under the Apache 2.0 License."
+Does GPU accelerated nodes support Pytorch?,"Yes, according to the documentation, GPU-accelerated ML nodes in OpenSearch require PyTorch 1.12.1 to work with ML models.
+
+Specifically, the documentation states:
+
+""GPU-accelerated ML nodes require [PyTorch](https://pytorch.org/docs/stable/index.html) 1.12.1 work with ML models.""
+
+So PyTorch support is a requirement for leveraging GPU acceleration on ML nodes in OpenSearch."
+Does opensearch support hugging face models? If so which ones? ,"Yes, OpenSearch supports various Hugging Face models for machine learning tasks. According to the OpenSearch documentation, the following Hugging Face models are supported:
+
+1. **Sentence Transformer Models**:
+   - These models map sentences and paragraphs into dense vector representations. OpenSearch supports several sentence transformer models from Hugging Face, including:
+     - all-distilroberta-v1
+     - all-MiniLM-L6-v2
+     - all-MiniLM-L12-v2
+     - all-mpnet-base-v2
+     - msmarco-distilbert-base-tas-b
+     - multi-qa-MiniLM-L6-cos-v1
+     - multi-qa-mpnet-base-dot-v1
+     - paraphrase-MiniLM-L3-v2
+     - paraphrase-multilingual-MiniLM-L12-v2
+     - paraphrase-mpnet-base-v2
+     - distiluse-base-multilingual-cased-v1
+
+2. **Cross-Encoder Models**:
+   - These models support query reranking. OpenSearch supports the following cross-encoder models from Hugging Face:
+     - ms-marco-MiniLM-L-6-v2
+     - ms-marco-MiniLM-L-12-v2
+
+The documentation provides artifact links and configuration details for downloading and using these Hugging Face models within OpenSearch.
+
+It's important to note that the supported models may change with new OpenSearch releases, so it's always a good idea to check the official documentation for the latest information."
+"I have a custom model, can I run it in Opensearch?","Yes, OpenSearch supports running custom local models that you can upload to the cluster. According to the documentation, as of different OpenSearch versions, it supports the following types of custom local models:
+
+- As of OpenSearch 2.6: Local text embedding models
+- As of OpenSearch 2.11: Local sparse encoding models  
+- As of OpenSearch 2.12: Local cross-encoder models
+- As of OpenSearch 2.13: Local question answering models
+
+The documentation provides steps on how to prepare, register, and deploy a custom model to run it within OpenSearch. Some key requirements are:
+
+1. The model must be in a supported format like TorchScript or ONNX.
+2. You need to package the model as a zip file and calculate its SHA256 checksum.
+3. Register the model by providing details like name, version, model format, config, etc. 
+4. Deploy the registered model to load it into memory.
+
+Once deployed, you can use the model for tasks like text embedding, semantic search, question answering etc. by calling the appropriate prediction APIs.
+
+So in summary, yes OpenSearch does allow running custom trained models locally within the cluster, as long as you follow the specified steps to register and deploy the model correctly."
+"I have a model and some ML nodes, how do I boost it's performance?","Based on the context provided, to boost the performance of your machine learning (ML) model when running on OpenSearch ML nodes, you can leverage GPU acceleration. The key points are:
+
+1. OpenSearch supports GPU acceleration using NVIDIA GPUs with CUDA 11.6 or AWS Inferentia instances.
+
+2. To use GPU acceleration, you need to provision GPU instances through Amazon EC2 and set up the ML nodes on those GPU instances.
+
+3. For NVIDIA GPUs, you need to ensure the nvidia-uvm kernel is present and initialize it if not.
+
+4. For AWS Inferentia instances, you can use the provided scripts (for Ubuntu 20.04 or Amazon Linux 2) to set up the environment, install required packages like PyTorch 1.12.1, copy required libraries, and configure system settings.
+
+5. If the provided scripts don't work, you can manually deploy on an AWS Inferentia instance, copy the Neuron library to OpenSearch, set the required environment variables, and optionally install Neuron tools.
+
+6. You may need to increase the JVM stack size, max file descriptors, and max virtual memory areas to accommodate the resource requirements of running ML models.
+
+By setting up GPU-accelerated ML nodes, you can leverage the parallel processing capabilities of GPUs to speed up model upload, inference, and training tasks, thereby boosting the overall performance of your ML workloads on OpenSearch."
+Can you show me an example of how to use lat/long coordinates?,"Yes, the context provides several examples of how to use latitude and longitude coordinates to index a geopoint field. Here are a few examples from the context:
+
+1. An object with a latitude and longitude:
+
+```json
+PUT testindex1/_doc/1
+{
+  ""point"": { 
+    ""lat"": 40.71,
+    ""lon"": 74.00
+  }
+}
+```
+
+2. A string in the ""`latitude`,`longitude`"" format:
+
+```json
+PUT testindex1/_doc/2
+{
+  ""point"": ""40.71,74.00"" 
+}
+```
+
+3. An array in the [`longitude`, `latitude`] format:
+
+```json
+PUT testindex1/_doc/4
+{
+  ""point"": [74.00, 40.71] 
+}
+```
+
+4. A [Well-Known Text](https://docs.opengeospatial.org/is/12-063r5/12-063r5.html) POINT in the ""POINT(`longitude` `latitude`)"" format:
+
+```json
+PUT testindex1/_doc/5
+{
+  ""point"": ""POINT (74.00 40.71)""
+}
+```
+
+5. GeoJSON format, where the `coordinates` are in the [`longitude`, `latitude`] format:
+
+```json
+PUT testindex1/_doc/6
+{
+  ""point"": {
+    ""type"": ""Point"",
+    ""coordinates"": [74.00, 40.71]
+  }
+}
+```
+
+So the context provides multiple ways to specify latitude and longitude coordinates when indexing a geopoint field."
+How do I use vector search?,"According to the provided context, there are two main ways to use vector search in OpenSearch:
+
+1. **Working with embeddings generated outside of OpenSearch**:
+   - Generate vector embeddings using a library of your choice
+   - Create a k-NN index in OpenSearch by setting `index.knn` to `true`
+   - Specify the vector field as `knn_vector` type in the index mapping
+   - Index the vector embeddings into the k-NN index
+   - Use approximate k-NN search methods like HNSW or IVF to find nearest vector neighbors
+
+2. **Generating vector embeddings within OpenSearch**:
+   - Use the Neural Search plugin which encapsulates the infrastructure for semantic vector search
+   - Choose a pre-trained model or upload your own model for text/image embeddings
+   - Index your data, and Neural Search will automatically generate embeddings and index them
+   - Use search methods like semantic search, hybrid search, multimodal search, etc. to query the indexed embeddings
+
+The context provides detailed steps and examples for both approaches to help you get started with vector search in OpenSearch."
+How do I understand the memory requirements for using hnsw?,"The memory requirements for using HNSW (Hierarchical Navigable Small World) with k-NN vector indexing in OpenSearch depend on several factors:
+
+1. **Vector Quantization Method**:
+   - For unquantized float vectors, the memory estimation formula is: `1.1 * (dimension + 8 * M) * num_vectors` bytes
+   - For Lucene scalar quantized vectors, it's: `1.1 * (dimension + 8 * M) * num_vectors` bytes
+   - For Faiss 16-bit scalar quantized vectors, it's: `1.1 * (2 * dimension + 8 * M) * num_vectors` bytes
+   - For Faiss product quantization, it's: `1.1 * (((pq_code_size / 8) * pq_m + 24 + 8 * M) * num_vectors + num_segments * (2^pq_code_size * 4 * dimension))` bytes
+
+2. **Dimension (d)**: The dimensionality of the vectors. Higher dimensions require more memory.
+
+3. **Number of Vectors (num_vectors)**: More vectors require more memory.
+
+4. **Maximum Connections (M)**: The maximum number of bi-directional links for each vector in the HNSW graph. Higher M typically leads to better accuracy but requires more memory.
+
+5. **Product Quantization Parameters (pq_m, pq_code_size)**: For product quantization, the memory depends on the number of sub-vectors (pq_m) and the number of bits used to encode each sub-vector (pq_code_size).
+
+6. **Number of Segments (num_segments)**: For product quantization, the memory also depends on the number of segments in the index.
+
+So in summary, the memory requirements grow with the number of vectors, their dimensionality, the value of M, and the specific quantization method used. Quantization can significantly reduce memory needs compared to unquantized float vectors."
+Can you show me some different examples of using different quantization methods for vectors?,"Sure, here are some examples of using different quantization methods for vectors with the k-NN plugin in OpenSearch:
+
+1. **Lucene byte vector**:
+```json
+PUT /index
+{
+  ""mappings"": {
+    ""properties"": {
+      ""my_vector"": {
+        ""type"": ""knn_vector"",
+        ""dimension"": 4,
+        ""method"": {
+          ""name"": ""hnsw"",
+          ""engine"": ""lucene"",
+          ""space_type"": ""l2"",
+          ""parameters"": {
+            ""data_type"": ""byte""
+          }
+        }
+      }
+    }
+  }
+}
+```
+This maps a knn_vector field `my_vector` of dimension 4 using the Lucene engine and byte vector quantization.
+
+2. **Lucene scalar quantization**:
+```json
+PUT /index
+{
+  ""mappings"": {
+    ""properties"": {
+      ""my_vector"": {
+        ""type"": ""knn_vector"", 
+        ""dimension"": 128,
+        ""method"": {
+          ""name"": ""hnsw"",
+          ""engine"": ""lucene"",
+          ""space_type"": ""l2"",
+          ""parameters"": {
+            ""encoder"": {
+              ""name"": ""sq"",
+              ""parameters"": {
+                ""confidence_interval"": 0.9
+              }
+            },
+            ""m"": 16
+          }
+        }
+      }
+    }
+  }
+}
+```
+This uses Lucene scalar quantization with a confidence interval of 0.9 for a vector field `my_vector` of dimension 128.
+
+3. **Faiss scalar quantization**:
+```json
+PUT /index
+{
+  ""settings"": {
+    ""index.knn.algo_param.ef_search"": 100  
+  },
+  ""mappings"": {
+    ""properties"": {
+      ""my_vector"": {
+        ""type"": ""knn_vector"",
+        ""dimension"": 512,
+        ""method"": {
+          ""name"": ""hnsw"", 
+          ""engine"": ""faiss"",
+          ""space_type"": ""l2"",
+          ""parameters"": {
+            ""encoder"": {
+              ""name"": ""sq"",
+              ""parameters"": {
+                ""type"": ""fp16"",
+                ""clip"": true
+              }
+            },
+            ""m"": 32
+          }
+        }
+      }
+    }
+  }
+}
+```
+This uses the Faiss SQfp16 scalar quantizer which quantizes 32-bit vectors to 16-bits, with clipping enabled for out-of-range values. It is for a `my_vector` field of dimension 512.
+
+4. **Faiss product quantization**:
+```json
+PUT /index
+{
+  ""settings"": {
+    ""index.knn.algo_param.ef_search"": 100
+  },
+  ""mappings"": {
+    ""properties"": {
+      ""my_vector"": {
+        ""type"": ""knn_vector"",
+        ""dimension"": 128,
+        ""method"": {
+          ""name"": ""hnsw"",
+          ""engine"": ""faiss"",
+          ""space_type"": ""l2"", 
+          ""parameters"": {
+            ""encoder"": {
+              ""name"": ""pq"",
+              ""parameters"": {
+                ""m"": 16,
+                ""code_size"": 8
+              }
+            },
+            ""m"": 16
+          }
+        }
+      }
+    }
+  }
+}
+```
+This uses Faiss product quantization with m=16 and code_size=8 for a vector field `my_vector` of dimension 128 using the HNSW index.
+
+Let me know if you need any clarification or have additional examples to show!"
+"Would you recommend I use ReRank? If so, what type of model would you recommend for ReRank? ","Based on the context provided, I don't have enough information to definitively recommend whether you should use reranking or what specific model to use. The decision depends on your specific use case, data, and requirements.
+
+However, here are some general points to consider regarding using the reranking feature:
+
+1. Reranking can potentially improve search relevance by taking into account more complex relationships between the query and documents using a cross-encoder model. This can be beneficial if your initial search ranking is not optimal.
+
+2. Implementing reranking requires additional setup and resources, as you need to provision and host a cross-encoder model. This adds complexity compared to just using the default search ranking.
+
+3. The effectiveness of reranking depends on the quality and suitability of the cross-encoder model for your data and use case. You may need to experiment with different pre-trained models or train a custom model.
+
+4. Reranking can impact query performance, as it adds an additional computation step during searching. The impact depends on factors like the model size, number of documents to rerank, etc.
+
+If you decide to use reranking, the documentation suggests considering pre-trained cross-encoder models provided by OpenSearch, or training a custom model if those don't meet your needs. The choice depends on your data domain, available training data, and performance requirements. Without more specifics about your use case, it's difficult to recommend a particular model.
+
+Ultimately, you'll need to evaluate the potential relevance gains from reranking against the added complexity and resource requirements for your specific scenario. Setting up a test environment to experiment with reranking and different models could help make that determination."
+How do I set up a tiered cache with an on-heap and disk tier for our index request cache? And what settings should I tweak to make sure it doesn't eat all our resources?,"To set up a tiered cache with an on-heap and disk tier for your index request cache in OpenSearch, follow these steps:
+
+1. **Enable the experimental pluggable caching feature**:
+   ```yaml
+   opensearch.experimental.feature.pluggable.caching.enabled: true
+   ```
+
+2. **Install the `cache-ehcache` plugin** to get the disk cache implementation.
+
+3. **Configure the cache store name**:
+   ```yaml
+   indices.request.cache.store.name: tiered_spillover
+   ```
+
+4. **Set the on-heap and disk store tiers**:
+   ```yaml
+   indices.request.cache.tiered_spillover.onheap.store.name: opensearch_onheap
+   indices.request.cache.tiered_spillover.disk.store.name: ehcache_disk
+   ```
+
+5. **Configure the on-heap store settings** (optional):
+   - `indices.request.cache.opensearch_onheap.size`: Set the size of the on-heap cache (e.g., 1% of the heap size).
+   - `indices.request.cache.opensearch_onheap.expire`: Set a time-to-live (TTL) for cached results.
+
+6. **Configure the disk store settings**:
+   - `indices.request.cache.ehcache_disk.max_size_in_bytes`: Set the size of the disk cache (e.g., 1GB).
+   - `indices.request.cache.ehcache_disk.storage.path`: Set the storage path for the disk cache (required).
+   - `indices.request.cache.ehcache_disk.expire_after_access`: Set a TTL for cached results (optional).
+
+7. **Tweak additional settings to manage resources**:
+   - `indices.request.cache.tiered_spillover.disk.store.policies.took_time.threshold`: Set a threshold for caching queries based on their execution time.
+   - `indices.request.cache.tiered_spillover.disk.store.enabled`: Enable or disable the disk cache dynamically.
+   - `indices.requests.cache.cleanup.staleness_threshold`: Set the percentage of stale keys to trigger cache cleanup.
+   - `indices.requests.cache.cleanup.interval`: Set the frequency for cleaning up stale cache entries.
+
+By configuring these settings, you can control the size and behavior of the on-heap and disk tiers, as well as manage the cache's resource usage. It's recommended to monitor the cache's performance and adjust the settings as needed for your specific use case."
+I need to combine relevance scores from different types of searches.,"Based on the context provided, it seems that you can use a hybrid query in OpenSearch to combine relevance scores from multiple queries into one score for a given document. A hybrid query contains a list of one or more queries, and it independently calculates document scores at the shard level for each subquery. The subquery rewriting is performed at the coordinating node level to avoid duplicate computations.
+
+The context mentions that a hybrid query is useful when you need to combine relevance scores from different types of searches. By specifying multiple queries in the `queries` parameter of the hybrid query, you can combine the relevance scores from those queries into a single score for each document."
+What metrics does query metrics give me out of the box? ,"According to the documentation, query metrics provide the following measurements out of the box:
+
+- The number of queries per query type (e.g., number of `match` or `regex` queries)
+- The number of queries per aggregation type (e.g., number of `terms` aggregation queries)
+- The number of queries per sort order (e.g., number of ascending and descending `sort` queries)
+- Histograms of latency for each query type, aggregation type, and sort order
+- Histograms of CPU usage for each query type, aggregation type, and sort order
+- Histograms of memory usage for each query type, aggregation type, and sort order"
+Does opensearch work with open telemetry?,"Yes, OpenSearch does work with OpenTelemetry (OTel). The documentation you provided mentions that with the release of OpenSearch 2.4, you can ingest and visualize metric data stored directly in OpenSearch using the Metrics tool. This includes support for an OpenSearch cluster containing an OTel-compatible metrics index with OTel-based signals.
+
+The documentation explains how you can set up an OpenSearch demo environment using the `opentelemetry-demo` repository to collect, process, and visualize metric data through OpenTelemetry Metrics. It involves configuring the OTel Collector pipeline to emit metric signals, and the Data Prepper pipeline to ingest those metric signals into an OpenSearch metrics index that supports the OpenTelemetry Metrics schema format. Once the data is ingested, you can visualize the OTel metrics on the Metrics page in OpenSearch Dashboards.
+
+So in summary, OpenSearch integrates with OpenTelemetry to allow ingesting, storing, and visualizing metrics collected through the OpenTelemetry instrumentation and collection system."
+How do I update an existing Slack channel configuration to change its webhook URL and description using the Notifications API?,"To update an existing Slack channel configuration to change its webhook URL and description using the Notifications API, you can send a PUT request to the `/_plugins/_notifications/configs/<config_id>` endpoint with the updated configuration details in the request body.
+
+Here's an example request:
+
+```json
+PUT /_plugins/_notifications/configs/<config_id>
+{
+  ""config"": {
+    ""name"": ""Updated Slack Channel"",
+    ""description"": ""This is the updated description for the Slack channel"",
+    ""config_type"": ""slack"",
+    ""is_enabled"": true,
+    ""slack"": {
+      ""url"": ""https://hooks.slack.com/services/new-webhook-url""
+    }
+  }
+}
+```
+
+Replace `<config_id>` with the actual configuration ID of the Slack channel you want to update.
+
+In the request body, update the following fields:
+
+- `name`: The new name for the Slack channel.
+- `description`: The new description for the Slack channel.
+- `slack.url`: The new webhook URL for the Slack channel.
+
+Make sure to keep the `config_type` as `""slack""` and set `is_enabled` to `true` if you want the channel to be enabled.
+
+The response will contain the `config_id` of the updated configuration:
+
+```json
+{
+  ""config_id"" : ""<config_id>""
+}
+```
+
+After sending this request, the Slack channel configuration will be updated with the new webhook URL and description."
+"What specific Java permission is required to register and unregister MBeans when installing the anomaly detection plugin, and what exact object does this permission apply to?","According to the example output when installing the opensearch-anomaly-detection plugin, the following Java permissions are required related to registering and unregistering MBeans:
+
+- javax.management.MBeanPermission org.apache.commons.pool2.impl.GenericObjectPool#-[org.apache.commons.pool2:name=pool,type=GenericObjectPool] registerMBean
+- javax.management.MBeanPermission org.apache.commons.pool2.impl.GenericObjectPool#-[org.apache.commons.pool2:name=pool,type=GenericObjectPool] unregisterMBean
+
+These permissions allow the plugin to register and unregister the org.apache.commons.pool2.impl.GenericObjectPool MBean with the object name ""org.apache.commons.pool2:name=pool,type=GenericObjectPool""."
+What environment variable and YAML structure must be used to customize the admin password in a helm chart? ,"According to the context provided, to customize the admin password in a Helm chart for OpenSearch version 2.12 or greater, you need to use the `OPENSEARCH_INITIAL_ADMIN_PASSWORD` environment variable under the `extraEnvs` section in the `values.yaml` file. The YAML structure should look like this:
+
+```yaml
+extraEnvs:
+  - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+    value: <custom-admin-password>
+```
+
+Replace `<custom-admin-password>` with your desired admin password."
+How can I group my data by a nested field but still calculate metrics on a parent-level field in the same query?,"Based on the context provided, you can use the `reverse_nested` aggregation to group your data by a nested field while still calculating metrics on a parent-level field in the same query.
+
+The `reverse_nested` aggregation is a sub-aggregation inside a `nested` aggregation. It allows you to ""join back"" to the root document and calculate aggregations on fields from the parent document, after grouping by fields from the nested object.
+
+The example query demonstrates this by first using a `nested` aggregation on the `pages` field to group the data by the nested `load_time` field. Then, inside the `terms` aggregation on `pages.load_time`, it uses a `reverse_nested` sub-aggregation to calculate the `min_load_time` from the parent document's `load_time` field.
+
+So, to group your data by a nested field but still calculate metrics on a parent-level field, you can follow a similar pattern:
+
+1. Use a `nested` aggregation to group by the nested field.
+2. Inside the `nested` aggregation, add a `terms` (or other bucket) aggregation on the nested field you want to group by.
+3. Inside the `terms` aggregation, add a `reverse_nested` sub-aggregation.
+4. Inside the `reverse_nested` sub-aggregation, add metric aggregations (e.g., `min`, `max`, `avg`) on the parent-level fields you want to calculate.
+
+This way, you can effectively join the nested data back to the parent document and calculate metrics on parent-level fields while still grouping by the nested field."
+Make it simpler like what happens when I have missing values in an agg?,"When you have missing values in an aggregation, the `missing` parameter in the aggregation allows you to specify a name for a bucket that will contain the documents that are missing the aggregating field or have a null value for that field.
+
+If you don't set the `missing` parameter, the documents with missing values for the aggregating field will not be included in any of the buckets generated by the aggregation.
+
+By setting the `missing` parameter and providing a name (e.g., ""N/A"" in the example), a separate bucket will be created for those missing values, allowing you to account for them in your analysis.
+
+Additionally, to see the bucket for missing values in the response, you may need to set the `min_doc_count` parameter to 0, as the default value of 1 will exclude buckets with 0 documents."
+Can you explain compound queries to me? ,"Compound queries in Elasticsearch are used to combine multiple leaf or compound query clauses together, either to combine their results or to modify their behavior. They act as wrappers around other queries, allowing you to apply boolean logic, adjust relevance scores, or combine results in various ways.
+
+Some key compound queries include:
+
+1. `bool` query: Combines multiple queries using boolean logic (AND, OR, NOT). This allows you to create complex queries by combining simpler ones.
+
+2. `boosting` query: Adjusts the relevance scores of documents that match a ""negative"" query, without removing them from the results. This can be useful for demoting certain results.
+
+3. `constant_score` query: Wraps a query or filter and assigns a constant relevance score to all matching documents.
+
+4. `dis_max` (disjunction max) query: Returns documents that match one or more queries, assigning higher relevance scores to documents that match multiple queries.
+
+5. `function_score` query: Recalculates the relevance scores of documents returned by a query, using a custom scoring function.
+
+6. `hybrid` query: Combines relevance scores from multiple queries into a single score for each document.
+
+Compound queries provide a way to build complex search queries by combining simpler ones, applying boolean logic, adjusting relevance scores, and customizing how results are scored and ranked. They offer flexibility in crafting sophisticated search queries tailored to specific needs."
+What is the difference between vector search and full text search? ,The context provided does not mention vector search or explain the differences between vector search and full-text search. It only covers the differences between term-level queries and full-text queries in OpenSearch/Elasticsearch. I don't have enough information to accurately explain the difference between vector search and full-text search.
+"Why can't my coworker see my async searches, but I can see and delete theirs? This role thing is messing everything up!","Based on the context provided, it seems that the issue is related to the backend roles assigned to you and your coworker. The backend roles determine the level of access and visibility for asynchronous searches between users.
+
+The key points from the context:
+
+1. Backend roles are typically assigned from an LDAP server, SAML provider, or manually added to the internal user database.
+2. When users view or interact with asynchronous search resources, they can only see and access the searches submitted by users who have a subset of their own backend roles.
+3. If a user has a superset of another user's backend roles, they can see and perform operations on the other user's asynchronous searches, but not vice versa.
+4. If none of the users have any backend roles, they can see and access each other's asynchronous searches.
+
+So, in your case, it seems that you and your coworker have different backend roles assigned, and your backend roles are a superset of your coworker's backend roles. This allows you to see and delete your coworker's asynchronous searches, but not the other way around.
+
+To resolve this issue, you can either:
+
+1. Adjust the backend roles assigned to you and your coworker to ensure you both have the appropriate level of access and visibility.
+2. If you both need full access to each other's asynchronous searches, you can remove or leave the backend roles empty for both users.
+
+It's essential to carefully manage backend roles and permissions to ensure the desired level of access and visibility for asynchronous searches within your organization."
