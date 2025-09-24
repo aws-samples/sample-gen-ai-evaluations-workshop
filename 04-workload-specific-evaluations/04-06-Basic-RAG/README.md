@@ -1,6 +1,6 @@
 # Basic RAG System Evaluation
 
-This project covers an abridged version of RAG evaluations to demonstrate how to evaluate the retrieval task of a RAG system as well as how to evaluate the entire system end-to-end.
+This project is an abridged version of the more in depth [RAG repository](https://github.com/aws-samples/genai-system-evaluation/tree/main).  Here we will demonstrate how to evaluate the retrieval task of a RAG system as well as how to evaluate the entire system end-to-end.  For a much deeper dive on RAG evaluations, please visit the full repository.
 
 A typical RAG system operates through two primary pipelines that transform raw organizational data into contextually accessible knowledge for GenAI applications:
 
