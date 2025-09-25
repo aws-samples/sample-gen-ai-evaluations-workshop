@@ -167,16 +167,28 @@ Sample evaluation output:
 
 
 
-## 🔒 Account ID Security & Masking
+## 🔒 Optional - Account ID Security & Masking
 
 This repository includes automated security measures to prevent AWS account IDs from being exposed in published notebooks.
+Below is the script which has been added to the repo (.git/hooks/pre-commit). You can customize it in your local git repo:
+```
+#!/bin/bash
+set -e
+
+# Get only staged files in the target directory
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep "^05-framework-specific-evaluations/05-04-AgentCore/.*\.\(ipynb\|py\)$" || true)
+
+if [ -n "$staged_files" ]; then
+    python3 "05-framework-specific-evaluations/05-04-AgentCore/05-04-05-optional-clean-notebooks.py" $staged_files
+    git add $staged_files
+fi
+```
 
 ### How Account ID Masking Works
 
-1. **Pre-commit Hook**: Git automatically runs `clean_notebooks.py` before each commit
+1. **Pre-commit Hook**: Git automatically runs `05-04-04-optional-clean-notebooks.py` before each commit
 2. **Pattern Detection**: Scans notebook outputs for 12-digit numbers (AWS account ID format)  
 3. **Safe Replacement**: Replaces account IDs with `XXXXXXXXXXXX` while preserving all other outputs
 4. **Re-staging**: Automatically adds cleaned notebooks back to the commit
 
 **Note**: This repository uses account ID masking instead of complete output removal to maintain notebook functionality while ensuring security.
-
