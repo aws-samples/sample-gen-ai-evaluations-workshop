@@ -179,7 +179,7 @@ set -e
 staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep "^05-framework-specific-evaluations/05-04-AgentCore/.*\.\(ipynb\|py\)$" || true)
 
 if [ -n "$staged_files" ]; then
-    python3 "05-framework-specific-evaluations/05-04-AgentCore/05-04-05-optional-clean-notebooks.py" $staged_files
+    python3 "05-framework-specific-evaluations/05-04-AgentCore/05-04-04-optional-clean-notebooks.py" $staged_files
     git add $staged_files
 fi
 ```
