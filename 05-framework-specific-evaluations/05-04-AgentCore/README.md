@@ -11,6 +11,8 @@ This section of the workshop is structured into 2 parts. In the 1st part we depl
 ├── 05-04-04-requirements.txt          # Python dependencies
 ├── 05-04-01-Agentic-Metrics-AgentCore.ipynb # Agent deployment and basic metrics
 ├── 05-04-02-Agent-and-tool-evals-with-xray.ipynb # Advanced evaluation with X-Ray observability
+├── AgentCore-Evaluation.ipynb         # Comprehensive evaluation framework (recommended)
+├── AgentCore-Cleanup.ipynb            # Resource cleanup and account ID masking
 ├── citysearch.py                      # city search agent - Generated in 05-04-01-Agentic-Metrics-AgentCore.ipynb 
 ├── Dockerfile                         # Container configuration - Generated in 05-04-01-Agentic-Metrics-AgentCore.ipynb
 ├── .bedrock_agentcore.yaml            # AgentCore configuration - Generated in 05-04-01-Agentic-Metrics-AgentCore.ipynb
@@ -42,6 +44,24 @@ This section of the workshop is structured into 2 parts. In the 1st part we depl
 - Tool usage analysis and performance monitoring
 - Session-based trace filtering and comprehensive reporting
 
+### 3. AgentCore-Evaluation.ipynb (Recommended)
+**Comprehensive Evaluation Framework**
+
+- **Enhanced User Experience**: Streamlined interface with automated agent ARN detection
+- **Extended Test Coverage**: 6 comprehensive test cases covering various scenarios
+- **Rich Visualizations**: Quality metrics charts, response time distributions, performance analysis
+- **Detailed Reporting**: Individual test case analysis with recommendations
+- **Multiple Output Formats**: JSON, CSV, and Markdown reports
+- **Account ID Security**: Built-in masking for safe GitHub commits
+
+### 4. AgentCore-Cleanup.ipynb
+**Resource Cleanup and Security**
+
+- **Complete Resource Removal**: Deletes all AgentCore resources (runtime, ECR, IAM roles, etc.)
+- **Account ID Masking**: Cleans notebook outputs to remove sensitive information
+- **Cost Prevention**: Ensures no resources are left running after testing
+- **GitHub Safety**: Makes notebooks safe for public repository commits
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -56,8 +76,8 @@ pip install -r requirements.txt
 
 ### Usage
 1. **Deploy Agent**: Run `05-04-01-Agentic-Metrics-AgentCore.ipynb`
-2. **Evaluate Agent**: Run `05-04-02-Agent-and-tool-evals-with-xray.ipynb` with your agent ARN
-3. **Clean Up Resources**: Delete AWS resources manually in the AWS Console to avoid unexpected costs
+2. **Evaluate Agent**: Run `AgentCore-Evaluation.ipynb` (recommended) or `05-04-02-Agent-and-tool-evals-with-xray.ipynb`
+3. **Clean Up Resources**: Run `AgentCore-Cleanup.ipynb` to remove all AWS resources and mask account IDs
 
 ## 🏙️ City Search Agent (citysearch.py)
 
