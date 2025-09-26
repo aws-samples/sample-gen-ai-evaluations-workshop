@@ -1,10 +1,10 @@
-# Strands Agent Evaluation Framework
+# Agentic AI Evaluation Framework
 
-A comprehensive evaluation framework for Strands agents using built-in observability features and custom evaluation metrics.
+A comprehensive evaluation framework for AI agents using built-in observability features and custom evaluation metrics.
 
 ## Overview
 
-This framework demonstrates multiple evaluation techniques for Strands agents across four key dimensions:
+This framework demonstrates multiple evaluation techniques for AI agents across four key dimensions:
 
 - **Agent Performance**: Measuring accuracy using ground truth datasets
 - **Tool Execution**: Analyzing tool selection and execution success rates  
@@ -46,7 +46,7 @@ Uses structured city population dataset (`city_pop.csv`) to validate agent respo
 
 ### 2. Performance Metrics
 
-Leverages Strands built-in observability:
+Leverages built-in observability to track agent performance:
 
 ```python
 # Access comprehensive metrics
@@ -151,64 +151,11 @@ def evaluate_city_guess(city, state, response, dataset):
 
 ```python
 def display_metrics(result):
-    """Detailed performance analysis using Strands metrics"""
+    """Detailed performance analysis using built-in metrics"""
     summary = result.metrics.get_summary()
     # Tool performance analysis
     # Token usage breakdown  
     # Cycle duration tracking
 ```
 
-## Production Recommendations
 
-### Implementation Guidelines
-
-1. **Structured Outputs**: Use XML/JSON tags for automated evaluation
-2. **Continuous Monitoring**: Implement Strands metrics tracking
-3. **Baseline Establishment**: Create accuracy benchmarks with ground truth data
-4. **Tool Success Monitoring**: Track tool execution reliability
-5. **Cost Optimization**: Monitor token efficiency across models
-6. **Quality Assessment**: Deploy LLM-as-a-Judge for response evaluation
-
-### Best Practices
-
-- Test multiple data points for consistency
-- Use appropriate model tiers for different use cases
-- Implement retry logic for failed evaluations
-- Track both quantitative and qualitative metrics
-- Establish performance regression detection
-
-## Future Enhancements
-
-### Expanded Coverage
-- Additional evaluation domains beyond demographics
-- Complex multi-step reasoning tasks
-- Real-time data accuracy validation
-
-### Advanced Metrics
-- Semantic similarity scoring
-- Confidence calibration analysis
-- Error pattern classification
-
-### Automation
-- Continuous evaluation pipelines
-- A/B testing frameworks
-- Performance regression detection
-
-## References
-
-- [Strands Documentation](https://strandsagents.com/latest/documentation/docs/user-guide/observability-evaluation/evaluation/)
-- [AWS Bedrock Models](https://docs.aws.amazon.com/bedrock/)
-- [Agent Evaluation Best Practices](https://strandsagents.com/latest/documentation/)
-
-## Contributing
-
-This evaluation framework is designed to be extensible. To add new evaluation methods:
-
-1. Create evaluation functions following the existing patterns
-2. Add test datasets in appropriate formats
-3. Implement metrics collection using Strands observability
-4. Document evaluation criteria and expected outcomes
-
-## License
-
-This project follows the same license as the Strands framework.
