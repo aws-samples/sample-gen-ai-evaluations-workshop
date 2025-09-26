@@ -126,6 +126,10 @@ By completing this tutorial, you will understand:
 
 ### Prerequisites
 
+- **AWS EC2 g5 instance** (recommended and tested)
+  - This implementation is designed for and tested on g5 instances
+  - Tested specifically on g5.8xlarge, but any g5 instance should work
+  - g5 instances provide optimal GPU performance for ImageBind embeddings
 - Python 3.8+
 - PyTorch 2.0+
 - CUDA-capable GPU (recommended)
