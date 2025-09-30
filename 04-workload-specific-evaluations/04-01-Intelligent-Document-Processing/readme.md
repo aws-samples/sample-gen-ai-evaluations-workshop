@@ -22,7 +22,7 @@ The evaluation framework serves as a critical quality control component by:
 This workshop covered the basics of structured data evaluation. To explore the full capabilities of the IDP pipeline:
 
 1. **Evaluation Framework**
-   - For detailed documentation, visit the evaluation repository at [repository-link].
+   - For detailed documentation, visit the evaluation repository at [coming-soon].
    - Explore advanced comparison strategies
    - Review more complex examples in the examples directory
 
