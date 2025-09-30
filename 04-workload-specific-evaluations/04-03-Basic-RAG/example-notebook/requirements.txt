@@ -10,7 +10,7 @@ pydantic==2.8.2
 chromadb==1.1.0
 #0.5.5
 jupyter==1.0.0
-llama-index==0.10.63
+llama-index==0.12.41
 llama-index-embeddings-bedrock==0.2.1
 sentence-transformers==3.0.1
 scikit-learn==1.4.2
