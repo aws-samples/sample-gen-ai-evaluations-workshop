@@ -1,4 +1,4 @@
-boto3
+boto3==1.40.55
 awscli
 ipykernel
 ipywidgets
@@ -9,3 +9,4 @@ strands-agents-tools>=0.2.4
 python-jose>=3.3.0
 rich
 matplotlib
+seaborn

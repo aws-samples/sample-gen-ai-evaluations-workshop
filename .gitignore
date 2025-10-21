@@ -1,3 +1,14 @@
 .DS_Store
 **/.DS_Store
 **/.idea
+**/chroma
+**/__pycache__
+**/opensearch-docs
+**/venv
+**/.venv
+**/chroma.zip
+**/04-02-Guardrails/data/alert_adversarial.jsonl
+**/04-02-Guardrails/data/alert.jsonl
+**/04-02-Guardrails/data/safetybench_test_en.json
+**/04-02-Guardrails/data/test_results.json
+**/04-02-Guardrails/data/test_with_adversarial_results.json
