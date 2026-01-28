@@ -1,0 +1,50 @@
+{
+  "cases": [
+    {
+      "name": "city-1-new-york",
+      "session_id": "6a9c9071-b456-4f28-991f-62c08c021c35",
+      "input": "What is the population and area in square miles of New York, NY?",
+      "expected_output": "Population: 8478072, Area: 300.5 square miles",
+      "expected_trajectory": null,
+      "expected_interactions": null,
+      "metadata": {
+        "category": "city_info",
+        "city": "New York",
+        "state": "NY"
+      }
+    },
+    {
+      "name": "city-2-los-angeles",
+      "session_id": "3370f3b8-962a-4466-a1cc-8661534cf023",
+      "input": "What is the population and area in square miles of Los Angeles, CA?",
+      "expected_output": "Population: 3878704, Area: 469.5 square miles",
+      "expected_trajectory": null,
+      "expected_interactions": null,
+      "metadata": {
+        "category": "city_info",
+        "city": "Los Angeles",
+        "state": "CA"
+      }
+    },
+    {
+      "name": "city-3-chicago",
+      "session_id": "3fb83dee-9a05-4ec7-93fe-8cf9983daadb",
+      "input": "What is the population and area in square miles of Chicago, IL?",
+      "expected_output": "Population: 2721308, Area: 227.7 square miles",
+      "expected_trajectory": null,
+      "expected_interactions": null,
+      "metadata": {
+        "category": "city_info",
+        "city": "Chicago",
+        "state": "IL"
+      }
+    }
+  ],
+  "evaluators": [
+    {
+      "evaluator_type": "OutputEvaluator",
+      "rubric": "\n    Evaluate the response based on:\n    1. Population Accuracy - Is the population value close to the expected value? (within 5% is excellent, within 10% is acceptable)\n    2. Area Accuracy - Is the area value close to the expected value? (within 5% is excellent, within 10% is acceptable)\n    3. Completeness - Does the response include both population AND area information?\n\n    Score 1.0 if both values are within 5% of expected and response is complete.\n    Score 0.7 if both values are within 10% of expected.\n    Score 0.5 if only one value is accurate or response is incomplete.\n    Score 0.0 if values are significantly wrong or missing.\n\n    Focus on the numerical accuracy, not the exact format of the response.\n    ",
+      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    }
+  ]
+}
