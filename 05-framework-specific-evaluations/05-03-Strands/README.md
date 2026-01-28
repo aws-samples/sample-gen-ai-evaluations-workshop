@@ -59,7 +59,7 @@ pip install strands-agents strands-agents-tools strands-agents-evals
 pip install ddgs
 ```
 
-Before executing this notebook, ensure access to Claude 3.5 Haiku in your configured AWS region.
+Before executing this notebook, ensure access to Global Claude 4.5 Haiku in your configured AWS region, or change the notebook to your model of choice.  
 
 ## Resources
 
