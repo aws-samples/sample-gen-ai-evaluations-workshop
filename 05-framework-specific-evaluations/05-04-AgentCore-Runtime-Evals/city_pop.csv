@@ -1,0 +1,347 @@
+city,state,population,land_area_mi2
+New York[c],NY,"8,478,072",300.5
+Los Angeles,CA,"3,878,704",469.5
+Chicago,IL,"2,721,308",227.7
+Houston,TX,"2,390,125",640.4
+Phoenix,AZ,"1,673,164",518
+Philadelphia[d],PA,"1,573,916",134.4
+San Antonio,TX,"1,526,656",498.8
+San Diego,CA,"1,404,452",325.9
+Dallas,TX,"1,326,087",339.6
+Jacksonville[e],FL,"1,009,833",747.3
+Fort Worth,TX,"1,008,106",347.3
+San Jose,CA,"997,368",178.3
+Austin,TX,"993,588",319.9
+Charlotte,NC,"943,476",308.3
+Columbus,OH,"933,263",220
+Indianapolis[f],IN,"891,484",361.6
+San Francisco[g],CA,"827,526",46.9
+Seattle,WA,"780,995",83.8
+Denver[h],CO,"729,019",153.1
+Oklahoma City,OK,"712,919",606.2
+Nashville[i],TN,"704,963",475.8
+Washington[j],DC,"702,250",61.1
+El Paso,TX,"681,723",258.4
+Las Vegas,NV,"678,922",141.8
+Boston,MA,"673,458",48.3
+Detroit,MI,"645,705",138.7
+Louisville[k],KY,"640,796",324.9
+Portland,OR,"635,749",133.5
+Memphis,TN,"610,919",297
+Baltimore[l],MD,"568,271",80.9
+Milwaukee,WI,"563,531",96.2
+Albuquerque,NM,"560,326",187.3
+Tucson,AZ,"554,013",241
+Fresno,CA,"550,105",115.2
+Sacramento,CA,"535,798",98.6
+Atlanta,GA,"520,070",135.3
+Mesa,AZ,"517,151",138.7
+Kansas City,MO,"516,032",314.7
+Raleigh,NC,"499,825",147.1
+Colorado Springs,CO,"493,554",195.4
+Omaha,NE,"489,265",141.6
+Miami,FL,"487,014",36
+Virginia Beach[l],VA,"454,808",244.7
+Long Beach,CA,"450,901",50.7
+Oakland,CA,"443,554",55.9
+Minneapolis,MN,"428,579",54
+Bakersfield,CA,"417,468",149.8
+Tulsa,OK,"415,154",197.5
+Tampa,FL,"414,547",114
+Arlington,TX,"403,672",95.9
+Aurora,CO,"403,130",160.1
+Wichita,KS,"400,991",162
+Cleveland,OH,"365,379",77.7
+New Orleans[m],LA,"362,701",169.5
+Henderson,NV,"350,039",106.2
+Honolulu[n],HI,"344,967",60.5
+Anaheim,CA,"344,561",50.3
+Orlando,FL,"334,854",110.6
+Lexington[o],KY,"329,437",283.6
+Stockton,CA,"324,975",62.2
+Riverside,CA,"323,757",81.2
+Irvine,CA,"318,683",65.6
+Corpus Christi,TX,"317,317",162.2
+Newark,NJ,"317,303",24.1
+Santa Ana,CA,"316,184",27.3
+Cincinnati,OH,"314,915",77.8
+Pittsburgh,PA,"307,668",55.4
+Saint Paul,MN,"307,465",52
+Greensboro,NC,"307,381",129.6
+Jersey City,NJ,"302,824",14.7
+Durham,NC,"301,870",112.8
+Lincoln,NE,"300,619",97.7
+North Las Vegas,NV,"294,034",101.3
+Plano,TX,"293,286",71.7
+Anchorage[p],AK,"289,600","1,706.80"
+Gilbert,AZ,"288,790",68.6
+Madison,WI,"285,300",79.6
+Reno,NV,"281,714",108.8
+Chandler,AZ,"281,231",65.3
+St. Louis[l],MO,"279,695",61.7
+Chula Vista,CA,"278,546",49.6
+Buffalo,NY,"276,617",40.4
+Fort Wayne,IN,"273,203",110.7
+Lubbock,TX,"272,086",134.6
+St. Petersburg,FL,"267,102",61.8
+Toledo,OH,"265,638",80.5
+Laredo,TX,"261,260",106.5
+Port St. Lucie,FL,"258,575",119.2
+Glendale,AZ,"258,143",61.6
+Irving,TX,"258,060",67
+Winston-Salem,NC,"255,769",132.7
+Chesapeake[l],VA,"254,997",338.5
+Garland,TX,"250,431",57.1
+Scottsdale,AZ,"246,170",184
+Boise[q],ID,"237,963",84
+Hialeah,FL,"235,388",21.6
+Frisco,TX,"235,208",68.6
+Richmond[l],VA,"233,655",59.9
+Cape Coral,FL,"233,025",106
+Norfolk[l],VA,"231,105",53.3
+Spokane,WA,"230,609",68.8
+Huntsville,AL,"230,402",218.1
+Santa Clarita,CA,"229,159",70.8
+Tacoma,WA,"228,202",49.7
+Fremont,CA,"228,192",78.3
+McKinney,TX,"227,526",67
+San Bernardino,CA,"224,775",62.1
+Baton Rouge[r],LA,"220,907",86.3
+Modesto,CA,"220,592",43
+Fontana,CA,"218,455",43.1
+Salt Lake City,UT,"217,783",110.3
+Moreno Valley,CA,"213,919",51.3
+Des Moines,IA,"213,096",88.2
+Worcester,MA,"211,286",37.4
+Yonkers,NY,"211,040",18
+Fayetteville,NC,"209,496",148.3
+Sioux Falls,SD,"209,289",79.1
+Grand Prairie,TX,"207,331",72.6
+Rochester,NY,"207,282",35.8
+Tallahassee,FL,"205,089",100.9
+Little Rock,AR,"204,774",120
+Amarillo,TX,"203,729",102.3
+Overland Park,KS,"202,893",75.2
+Columbus[s],GA,"201,830",216.5
+Augusta[t],GA,"201,737",302.3
+Mobile,AL,"201,367",139.5
+Oxnard,CA,"200,616",26.5
+Grand Rapids,MI,"200,117",44.8
+Peoria,AZ,"199,924",176.1
+Vancouver,WA,"198,992",48.7
+Knoxville,TN,"198,722",98.7
+Birmingham,AL,"196,357",147
+Montgomery,AL,"195,818",159.9
+Providence,RI,"194,706",18.4
+Huntington Beach,CA,"193,151",27
+Brownsville,TX,"191,967",131.5
+Chattanooga,TN,"191,496",142.4
+Fort Lauderdale,FL,"190,641",34.6
+Tempe,AZ,"190,114",39.9
+Akron,OH,"189,664",61.9
+Glendale,CA,"187,823",30.5
+Clarksville,TN,"185,690",99.4
+Ontario,CA,"185,285",50
+Newport News[l],VA,"183,056",69
+Elk Grove,CA,"182,797",42
+Cary,NC,"182,659",59.2
+Aurora,IL,"180,710",45
+Salem,OR,"180,406",48.8
+Pembroke Pines,FL,"179,326",32.7
+Eugene,OR,"178,786",44.2
+Santa Rosa,CA,"177,524",42.5
+Rancho Cucamonga,CA,"176,675",40.1
+Shreveport,LA,"176,578",107.8
+Garden Grove,CA,"172,361",18
+Oceanside,CA,"170,941",41.3
+Fort Collins,CO,"170,924",57.2
+Springfield,MO,"170,596",82.4
+Murfreesboro,TN,"168,387",62.9
+Surprise,AZ,"167,564",110.3
+Lancaster,CA,"167,426",94.3
+Denton,TX,"165,998",96.4
+Roseville,CA,"163,304",44.1
+Palmdale,CA,"162,536",106.1
+Corona,CA,"161,540",39.9
+Salinas,CA,"160,783",23.5
+Killeen,TX,"160,616",54.8
+Paterson,NJ,"160,463",8.4
+Alexandria[l],VA,"159,102",14.9
+Hollywood,FL,"159,073",27.3
+Hayward,CA,"158,440",45.8
+Charleston,SC,"157,665",114.8
+Macon[u],GA,"157,056",249.4
+Lakewood,CO,"156,868",43.5
+Sunnyvale,CA,"156,792",22.1
+Kansas City[v],KS,"156,752",124.7
+Springfield,MA,"154,888",31.9
+Bellevue,WA,"154,377",33.5
+Naperville,IL,"153,124",39.1
+Joliet,IL,"151,837",64.5
+Bridgeport,CT,"151,599",16.1
+Mesquite,TX,"150,140",48.5
+Pasadena,TX,"149,617",43.7
+Olathe,KS,"149,035",61.9
+Escondido,CA,"148,847",37.3
+Savannah,GA,"148,808",106.8
+McAllen,TX,"148,782",62.3
+Gainesville,FL,"148,720",63.2
+Pomona,CA,"147,966",23
+Rockford,IL,"147,486",64.5
+Thornton,CO,"146,689",35.9
+Waco,TX,"146,608",88.7
+Visalia,CA,"146,271",37.9
+Syracuse,NY,"146,097",25.1
+Columbia,SC,"144,788",136.8
+Midland,TX,"143,687",75.5
+Miramar,FL,"143,242",28.9
+Palm Bay,FL,"142,023",86.4
+Lakewood[w],NJ,"141,985",24.7
+Jackson,MS,"141,449",111.7
+Coral Springs,FL,"140,808",22.9
+Victorville,CA,"140,721",73.7
+Elizabeth,NJ,"140,413",12.3
+Fullerton,CA,"140,054",22.4
+Meridian,ID,"139,740",35.1
+Torrance,CA,"139,576",20.5
+Stamford,CT,"139,134",37.6
+West Valley City,UT,"138,144",35.8
+Orange,CA,"137,941",25.7
+Cedar Rapids,IA,"137,904",72.1
+Warren,MI,"137,686",34.4
+Hampton[l],VA,"137,596",51.5
+New Haven,CT,"137,562",18.7
+Pasadena,CA,"137,195",23
+Kent,WA,"136,588",33.8
+Dayton,OH,"136,346",55.8
+Fargo,ND,"136,285",49.8
+Lewisville,TX,"135,983",37
+Carrollton,TX,"135,456",36.7
+Round Rock,TX,"135,359",37.6
+Sterling Heights,MI,"134,342",36.4
+Santa Clara,CA,"133,132",18.3
+Norman,OK,"131,010",178.8
+Columbia,MO,"130,900",66.5
+Abilene,TX,"130,501",106.7
+Pearland,TX,"129,620",48.7
+Athens[x],GA,"128,691",116.3
+College Station,TX,"128,023",51.2
+Clovis,CA,"127,993",25.4
+West Palm Beach,FL,"127,744",53.8
+Allentown,PA,"127,138",17.6
+North Charleston,SC,"126,005",77.6
+Simi Valley,CA,"125,778",41.5
+Topeka,KS,"125,467",61.4
+Wilmington,NC,"125,284",51.4
+Lakeland,FL,"124,990",66.2
+Thousand Oaks,CA,"124,229",55.3
+Concord,CA,"124,016",30.6
+Rochester,MN,"123,624",55.5
+Vallejo,CA,"123,475",30.4
+Ann Arbor,MI,"122,925",28.2
+Broken Arrow,OK,"122,756",63
+Fairfield,CA,"122,646",41.6
+Lafayette[y],LA,"122,280",55.8
+Hartford,CT,"122,129",17.4
+Arvada,CO,"121,873",38.9
+Berkeley,CA,"121,749",10.4
+Independence,MO,"121,629",78
+Billings,MT,"121,483",44.8
+Cambridge,MA,"121,186",6.4
+Lowell,MA,"120,418",13.6
+Odessa,TX,"119,748",51.1
+High Point,NC,"118,601",56.4
+League City,TX,"118,456",51.3
+Antioch,CA,"118,453",29.2
+Richardson,TX,"118,221",28.6
+Goodyear,AZ,"118,186",191.3
+Pompano Beach,FL,"118,104",24
+Nampa,ID,"117,350",33.5
+Menifee,CA,"117,041",46.5
+Las Cruces,NM,"116,998",76.9
+Clearwater,FL,"116,811",26.1
+West Jordan,UT,"116,688",32.3
+New Braunfels,TX,"116,477",45.2
+Manchester,NH,"116,386",33.1
+Miami Gardens,FL,"116,173",18.2
+Waterbury,CT,"115,908",28.5
+Provo,UT,"115,479",41.7
+Evansville,IN,"115,395",47.4
+Richmond,CA,"115,353",30.1
+Westminster,CO,"115,302",31.6
+Elgin,IL,"114,701",38
+Conroe,TX,"114,581",72
+Greeley,CO,"114,363",48.9
+Lansing,MI,"114,336",39.1
+Buckeye,AZ,"114,334",393
+Tuscaloosa,AL,"114,288",61.9
+Allen,TX,"113,746",26.4
+Carlsbad,CA,"113,575",37.8
+Everett,WA,"113,011",33.2
+Springfield,IL,"112,949",61.1
+Beaumont,TX,"112,893",82.5
+Murrieta,CA,"112,539",33.6
+Rio Rancho,NM,"112,524",103.4
+Temecula,CA,"112,431",37.3
+Concord,NC,"112,395",63.5
+Tyler,TX,"112,219",57.5
+Davie,FL,"112,052",34.9
+South Fulton,GA,"112,003",85.2
+Peoria,IL,"111,696",48
+Sparks,NV,"111,520",36.4
+Gresham,OR,"111,507",23.5
+Santa Maria,CA,"111,346",22.8
+Pueblo,CO,"111,166",55.4
+Hillsboro,OR,"110,337",25.7
+Edison[w],NJ,"110,002",30.1
+Sugar Land,TX,"109,851",40.5
+Ventura[z],CA,"109,831",21.9
+Downey,CA,"109,368",12.4
+Costa Mesa,CA,"109,131",15.8
+Centennial,CO,"108,853",29.7
+Edinburg,TX,"108,733",44.7
+Spokane Valley,WA,"108,267",37.7
+Jurupa Valley,CA,"108,154",42.9
+Bend,OR,"106,926",33.6
+West Covina,CA,"106,920",16
+Boulder,CO,"106,803",26.3
+Palm Coast,FL,"106,729",95.4
+Lee's Summit,MO,"106,419",63.9
+Dearborn,MI,"106,377",24.2
+Green Bay,WI,"106,311",45.5
+St. George,UT,"106,288",78.5
+Woodbridge[w],NJ,"106,101",23.3
+Brockton,MA,"105,788",21.3
+Renton,WA,"105,543",23.5
+Sandy Springs,GA,"105,505",37.7
+Rialto,CA,"104,918",24.1
+El Monte,CA,"104,639",9.6
+Vacaville,CA,"103,994",29.9
+Fishers,IN,"103,986",35.6
+South Bend,IN,"103,713",42
+Carmel,IN,"103,606",49.1
+Yuma,AZ,"103,559",120.7
+Burbank,CA,"103,533",17.3
+Lynn,MA,"103,489",10.7
+Quincy,MA,"103,434",16.6
+El Cajon,CA,"103,291",14.5
+Fayetteville,AR,"103,134",54.1
+Suffolk[l],VA,"103,105",399.2
+San Mateo,CA,"103,006",12.1
+Chico,CA,"102,911",34.1
+Inglewood,CA,"102,774",9.1
+Wichita Falls,TX,"102,372",72
+Boca Raton,FL,"102,238",29.2
+Hesperia,CA,"101,836",72.7
+Daly City,CA,"101,418",7.6
+Clinton[aa],MI,"101,359",28
+Georgetown,TX,"101,344",57.3
+New Bedford,MA,"101,318",20
+Albany,NY,"101,317",21.4
+Davenport,IA,"100,938",63.8
+Plantation,FL,"100,694",21.8
+Deltona,FL,"100,513",37.3
+Federal Way,WA,"100,252",22.3
+San Angelo,TX,"100,159",59.7
+Tracy,CA,"100,136",25.9
+Sunrise,FL,"100,128",16.2

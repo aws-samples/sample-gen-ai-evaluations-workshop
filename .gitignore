@@ -12,3 +12,13 @@
 **/04-02-Guardrails/data/safetybench_test_en.json
 **/04-02-Guardrails/data/test_results.json
 **/04-02-Guardrails/data/test_with_adversarial_results.json
+**/.kiro
+.kiro
+**/.vscode
+.vscode
+
+# AgentCore Runtime generated files (05-04 notebook)
+**/05-04-AgentCore-Runtime-Evals/citysearch.py
+**/05-04-AgentCore-Runtime-Evals/Dockerfile
+**/05-04-AgentCore-Runtime-Evals/.dockerignore
+**/.bedrock_agentcore.yaml

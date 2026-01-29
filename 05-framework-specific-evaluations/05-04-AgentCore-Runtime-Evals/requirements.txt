@@ -1,0 +1,9 @@
+strands-agents
+strands-agents-tools
+bedrock-agentcore
+bedrock-agentcore-starter-toolkit
+ddgs
+boto3
+pandas
+requests
+beautifulsoup4
