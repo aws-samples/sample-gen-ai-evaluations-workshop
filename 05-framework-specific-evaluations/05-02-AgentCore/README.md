@@ -3,8 +3,7 @@
 Comprehensive evaluation tools for AI agents deployed on Amazon Bedrock AgentCore Runtime, providing both deployment capabilities and sophisticated evaluation methodologies.
 This section of the workshop is structured into 2 parts. In the 1st part we deploy an agent we created in 03 onto AgentCore Runtime. And in the 2nd part we push run evaluations against the deployed agent through the evaluations notebook. 
 
-# Note!  These are evaluations for agents running on AgentCore Runtime.
-# To also use the AgentCore Evaluations capability, see module 5-03!
+# Note!  These are custom evaluations for agents running on AgentCore Runtime.  To use the native AgentCore Evaluations capability, see module 5-03!
 
 ## 📁 Repository Structure
 
