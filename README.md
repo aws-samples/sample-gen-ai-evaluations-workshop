@@ -22,14 +22,13 @@ We strongly recommend going in order through the first 3 modules.  These cover t
   - Guardrails
   - Basic RAG
   - Multi-modal RAG
-  - Synthetic Data Generation (Coming soon!)
-  - Speech 2 Speech (Coming soon!)
+  - Speech 2 Speech
   
 - 05 Framework and Tool Specific Implementations
   - PromptFoo
-  - AgentCore
-  - BrainTrust (Coming soon!)
-  - Bedrock Evaluations (Coming soon!)
+  - AgentCore (custom evaluations)
+  - Strands Evaluations
+  - AgentCore Evaluations
 
 ## Prerequisites
 
