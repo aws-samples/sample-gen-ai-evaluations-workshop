@@ -4,7 +4,7 @@ numpy==1.26.4
 scikit-learn==1.5.2
 
 # PyTorch ecosystem with CUDA 11.8 support
-torch==2.4.1+cu118
+torch==2.7.1+cu118
 torchaudio==2.4.1+cu118
 torchvision==0.19.1+cu118
 pytorchvideo==0.1.5
