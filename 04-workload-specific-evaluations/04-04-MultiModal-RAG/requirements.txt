@@ -41,4 +41,4 @@ ftfy==6.3.1
 regex==2024.11.6
 
 # PyTorch index URL for CUDA packages
---index-url https://download.pytorch.org/whl/cu118
+--extra-index-url https://download.pytorch.org/whl/cu118
