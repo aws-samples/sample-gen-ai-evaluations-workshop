@@ -6,7 +6,7 @@ websockets==15.0.1
 requests==2.32.3
 aws_sdk_bedrock_runtime==0.2.0
 #>=0.1.0,<0.2.0
-mcp==1.13.1
+mcp==1.23.0
 strands-agents==1.17.0
 
 # Telemetry and observability
