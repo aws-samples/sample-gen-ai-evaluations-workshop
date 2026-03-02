@@ -3,7 +3,7 @@ numpy==2.2.4
 scipy==1.16.3
 rx==3.2.0
 websockets==15.0.1
-requests==2.32.3
+requests==2.32.4
 aws_sdk_bedrock_runtime==0.2.0
 #>=0.1.0,<0.2.0
 mcp==1.13.1
