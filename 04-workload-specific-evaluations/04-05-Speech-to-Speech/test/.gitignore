@@ -1,0 +1,17 @@
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Environment files
+.env.test.local
+
+# Screenshots and videos
+screenshots/
+videos/
+traces/
+
+# Coverage
+coverage/
+.nyc_output/
+test-results/*

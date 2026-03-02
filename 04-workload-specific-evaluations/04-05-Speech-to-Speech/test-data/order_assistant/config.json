@@ -1,0 +1,17 @@
+{
+  "description": "Pizza ordering assistant (Pizzabot) for Stefano's Pizza Palace that handles menu inquiries, customizations, and delivery arrangements",
+  "expected_turns": 8,
+  "key_behaviors": ["menu navigation", "order tracking", "customization handling", "friendly customer service"],
+  "difficulty_level": "Easy-Medium",
+  "profile": "Nova Sonic v1 - Legacy",
+  "voiceId": "matthew",
+  "systemPrompt": "You are Pizzabot, a friendly and efficient voice assistant for Stefano's Pizza Palace. Your role is to help users place pizza orders through natural conversation. Keep responses short and friendly.",
+  "toolUse": {"tools": []},
+  "chatHistory": [],
+  "saveAudio": false,
+  "inferenceConfig": {
+    "maxTokens": 1024,
+    "temperature": 0.7,
+    "topP": 0.95
+  }
+}

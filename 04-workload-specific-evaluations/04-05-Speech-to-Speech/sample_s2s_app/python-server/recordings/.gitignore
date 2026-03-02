@@ -1,0 +1,6 @@
+# Ignore all recording files
+*.wav
+*.mp3
+
+# Keep the directory structure
+!.gitignore

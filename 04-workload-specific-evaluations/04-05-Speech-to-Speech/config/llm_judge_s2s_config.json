@@ -1,0 +1,17 @@
+{
+  "judge_model": {
+    "id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "max_tokens": 1024,
+    "temperature": 0.0
+  },
+  "evaluation_criteria": {
+    "speech_recognition_accuracy": "Did the system accurately transcribe the user's spoken input? Score 1 if transcription is accurate and complete, 0 if there are significant recognition errors.",
+    "tool_calling_accuracy": "Were the correct tools invoked at appropriate moments? Score 1 if all expected tool calls occurred correctly, 0 otherwise. If there are no tool calls in the validation data, and no tool calls in the evaluation data, then set default score 1.",
+    "response_relevance": "Are the AI Assistant's responses directly addressing the user's input? Score 1 if responses are relevant and contextual, 0 if off-topic or misaligned.",
+    "response_correctness": "Is the content of the AI Assistant's responses factually accurate? Score 1 if content is correct and appropriate, 0 if incorrect or inappropriate.",
+    "context_maintenance": "Did the agent maintain context across turns and handle references correctly? Score 1 if context is well-maintained throughout, 0 if context is lost or confused.",
+    "completeness": "Do AI responses provide sufficient depth to advance the interview effectively? Score 1 if responses are complete and thorough, 0 if incomplete or superficial.",
+    "clarity": "Are responses well-structured, professional, and easy to understand? Score 1 if clear and professional, 0 if unclear or poorly structured."
+  },
+  "prompt_template": "You are an expert evaluator for an AI Interview Practice Assistant that conducts technical interviews through speech-to-speech interaction. Your task is to evaluate the quality and accuracy of the AI Interview Assistant's responses across a multi-turn conversation. EXPECTED CONVERSATION FLOW: {expected_conversation_flow} ACTUAL CONVERSATION FLOW: {actual_conversation_flow} Please evaluate the response based on the following criteria: {criteria_text} For each criterion, provide: 1. A score of 0 (failed/does not meet expectations) or 1 (passed/meets expectations) 2. A brief explanation for your score (1-2 sentences) Then provide an overall score of 0 or 1 and a summary of your evaluation. You MUST format your response as a JSON object with the following structure: {{\"criteria\": {{\"speech_recognition_accuracy\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}, \"tool_calling_accuracy\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}, \"response_relevance\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}, \"response_correctness\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}, \"context_maintenance\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}, \"completeness\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}, \"clarity\": {{\"score\": <0 or 1>, \"explanation\": \"<explanation>\"}}}}, \"overall\": {{\"score\": <0 or 1>, \"summary\": \"<summary>\"}}}} Score Guidelines: 0 = Failed (does not meet expectations, has significant issues), 1 = Passed (meets expectations, acceptable quality). Ensure scores are internally consistent (overall score should reflect the pattern of individual criterion scores)."
+}

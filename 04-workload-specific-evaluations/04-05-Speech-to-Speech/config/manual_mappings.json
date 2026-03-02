@@ -1,0 +1,52 @@
+[
+  {
+    "sessionId": "c7806a67-1926-4a6e-ad99-f0f92ef33beb",
+    "category": "OrderAssistant",
+    "timestamp": "2025-11-22T19:32:51.192165"
+  },
+  {
+    "sessionId": "729fc1f5-cdd4-45a3-9691-1ed96e23db97",
+    "category": "SurveyAssistant",
+    "timestamp": "2025-11-22T19:32:58.540863"
+  },
+  {
+    "sessionId": "58628ac2-430d-4dba-936c-6129c6834f45",
+    "category": "TechnicalInterviewCV1",
+    "timestamp": "2025-11-22T21:51:52.040722"
+  },
+  {
+    "sessionId": "81b94f51-9c40-4eb1-a3a7-79ac7d9857cc",
+    "category": "TechnicalInterviewCV1",
+    "timestamp": "2025-11-22T21:52:02.544988"
+  },
+  {
+    "sessionId": "8410663a-c781-4343-b843-8268dc700483",
+    "category": "OrderAssistant",
+    "timestamp": "2025-11-24T09:28:08.455146"
+  },
+  {
+    "sessionId": "4aebdb5c-1e84-4b5b-b3d0-5934b178be23",
+    "category": "TechnicalInterviewCV1",
+    "timestamp": "2025-11-24T09:28:16.178487"
+  },
+  {
+    "sessionId": "a9d78fa6-fd7b-465a-a050-bf4d50db1bc5",
+    "category": "OrderAssistant",
+    "timestamp": "2025-11-24T09:28:22.626705"
+  },
+  {
+    "sessionId": "62c43a1d-bc47-4e8c-b6bb-9478ddfe2bc9",
+    "category": "OrderAssistant",
+    "timestamp": "2025-11-24T09:28:40.323252"
+  },
+  {
+    "sessionId": "20469d02-6cb6-4a0b-afb9-4fc9fbc8de32",
+    "category": "SurveyAssistant",
+    "timestamp": "2025-11-24T09:28:47.704896"
+  },
+  {
+    "sessionId": "d0fcf223-1adf-4e98-a3a1-dfbc5d23c83e",
+    "category": "TechnicalInterviewCV1",
+    "timestamp": "2025-11-24T09:28:52.774905"
+  }
+]

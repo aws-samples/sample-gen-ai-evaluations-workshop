@@ -1,0 +1,9 @@
+boto3
+pandas
+python-dotenv
+ipywidgets
+seaborn
+opentelemetry-instrumentation
+websockets>=12.0
+numpy
+scipy

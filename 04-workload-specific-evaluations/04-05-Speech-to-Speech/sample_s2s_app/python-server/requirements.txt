@@ -1,0 +1,16 @@
+boto3==1.41.2
+numpy==2.2.4
+scipy==1.16.3
+rx==3.2.0
+websockets==15.0.1
+requests==2.32.3
+aws_sdk_bedrock_runtime==0.2.0
+#>=0.1.0,<0.2.0
+mcp==1.13.1
+strands-agents==1.17.0
+
+# Telemetry and observability
+aws-opentelemetry-distro~=0.10.1
+strands-agents[otel]
+# Environment and configuration
+python-dotenv
