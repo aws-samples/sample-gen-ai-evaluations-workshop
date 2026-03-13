@@ -1,0 +1,282 @@
+[
+    {
+        "test_number": 1,
+        "test_category": "validation_correctness",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "According to the San Francisco Housing Code Section 504(a)(5), showerheads must have a flow rate of no more than 3 gallons per minute.",
+        "expected_finding_type": "valid",
+        "description": "Correct showerhead flow rate limit",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 4,
+        "test_category": "validation_correctness",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "The heating system must maintain a room temperature of at least 70 degrees Fahrenheit at the midpoint of the room, measured 4 feet 6 inches above the floor.",
+        "expected_finding_type": "valid",
+        "description": "Correct heating temperature requirement",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 6,
+        "test_category": "validation_correctness",
+        "housing_code_section": "503(a)",
+        "rule_domain": "lighting",
+        "llm_output": "Every habitable room must have windows with a total area of at least one-tenth of the floor area, with a minimum of 12 square feet.",
+        "expected_finding_type": "valid",
+        "description": "Correct window area requirement",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 7,
+        "test_category": "validation_correctness",
+        "housing_code_section": "603(b)",
+        "rule_domain": "garages",
+        "llm_output": "Garages in apartment houses may only be used for the storage of automobiles.",
+        "expected_finding_type": "valid",
+        "description": "Correct garage use restriction",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 11,
+        "test_category": "validation_correctness",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "Showerheads in apartment buildings are allowed to have a flow rate of up to 5 gallons per minute.",
+        "expected_finding_type": "invalid",
+        "description": "Incorrect: exceeds 3 GPM limit",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 12,
+        "test_category": "validation_correctness",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "Landlords are only required to maintain heating at 60 degrees Fahrenheit in dwelling units.",
+        "expected_finding_type": "invalid",
+        "description": "Incorrect: minimum is 70F, not 60F",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 13,
+        "test_category": "validation_correctness",
+        "housing_code_section": "503(a)",
+        "rule_domain": "lighting",
+        "llm_output": "Habitable rooms need windows with an area of at least one-twentieth of the floor area.",
+        "expected_finding_type": "invalid",
+        "description": "Incorrect: ratio is 1/10, not 1/20",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 16,
+        "test_category": "validation_correctness",
+        "housing_code_section": "709(b)(1)",
+        "rule_domain": "sleeping",
+        "llm_output": "It is permissible for guests to sleep in hallways of hotels during periods of high occupancy.",
+        "expected_finding_type": "invalid",
+        "description": "Incorrect: sleeping in hallways is prohibited",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 21,
+        "test_category": "validation_correctness",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "My showerhead may or may not comply with the housing code. It depends on whether it is a ball-joint type and its flow rate.",
+        "expected_finding_type": "satisfiable",
+        "description": "Ambiguous: compliance depends on unspecified conditions",
+        "difficulty": "hard"
+    },
+    {
+        "test_number": 24,
+        "test_category": "validation_correctness",
+        "housing_code_section": "N/A",
+        "rule_domain": "off_topic",
+        "llm_output": "The best pizza in San Francisco can be found at Tony's Pizza Napoletana in North Beach.",
+        "expected_finding_type": "noTranslations",
+        "description": "Off-topic: pizza recommendations have no housing code rules",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 26,
+        "test_category": "translation_quality",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "Showerheads are limited to 3 gal/min flow rate per the housing code.",
+        "expected_finding_type": "valid",
+        "description": "Uses 'gal/min' abbreviation instead of 'gallons per minute'",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 28,
+        "test_category": "translation_quality",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "Rooms where people live must be heated to at least 70 degrees.",
+        "expected_finding_type": "valid",
+        "description": "Colloquial 'rooms where people live' for 'dwelling units'",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 29,
+        "test_category": "translation_quality",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "The heating must maintain at least 21 degrees Celsius in dwelling units.",
+        "expected_finding_type": "valid",
+        "description": "Uses Celsius conversion (70F \u2248 21C)",
+        "difficulty": "hard"
+    },
+    {
+        "test_number": 35,
+        "test_category": "boundary_value",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "The showerhead has a flow rate of 2.9 gallons per minute, which complies with the housing code.",
+        "expected_finding_type": "valid",
+        "description": "Boundary: 2.9 GPM is below the 3 GPM limit (valid)",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 37,
+        "test_category": "boundary_value",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "The showerhead has a flow rate of 3.1 gallons per minute, which complies with the housing code.",
+        "expected_finding_type": "invalid",
+        "description": "Boundary: 3.1 GPM exceeds the 3 GPM limit (invalid)",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 38,
+        "test_category": "boundary_value",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "The heating system maintains a temperature of 69 degrees Fahrenheit, which meets the housing code requirement.",
+        "expected_finding_type": "invalid",
+        "description": "Boundary: 69F is below the 70F minimum (invalid)",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 39,
+        "test_category": "boundary_value",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "The heating system maintains a temperature of exactly 70 degrees Fahrenheit, meeting the minimum requirement.",
+        "expected_finding_type": "valid",
+        "description": "Boundary: exactly 70F meets 'at least 70F' (valid)",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 42,
+        "test_category": "boundary_value",
+        "housing_code_section": "503(a)",
+        "rule_domain": "lighting",
+        "llm_output": "A room with 80 square feet of floor area has windows totaling 10 square feet. This meets the 1/10 ratio requirement.",
+        "expected_finding_type": "invalid",
+        "description": "Boundary: 10/80 > 1/10 ratio, but 10 < 12 sqft minimum (invalid)",
+        "difficulty": "hard"
+    },
+    {
+        "test_number": 47,
+        "test_category": "adversarial_paraphrase",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "Per the housing code, shower fixtures cannot exceed three gallons per minute in water flow.",
+        "expected_finding_type": "valid",
+        "description": "Paraphrase A of showerhead rule \u2014 formal language",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 48,
+        "test_category": "adversarial_paraphrase",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "Your shower can only use up to 3 gallons of water each minute, that's the rule.",
+        "expected_finding_type": "valid",
+        "description": "Paraphrase B of showerhead rule \u2014 casual language",
+        "difficulty": "medium"
+    },
+    {
+        "test_number": 55,
+        "test_category": "adversarial_negation",
+        "housing_code_section": "504(a)(5)",
+        "rule_domain": "plumbing",
+        "llm_output": "There is no limit on showerhead flow rates in San Francisco apartment buildings.",
+        "expected_finding_type": "invalid",
+        "description": "Negation of showerhead rule \u2014 denies existence of limit",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 56,
+        "test_category": "adversarial_negation",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "Landlords are not required to provide any minimum heating temperature in dwelling units.",
+        "expected_finding_type": "invalid",
+        "description": "Negation of heating rule \u2014 denies temperature requirement",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 57,
+        "test_category": "adversarial_negation",
+        "housing_code_section": "503(a)",
+        "rule_domain": "lighting",
+        "llm_output": "There is no minimum window area requirement for habitable rooms in SF.",
+        "expected_finding_type": "invalid",
+        "description": "Negation of window requirement",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 58,
+        "test_category": "adversarial_negation",
+        "housing_code_section": "603(b)",
+        "rule_domain": "garages",
+        "llm_output": "Apartment building garages can be used for any purpose the residents choose, including storage and workshops.",
+        "expected_finding_type": "invalid",
+        "description": "Negation of garage restriction \u2014 claims unrestricted use",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 69,
+        "test_category": "domain_coverage",
+        "housing_code_section": "401",
+        "rule_domain": "maintenance",
+        "llm_output": "Buildings must be maintained free of nuisances as defined by the housing code.",
+        "expected_finding_type": "valid",
+        "description": "Domain coverage: nuisances chapter",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 74,
+        "test_category": "domain_coverage",
+        "housing_code_section": "602",
+        "rule_domain": "ventilation",
+        "llm_output": "Ventilation openings must be at least 1.5 square feet per 50 linear feet of exterior wall.",
+        "expected_finding_type": "valid",
+        "description": "Domain coverage: ventilation requirements",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 76,
+        "test_category": "domain_coverage",
+        "housing_code_section": "701(a)(1)",
+        "rule_domain": "heating",
+        "llm_output": "Heating must maintain 70\u00b0F at 4'6\" above the floor for 11 hours between 6AM and midnight.",
+        "expected_finding_type": "valid",
+        "description": "Domain coverage: heating requirements",
+        "difficulty": "easy"
+    },
+    {
+        "test_number": 83,
+        "test_category": "domain_coverage",
+        "housing_code_section": "1311",
+        "rule_domain": "maintenance",
+        "llm_output": "A caretaker must be provided for apartment houses with 16 or more apartments.",
+        "expected_finding_type": "valid",
+        "description": "Domain coverage: caretaker requirements",
+        "difficulty": "easy"
+    }
+]
