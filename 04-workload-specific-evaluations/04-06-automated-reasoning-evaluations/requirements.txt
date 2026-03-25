@@ -1,0 +1,7 @@
+boto3>=1.35.0
+ipykernel
+numpy
+pandas
+matplotlib
+seaborn
+PyPDF2
