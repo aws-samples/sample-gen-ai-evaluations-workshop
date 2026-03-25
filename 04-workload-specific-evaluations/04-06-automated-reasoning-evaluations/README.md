@@ -4,7 +4,7 @@ This module demonstrates how to evaluate **Automated Reasoning (AR) Checks** in 
 
 ## What You'll Learn
 
-- How AR Checks work: the 7 verdict types and what they mean
+- How AR Checks work: the 7 validation result types and what they mean
 - Building AR policies from a real regulatory document (SF Housing Code)
 - Running claims through an AR guardrail and interpreting results
 - Evaluating AR policy quality with metrics (accuracy, F1, false valid rate, translation confidence)
