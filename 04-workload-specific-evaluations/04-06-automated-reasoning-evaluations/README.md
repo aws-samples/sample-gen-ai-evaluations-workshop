@@ -21,7 +21,7 @@ This module demonstrates how to evaluate **Automated Reasoning (AR) Checks** in 
 
 ## Key Concepts
 
-### 7 Verdict Types
+### 7 Validation finding Types
 
 **Definitive answers:**
 - `VALID` — claim satisfies all translated policy rules
