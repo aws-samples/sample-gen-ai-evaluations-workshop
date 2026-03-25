@@ -23,6 +23,7 @@ We strongly recommend going in order through the first 3 modules.  These cover t
   - Basic RAG
   - Multi-modal RAG
   - Speech 2 Speech
+  - Automated Reasoning Evaluations
   
 - 05 Framework and Tool Specific Implementations
   - PromptFoo
