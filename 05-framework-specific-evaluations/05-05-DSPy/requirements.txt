@@ -1,2 +1,3 @@
 dspy
 boto3
+pandas

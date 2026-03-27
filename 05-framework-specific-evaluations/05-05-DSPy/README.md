@@ -4,7 +4,7 @@
 
 This module demonstrates how to use [DSPy](https://dspy.ai/) to programmatically evaluate and optimize prompts using Amazon Bedrock. Instead of hand-writing prompts, you declare **what** you want (a typed signature), define a metric that scores quality, and let an optimizer find the best prompts automatically.
 
-The use case is meeting transcript summarization: given a meeting transcript, extract key decisions, action items, and a concise summary.
+The use case is **city Q&A**: given a dataset of ~300 US cities with population and land area data, build an LLM system that answers factual questions accurately — scored against ground-truth values.
 
 ## What is DSPy?
 
@@ -21,10 +21,13 @@ The key idea: **compile, don't write**. The optimizer generates instructions and
 
 1. Configure DSPy with Amazon Bedrock
 2. Define typed signatures for structured outputs
-3. Build a metric to score summarization quality
+3. Build a numeric accuracy metric (% error with 5%/10% thresholds)
 4. Run systematic evaluation with `dspy.Evaluate`
 5. Optimize prompts automatically with `BootstrapFewShot`
-6. Compare baseline vs optimized performance
+6. Add reasoning with `ChainOfThought`
+7. Build custom modules and optimize them end-to-end
+8. Enhance metrics with LLM-as-judge faithfulness checks
+9. Compare all approaches in a summary table
 
 ## Prerequisites
 
@@ -34,8 +37,7 @@ The key idea: **compile, don't write**. The optimizer generates instructions and
 
 ## Estimated Time
 
-- Guided sections (1–9): 30–60 minutes
-- ToDo sections (10–15): additional 30 minutes
+45–90 minutes (15 sections)
 
 ## Getting Started
 
@@ -45,13 +47,7 @@ The key idea: **compile, don't write**. The optimizer generates instructions and
 pip install -r requirements.txt
 ```
 
-### 2. Generate sample data (optional — pre-generated data included)
-
-```bash
-python utils/generate_data.py
-```
-
-### 3. Run the notebook
+### 2. Run the notebook
 
 Open `05-05-DSPy-Prompt-Optimization.ipynb` and follow along.
 
@@ -59,10 +55,9 @@ Open `05-05-DSPy-Prompt-Optimization.ipynb` and follow along.
 
 | File | Description |
 |------|-------------|
-| `05-05-DSPy-Prompt-Optimization.ipynb` | Main workshop notebook |
+| `05-05-DSPy-Prompt-Optimization.ipynb` | Main workshop notebook (15 sections) |
 | `requirements.txt` | Python dependencies |
-| `data/meetings.json` | Sample meeting transcripts with expected outputs |
-| `utils/generate_data.py` | Script to generate synthetic meeting data via Bedrock |
+| `city_pop.csv` | US city population and land area data (~300 cities) |
 | `README.md` | This documentation |
 
 ## Resources
