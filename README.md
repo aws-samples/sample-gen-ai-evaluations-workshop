@@ -30,6 +30,7 @@ We strongly recommend going in order through the first 3 modules.  These cover t
   - AgentCore (custom evaluations)
   - Strands Evaluations
   - AgentCore Evaluations
+  - DSPy Prompt Optimization
 
 ## Prerequisites
 
