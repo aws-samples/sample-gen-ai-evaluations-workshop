@@ -35,6 +35,14 @@ The key idea: **compile, don't write**. The optimizer generates instructions and
 - AWS credentials with Bedrock access
 - Model access: `global.anthropic.claude-haiku-4-5-20251001-v1:0`
 
+### IAM Permissions
+
+Your IAM role or user needs:
+- `bedrock-runtime:InvokeModel` — required for all DSPy calls to Bedrock
+- `bedrock:ListFoundationModels` — optional, for verifying model availability
+
+If using a workshop-provided account, these permissions are pre-configured.
+
 ## Estimated Time
 
 45–90 minutes (15 sections)
