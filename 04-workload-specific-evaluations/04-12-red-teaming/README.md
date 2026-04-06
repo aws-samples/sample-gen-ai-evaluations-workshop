@@ -2,7 +2,7 @@
 
 Red teaming is the practice of systematically probing an AI system with adversarial inputs to uncover vulnerabilities before real users do. Rather than testing whether a system works correctly under normal conditions, red teaming asks: *how does it fail when someone actively tries to break it?*
 
-This module uses [Promptfoo](https://www.promptfoo.dev/), an open-source evaluation framework, to automate red teaming of applications built on Amazon Bedrock. We cover four workload types: general LLM applications powered by Bedrock foundation models, RAG pipelines using Amazon Bedrock Knowledge Bases, agentic systems built with Strands Agents on Amazon Bedrock AgentCore, and Amazon Bedrock Guardrails configurations.
+This module uses [Promptfoo](https://www.promptfoo.dev/), an open-source evaluation framework, to automate red teaming of applications built on Amazon Bedrock. We cover four workload types: general LLM applications powered by [Amazon Bedrock](https://aws.amazon.com/bedrock/) foundation models, RAG pipelines using [Amazon Bedrock Knowledge Bases](https://aws.amazon.com/bedrock/knowledge-bases/), agentic systems built with [Strands Agents](https://strandsagents.com/) on [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/), and [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) configurations.
 
 ## Why Red Team?
 
