@@ -1,4 +1,6 @@
 boto3
-strands-agents
+strands-agents[otel]
 strands-agents-tools
-strands-evals
+strands-agents-evals
+nest-asyncio
+opentelemetry-test-utils

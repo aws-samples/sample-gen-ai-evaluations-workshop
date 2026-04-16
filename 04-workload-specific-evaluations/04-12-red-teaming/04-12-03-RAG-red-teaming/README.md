@@ -71,7 +71,7 @@ The accompanying Jupyter notebook (`04-12-03-RAG-red-teaming.ipynb`) provides a 
 - Create synthetic HR policy documents (clean and poisoned)
 - Build a Bedrock Knowledge Base programmatically with an S3 data source
 - Build custom Promptfoo providers for both the full RAG pipeline (`RetrieveAndGenerate`) and retrieval-only testing (`Retrieve`)
-- Configure and run a red team evaluation with a custom [`policy`](https://www.promptfoo.dev/docs/red-team/plugins/policy/) plugin defining HR-specific security rules, alongside the core plugin set from Modules 04-12-01 and 04-12-02
+- Configure and run a red team evaluation with a custom [`policy`](https://www.promptfoo.dev/docs/red-team/plugins/policy/) plugin defining HR-specific security rules
 - Compare results across both targets to distinguish retrieval-layer from generation-layer vulnerabilities
 
 ## Prerequisites

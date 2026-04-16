@@ -21,7 +21,7 @@ For example:
 
 ```yaml
 targets:
-  - id: bedrock:converse:us.amazon.nova-2-lite-v1:0
+  - id: bedrock:converse:global.amazon.nova-2-lite-v1:0
     label: 'nova-2-lite'
     config:
       maxTokens: 4096
@@ -70,7 +70,7 @@ Promptfoo's red teaming pipeline uses two distinct models:
 | Role | What It Does | Model in This Module |
 |------|-------------|---------|
 | **Attacker model** | Generates adversarial inputs and evaluates results | Claude Sonnet 4.6 on Amazon Bedrock (`bedrock:converse:global.anthropic.claude-sonnet-4-6`) |
-| **Target model** | The Bedrock foundation model you are testing | Amazon Nova 2 Lite on Amazon Bedrock (`bedrock:converse:us.amazon.nova-2-lite-v1:0`) |
+| **Target model** | The Bedrock foundation model you are testing | Amazon Nova 2 Lite on Amazon Bedrock (`bedrock:converse:global.amazon.nova-2-lite-v1:0`) |
 
 Both models run on Amazon Bedrock, but they serve very different roles. The attacker model is intentionally separate so it can generate creative, unconstrained adversarial prompts — something the target model's safety training is designed to resist. This separation is what makes automated red teaming effective: you are testing the target's defenses against a purpose-built adversary.
 
