@@ -16,7 +16,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # Default classifier model — cheap and fast is fine here
-DEFAULT_MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"
+DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 
 class SessionAutoClassifier:

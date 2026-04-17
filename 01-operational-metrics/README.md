@@ -12,7 +12,7 @@ This hands-on workshop covers essential operational metrics that every productio
 Track and optimize your LLM spending:
 - **Token Usage Analysis**: Monitor input and output token consumption across different models
 - **Cost Calculation**: Calculate real-time costs based on current Bedrock pricing
-- **Model Cost Comparison**: Compare cost efficiency across Nova Lite, Nova Pro, and Claude models
+- **Model Cost Comparison**: Compare cost efficiency across Nova 2 Lite, Nova Pro, and Claude models
 - **Custom CloudWatch Metrics**: Publish cost metrics for monitoring and alerting
 
 ### 2. Latency Metrics
@@ -31,7 +31,7 @@ Understand streaming performance characteristics:
 
 ### 4. Real-World Use Case: Email Summarization
 Apply metrics to a practical business scenario:
-- **Multi-Model Comparison**: Evaluate Nova Lite, Nova Pro, and Claude 3.7 Sonnet
+- **Multi-Model Comparison**: Evaluate Nova 2 Lite, Nova Pro, and Claude Sonnet 4.6
 - **Performance vs Quality Trade-offs**: Balance speed, cost, and output quality
 - **Production Readiness**: Assess which models meet your specific requirements
 
@@ -54,7 +54,7 @@ Navigate to the `01-Operational-Metrics.ipynb` notebook which demonstrates:
 
 **Prerequisites:**
 - AWS account with Amazon Bedrock access
-- Access to Nova Lite, Nova Pro, and Claude 3.7 Sonnet models in your region
+- Access to Nova 2 Lite, Nova Pro, and Claude Sonnet 4.6 models in your region
 - Python 3.10+ with boto3 library
 - CloudWatch permissions for custom metrics publishing
 

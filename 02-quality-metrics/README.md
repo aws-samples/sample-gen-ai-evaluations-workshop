@@ -44,7 +44,7 @@ Navigate to the `02-Quality_Metrics.ipynb` notebook which demonstrates:
 
 **Prerequisites:**
 - AWS account with Amazon Bedrock access
-- Access to Claude 3.7 Sonnet and Nova models in your region
+- Access to Claude Sonnet 4.6 and Nova models in your region
 - Python 3.10+ with boto3 library
 
 ## Key Takeaways

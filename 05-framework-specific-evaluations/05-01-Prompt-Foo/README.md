@@ -51,6 +51,6 @@ Combining multiple methods for comprehensive evaluation.
 
 ## Getting Started
 Navigate to `05-Promptfoo-basic.ipynb` notebook which demonstrates the use of Promptfoo to evaluate a basic email classification use case.
-Before executing this notebook, please ensure access to Claude 3.5 Haiku and Amazon Nova Lite in `us-west-2` region.
+Before executing this notebook, please ensure access to Claude Haiku 4.5 and Amazon Nova 2 Lite in `us-west-2` region.
 
 For a detailed hands-on experience working on Promptfoo, please navigate to the following [AWS workshop](https://catalog.workshops.aws/promptfoo/en-US).

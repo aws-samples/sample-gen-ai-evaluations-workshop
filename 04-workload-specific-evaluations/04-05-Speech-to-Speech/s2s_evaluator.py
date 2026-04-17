@@ -318,7 +318,7 @@ class S2SEvaluator:
             auto_classifier=auto_classifier,
         )
 
-    def build_auto_classifier(self, model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"):
+    def build_auto_classifier(self, model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"):
         """Create a SessionAutoClassifier pre-loaded with categories from the validation dataset.
 
         Call this after load_validation_dataset() and pass the result to

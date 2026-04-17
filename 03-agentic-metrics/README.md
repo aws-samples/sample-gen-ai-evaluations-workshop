@@ -81,8 +81,8 @@ Uses stronger models to evaluate response quality:
 # Evaluate multiple models
 models = [
     "us.amazon.nova-micro-v1:0",
-    "us.amazon.nova-lite-v1:0", 
-    "us.anthropic.claude-3-haiku-20240307-v1:0"
+    "us.amazon.nova-2-lite-v1:0", 
+    "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 ]
 
 for model in models:
