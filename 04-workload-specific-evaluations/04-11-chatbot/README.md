@@ -23,14 +23,12 @@ You'll build a travel booking assistant, simulate realistic multi-turn conversat
 |----------|-------------|------------------|------|
 | `04-11-01-intro-and-setup.ipynb` | Introduction to multi-turn evaluation concepts, environment setup, and building the travel booking assistant | 1, 2, 3 | ~15 min |
 | `04-11-02-strands-simulation.ipynb` | Multi-turn conversation simulation with Strands `ActorSimulator` — creating test cases, generating actor profiles, running goal-oriented conversations, and capturing traces | 4a | ~20 min |
-| `04-11-03-deepeval-simulation.ipynb` | Multi-turn conversation simulation with DeepEval `ConversationSimulator` — defining scenarios with `ConversationalGolden`, writing the model callback, and designing diverse user personas *(Ester)* | 4b | ~20 min |
-| `04-11-04-deepeval-metrics.ipynb` | DeepEval multi-turn evaluation metrics — conversation quality, context retention, behavioral compliance, agentic metrics, and custom metrics *(Ester)* | 5a–5e | ~30 min |
+| `04-11-03-deepeval-simulation.ipynb` | Multi-turn conversation simulation with DeepEval `ConversationSimulator` — defining scenarios with `ConversationalGolden`, writing the model callback, and designing diverse user personas | 4b | ~20 min |
+| `04-11-04-deepeval-metrics.ipynb` | DeepEval multi-turn evaluation metrics | 5a–5e | ~30 min |
 | `04-11-05-strands-evaluators.ipynb` | Strands Evals trace-level evaluators (Coherence, Faithfulness, Relevance, Helpfulness), session-level evaluators (GoalSuccessRate, Interactions), and combining multiple evaluators | 6a–6c | ~25 min |
-| `04-11-06-synthetic-data.ipynb` | Generating synthetic multi-turn test cases with Strands `ExperimentGenerator` and DeepEval scenarios, plus scaling strategies | 7a, 7b *(Ester)*, 7c | ~20 min |
+| `04-11-06-synthetic-data.ipynb` | Generating synthetic multi-turn test cases with Strands `ExperimentGenerator` and DeepEval scenarios, plus scaling strategies | 7a, 7b, 7c | ~20 min |
 | `04-11-07-tool-simulation.ipynb` | Using Strands `ToolSimulator` for LLM-powered tool responses, combining `ActorSimulator` + `ToolSimulator` for fully simulated end-to-end conversations | 8 | ~20 min |
 | `04-11-08-e2e-pipeline.ipynb` | End-to-end multi-turn evaluation pipeline combining all techniques, best practices, and summary | 9, 10, 11 | ~20 min |
-
-> **Note:** Notebooks marked *(Ester)* contain sections contributed by Ester covering DeepEval-specific topics.
 
 ## File Structure
 
