@@ -109,7 +109,7 @@ def bedrock_call(prompt: str) -> Dict[str, Any]:
     """
     
     response = bedrock.converse(
-        modelId='us.anthropic.claude-sonnet-4-20250514-v1:0',
+        modelId='us.anthropic.claude-sonnet-4-6-v1:0',
         messages=[
             {
                 'role': 'user',

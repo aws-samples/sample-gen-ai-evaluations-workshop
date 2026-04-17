@@ -93,6 +93,7 @@ celerybeat.pid
 
 # Environments
 .env
+!sample_s2s_app/react-client/.env
 .env.test.local
 .venv
 env/

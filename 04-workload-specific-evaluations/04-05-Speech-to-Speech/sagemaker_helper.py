@@ -78,8 +78,9 @@ if __name__ == "__main__":
     react_env = HERE / "sample_s2s_app/react-client/.env"
     update_env_file(react_env, {"REACT_APP_WEBSOCKET_URL": websocket_url})
 
-    # Update playwright test .env.test
-    test_env = HERE / "test/.env.test"
-    update_env_file(test_env, {"FRONTEND_URL": frontend_url})
+    # Update playwright test .env.test (both root and test/ copies)
+    for env_test_path in [HERE / ".env.test", HERE / "test/.env.test"]:
+        if env_test_path.exists():
+            update_env_file(env_test_path, {"FRONTEND_URL": frontend_url})
 
     print("\nDone. You can now start the React app and run Playwright tests.")

@@ -44,7 +44,7 @@
     {
       "evaluator_type": "OutputEvaluator",
       "rubric": "\n    Evaluate the response based on:\n    1. Population Accuracy - Is the population value close to the expected value? (within 5% is excellent, within 10% is acceptable)\n    2. Area Accuracy - Is the area value close to the expected value? (within 5% is excellent, within 10% is acceptable)\n    3. Completeness - Does the response include both population AND area information?\n\n    Score 1.0 if both values are within 5% of expected and response is complete.\n    Score 0.7 if both values are within 10% of expected.\n    Score 0.5 if only one value is accurate or response is incomplete.\n    Score 0.0 if values are significantly wrong or missing.\n\n    Focus on the numerical accuracy, not the exact format of the response.\n    ",
-      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0"
+      "model_id": "us.anthropic.claude-sonnet-4-6-v1:0"
     }
   ]
 }
