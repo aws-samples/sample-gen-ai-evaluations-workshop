@@ -109,7 +109,7 @@ def bedrock_call(prompt: str) -> Dict[str, Any]:
     """
     
     response = bedrock.converse(
-        modelId='us.anthropic.claude-sonnet-4-6-v1:0',
+        modelId='us.anthropic.claude-sonnet-4-6',
         messages=[
             {
                 'role': 'user',
@@ -144,7 +144,7 @@ def generate_model_response(question: str, context_data: str = "") -> str:
         
     try:
         response = bedrock.converse(
-            modelId='us.anthropic.claude-sonnet-4-6-v1:0',
+            modelId='us.anthropic.claude-sonnet-4-6',
             messages=[
                 {
                     'role': 'user',
@@ -161,7 +161,7 @@ def generate_model_response(question: str, context_data: str = "") -> str:
     except Exception as e:
         return f"Error generating response: {str(e)}"
 
-def call_judge_model(prompt: str, model_id: str = "us.anthropic.claude-sonnet-4-6-v1:0") -> str:
+def call_judge_model(prompt: str, model_id: str = "us.anthropic.claude-sonnet-4-6") -> str:
     """Call the judge model to evaluate a response using boto3 directly."""
     try:
         response = bedrock.converse(
