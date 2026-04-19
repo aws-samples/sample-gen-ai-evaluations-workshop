@@ -74,13 +74,14 @@ if __name__ == "__main__":
     print(f"  Frontend URL : {frontend_url}")
     print(f"  WebSocket URL: {websocket_url}\n")
 
-    # Update react-client .env
+    # Update react-client .env — the React app runs in the user's browser,
+    # so it needs the SageMaker proxy URL to reach the backend WebSocket.
     react_env = HERE / "sample_s2s_app/react-client/.env"
     update_env_file(react_env, {"REACT_APP_WEBSOCKET_URL": websocket_url})
 
-    # Update playwright test .env.test (both root and test/ copies)
-    for env_test_path in [HERE / ".env.test", HERE / "test/.env.test"]:
-        if env_test_path.exists():
-            update_env_file(env_test_path, {"FRONTEND_URL": frontend_url})
+    # Playwright runs on the same SageMaker instance as the servers, so it
+    # should connect directly via localhost — do NOT set the proxy URL here.
+    # The .env.test files keep their default FRONTEND_URL=http://localhost:3000.
 
     print("\nDone. You can now start the React app and run Playwright tests.")
+    print("  Note: Playwright .env.test files left as localhost (same-machine access).")

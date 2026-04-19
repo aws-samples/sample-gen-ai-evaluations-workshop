@@ -54,6 +54,8 @@ echo ""
 echo "🎭 Installing Playwright and Chromium..."
 npm install --silent 2>&1 | tail -1
 npx playwright install chromium 2>&1 | tail -3
+echo "📦 Installing Chromium OS dependencies..."
+npx playwright install-deps chromium 2>&1 | tail -5
 echo "✅ Playwright ready"
 echo ""
 

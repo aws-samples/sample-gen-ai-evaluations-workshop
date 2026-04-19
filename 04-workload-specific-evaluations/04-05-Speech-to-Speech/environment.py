@@ -71,6 +71,11 @@ class _Environment:
 
     @property
     def frontend_url(self) -> str:
+        """URL for humans to open in a browser.
+
+        On SageMaker this is the authenticated proxy URL; locally it is
+        plain localhost.
+        """
         self._resolve()
         if self._base_url is None:
             return f"http://localhost:{FRONTEND_PORT}"
@@ -91,7 +96,7 @@ class _Environment:
         """
         Local  → ``npm run start``  (CRA dev server with hot-reload)
         SageMaker → ``npm run build && python3 -m http.server 3000 --directory build``
-                     (static build served through the Studio proxy)
+                     (builds first if needed, then serves static files)
         """
         if self.is_sagemaker:
             return (
@@ -120,12 +125,12 @@ class _Environment:
         """Backend command — activates venv first so dependencies are found.
 
         Local     → run_server_with_telemetry.sh (websockets + OpenTelemetry)
-        SageMaker → run_aiohttp_server.py (aiohttp, binds 0.0.0.0, no OTel)
+        SageMaker → run_aiohttp_server.py (aiohttp, binds 0.0.0.0, with OTel)
         """
         if self.is_sagemaker:
             return (
                 f'{self._venv_prefix}'
-                f'python run_aiohttp_server.py 2>&1 | tee "telemetry.log"'
+                f'opentelemetry-instrument python run_aiohttp_server.py 2>&1 | tee "telemetry.log"'
             )
         return (
             f'{self._venv_prefix}'
