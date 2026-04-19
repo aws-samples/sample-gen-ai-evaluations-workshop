@@ -127,7 +127,18 @@ def bedrock_call(prompt: str) -> Dict[str, Any]:
     )
     
     response_text = response['output']['message']['content'][0]['text']
-    return json.loads(response_text)
+    
+    # Strip markdown code fences if present (e.g. ```json ... ```)
+    cleaned = response_text.strip()
+    if cleaned.startswith("```"):
+        # Remove opening fence (with optional language tag) and closing fence
+        lines = cleaned.split("\n")
+        lines = lines[1:]  # drop opening ```json
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    
+    return json.loads(cleaned)
 
 def generate_model_response(question: str, context_data: str = "") -> str:
     """Generate a model response to a cities question using Bedrock."""
@@ -748,7 +759,10 @@ def run_programmatic_tests(test_questions, df):
     for result in test_results:
         status = "✅ PASS" if result['passed'] else "❌ FAIL"
         print(f"{status} - {result['question']}")
-        print(f"   Response: {json.dumps(result['response'], indent=2)}")
+        if 'response' in result:
+            print(f"   Response: {json.dumps(result['response'], indent=2)}")
+        elif 'error' in result:
+            print(f"   Error: {result['error']}")
 
     return test_results
 
