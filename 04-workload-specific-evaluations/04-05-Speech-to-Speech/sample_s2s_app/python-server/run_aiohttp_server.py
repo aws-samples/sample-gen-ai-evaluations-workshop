@@ -9,7 +9,34 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
+
+# ---------------------------------------------------------------------------
+# Programmatic OpenTelemetry setup (replaces opentelemetry-instrument wrapper
+# which conflicts with aiohttp's event loop on SageMaker)
+# ---------------------------------------------------------------------------
+_otel_distro = os.environ.get("OTEL_PYTHON_DISTRO")
+if _otel_distro:
+    try:
+        from aws_opentelemetry_distro.aws_opentelemetry_configurator import AwsOpenTelemetryConfigurator
+        AwsOpenTelemetryConfigurator().configure()
+        print("✅ OpenTelemetry configured via aws-opentelemetry-distro")
+    except ImportError:
+        try:
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+            from opentelemetry import trace
+            provider = TracerProvider()
+            provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+            trace.set_tracer_provider(provider)
+            print("✅ OpenTelemetry configured via generic OTLP exporter")
+        except Exception as e:
+            print(f"⚠️ OpenTelemetry setup failed (traces will not be exported): {e}")
+    except Exception as e:
+        print(f"⚠️ OpenTelemetry setup failed (traces will not be exported): {e}")
+else:
+    print("ℹ️ OTEL_PYTHON_DISTRO not set — telemetry disabled")
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s - %(levelname)s - %(message)s')

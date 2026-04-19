@@ -2,10 +2,11 @@
 # =============================================================================
 # SageMaker Studio Setup Script for S2S Evaluation Pipeline
 #
-# Run this ONCE after navigating to the module directory and creating a venv:
-#   cd ~/sample-gen-ai-evaluations-workshop/04-workload-specific-evaluations/04-05-Speech-to-Speech
-#   python3 -m venv venv && source venv/bin/activate
-#   bash setup.sh
+# Before running this script:
+#   1. cd ~/sample-gen-ai-evaluations-workshop/04-workload-specific-evaluations/04-05-Speech-to-Speech
+#   2. python3 -m venv venv && source venv/bin/activate
+#   3. cp .env.example .env && nano .env   # Add your AWS credentials
+#   4. bash setup.sh
 # =============================================================================
 set -e
 
@@ -24,10 +25,11 @@ pip install -q -r sample_s2s_app/python-server/requirements.txt
 echo "✅ Python dependencies installed"
 echo ""
 
-# --- Step 2: Configure environment variables ---
-echo "📝 Setting up environment files..."
-cp -n .env.example .env 2>/dev/null || true
-echo "   Created .env from .env.example"
+# --- Step 2: Configure backend .env (AWS creds + OTel config) ---
+echo "📝 Setting up backend environment..."
+cp .env sample_s2s_app/python-server/.env
+cat sample_s2s_app/python-server/env.example >> sample_s2s_app/python-server/.env
+echo "   Created backend .env with AWS credentials and OTel config"
 
 # --- Step 3: Create .env.test for Playwright ---
 cp -n env.example .env.test 2>/dev/null || true
@@ -64,13 +66,6 @@ echo "============================================"
 echo "  ✅ Setup complete!"
 echo "============================================"
 echo ""
-echo "Next steps:"
-echo "  1. Edit .env and add your AWS credentials:"
-echo "     nano .env"
-echo ""
-echo "  2. Copy .env to the backend server:"
-echo "     cp .env sample_s2s_app/python-server/.env"
-echo ""
-echo "  3. Open the notebook and run all cells:"
+echo "  Open the notebook and run all cells:"
 echo "     s2s_entire_eval_pipeline.ipynb"
 echo ""

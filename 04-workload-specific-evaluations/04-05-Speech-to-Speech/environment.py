@@ -125,12 +125,14 @@ class _Environment:
         """Backend command — activates venv first so dependencies are found.
 
         Local     → run_server_with_telemetry.sh (websockets + OpenTelemetry)
-        SageMaker → run_aiohttp_server.py (aiohttp, binds 0.0.0.0, with OTel)
+        SageMaker → run_aiohttp_server.py (aiohttp, binds 0.0.0.0)
+                     OTel is initialized programmatically via aws-opentelemetry-distro
+                     when OTEL_PYTHON_DISTRO is set in the .env file.
         """
         if self.is_sagemaker:
             return (
                 f'{self._venv_prefix}'
-                f'opentelemetry-instrument python run_aiohttp_server.py 2>&1 | tee "telemetry.log"'
+                f'python run_aiohttp_server.py 2>&1 | tee "telemetry.log"'
             )
         return (
             f'{self._venv_prefix}'
