@@ -1,12 +1,20 @@
-# 02-01 Model Quality Metrics
+# 02 Model Quality Metrics
 
 ## Overview
 
-This module demonstrates advanced evaluation techniques for LLM applications using both programmatic testing and LLM-as-a-Judge methodology. Using a US cities demographic dataset, you'll learn to systematically evaluate model accuracy, analytical depth, and response quality across different question types and complexity levels.
+This module demonstrates advanced evaluation techniques for LLM applications using programmatic testing, LLM-as-a-Judge methodology, and judge calibration. Using a US cities demographic dataset, you'll learn to systematically evaluate model accuracy, analytical depth, and response quality — and then validate that your evaluators themselves are reliable.
+
+## Notebooks
+
+| Notebook | Description |
+|---|---|
+| **01_LLM_as_Judge_analysis** | Programmatic testing against ground truth + LLM-as-a-Judge evaluation |
+| **02_LLM_as_Jury_evaluation_analysis** | Multi-judge agreement analysis using the LLM-as-Jury pattern |
+| **03_Evaluating_your_Judge** | Calibrate and validate an LLM judge against human-labeled benchmarks |
 
 ## What You'll Learn
 
-This hands-on workshop covers two complementary evaluation approaches:
+This hands-on workshop covers three complementary evaluation approaches:
 
 ### 1. Programmatic Testing
 Objective verification methods for factual accuracy:
@@ -19,6 +27,14 @@ Qualitative assessment using AI evaluators:
 - **Multi-dimensional Scoring**: Assess accuracy, completeness, and analytical quality
 - **Question Type Classification**: Categorize queries by complexity and requirements
 - **Detailed Feedback Generation**: Receive specific improvement recommendations
+
+### 3. Evaluating Your Judge
+Validate that your automated evaluators are trustworthy:
+- **Binary Pass/Fail Calibration**: One failure mode per judge, no rating scales
+- **Human-Labeled Benchmarks**: Split labeled data into few-shot / dev / test sets
+- **TPR/TNR Measurement**: Quantify judge accuracy as an estimator of real model error
+- **Repeatability Testing**: Verify the judge produces stable verdicts across runs
+- **Open-Coding Failure Analysis**: Data-driven identification of judge failure patterns
 
 
 ## Evaluation Methodologies
@@ -36,11 +52,11 @@ Qualitative assessment using AI evaluators:
 
 ## Getting Started
 
-Navigate to the `02-Quality_Metrics.ipynb` notebook which demonstrates:
-- Loading and exploring the US cities demographic dataset
-- Implementing programmatic testing with ground truth validation
-- Setting up LLM-as-a-Judge evaluation pipelines
-- Analyzing results across question types and complexity levels
+Run the notebooks in order:
+
+1. **01_LLM_as_Judge_analysis** — Establish programmatic and judge-based evaluation baselines
+2. **02_LLM_as_Jury_evaluation_analysis** — Compare multiple judges for agreement and confidence
+3. **03_Evaluating_your_Judge** — Calibrate your judge against human labels before trusting it in production
 
 **Prerequisites:**
 - AWS account with Amazon Bedrock access
@@ -50,7 +66,7 @@ Navigate to the `02-Quality_Metrics.ipynb` notebook which demonstrates:
 ## Key Takeaways
 
 By completing this module, you will:
-- Understand two essential LLM evaluation methodologies for production applications
-- Understand when to use programmatic vs. judge-based evaluation approaches
-- Gain hands-on experience with evaluation challenges and data complexities
+- Understand three essential LLM evaluation methodologies for production applications
+- Know when to use programmatic vs. judge-based evaluation approaches
+- Be able to calibrate and validate LLM judges against human-labeled ground truth
 - Build reusable evaluation frameworks that can be adapted to your specific use cases
