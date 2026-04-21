@@ -13,162 +13,198 @@ This sample focuses on those system behaviors. The objective is not only to know
 
 Memory and coordination quality in multi-agent workflows, **independent of final answer accuracy**.
 
-## 3. Metrics Overview
+This is an example deployment pattern used in our samples. Agent systems are deployed locally.
 
-The metrics below are architecture-neutral. They apply regardless of how you wire your agents together.
+![Sample Architecture Diagram](sample-arch-diagram.png)
 
-| Metric | What it measures | Why it matters |
-|--------|-----------------|----------------|
-| Context Freshness | How often an agent used the latest available memory | High freshness = updates propagating before work starts |
-| Handoff Completeness | How much required context was included in a delegation | Incomplete handoffs force agents to guess or use defaults |
-| Context Utilization | Did the agent use the context it read from memory? | Low utilization means memory is being written but not read — a silent failure |
-| State Consistency | Whether active agents agree on critical fields at the same stage | Disagreement means agents are working from different realities |
-| Memory Write Accuracy | Whether what the agent wrote to memory is factually correct | Prevents spreading wrong facts as shared truth |
-| Redundant Context Transfer | How much repeated/irrelevant context is sent between agents | Captures efficiency cost of over-sharing instead of curating state |
-| Context Compression Ratio | Length ratio of handoff vs original (pure math) | Measures how much the hub compresses before delegating |
-| Memory Read / Write Latency | Time spent on memory operations | Coordination overhead that directly impacts user-perceived latency |
-| Coordination Latency % | `(read + write) / total agent time` | Shows what fraction of time is spent on coordination vs reasoning |
-| Coordination Token % | `context tokens / total tokens` | Shows what fraction of tokens are spent on coordination vs generation |
-| C2 Alignment | Cosine similarity of agent responses (Notebook 2 only) | Measures semantic agreement between peer agents |
+## 3. Metrics
 
-## 4. Two Scenarios Evaluated
+The metrics are architecture-neutral — they apply regardless of how agents are wired together. They split into three groups based on how they're computed.
 
-We evaluate these metrics across two orchestration patterns:
+### 3.1 Semantic Metrics (LLM-as-Judge, 1-5 scale)
+
+Claude Opus scores each agent call after the conversation completes. Paraphrasing is handled — "Los Angeles" and "LA" are treated as the same.
+
+| Metric | Scope | What it measures | Why it matters |
+|--------|-------|-----------------|----------------|
+| Context Freshness | Per agent call | Did the agent read the latest info from memory? | Stale reads mean updates aren't propagating |
+| Handoff Completeness | Per agent call | Did the handoff carry all facts the agent needs? | Incomplete handoffs force the agent to guess |
+| Context Utilization | Per agent call | Did the agent actually use what it read? | Writing to memory that no one uses is a silent failure |
+| Memory Write Accuracy | Per agent call | Is what the agent wrote factually correct? | Prevents spreading wrong facts to downstream agents |
+| Redundant Context | Per agent call | How much of the read context was repeated/irrelevant? | Over-sharing wastes tokens and attention |
+| State Consistency | Per turn (cross-agent) | Do all agents in a turn agree on key facts? | Disagreement means agents are working from different realities |
+
+### 3.2 Static Metrics (no LLM)
+
+Pure math — cheap and deterministic.
+
+| Metric | Scope | How it's computed | Why it matters |
+|--------|-------|-------------------|----------------|
+| Context Compression Ratio | Per agent call | `len(handoff) / len(original)` | Detects over-compression (losing facts) or under-compression (passing noise) |
+| Memory Read Latency | Per agent call | `time.perf_counter()` around memory read | Direct coordination overhead |
+| Memory Write Latency | Per agent call | `time.perf_counter()` around memory write | Direct coordination overhead |
+| Coordination Latency % | Per agent call | `(read + write) / total agent time` | What fraction of time is coordination vs reasoning |
+| Coordination Token % | Per agent call | `context tokens / total tokens` | What fraction of tokens is coordination vs generation |
+
+### 3.3 Embedding Metrics (peer-to-peer only)
+
+Used in Notebooks 3 and 4 where peer divergence matters.
+
+| Metric | Scope | How it's computed | Why it matters |
+|--------|-------|-------------------|----------------|
+| C2 Alignment | Pairwise across peers | Cosine similarity of Bedrock Titan embeddings | Values near 1.0 = peers converged. Below 0.7 = significant divergence. |
+
+
+
+## 4. Three Scenarios Evaluated
+
+We evaluate these metrics across three orchestration patterns:
 
 ### Notebook 1 — Hub-and-Spoke with Local Memory (Travel Planning)
 
-A coordinator delegates to three spokes (Flight, Hotel, Itinerary) via a shared **in-process Python list** that agents read from and append to. No cloud memory service required — good for fast iteration and for understanding the pattern before adding infrastructure.
+A coordinator delegates to three spokes (Flight, Hotel, Itinerary) via a shared **in-process Python list** that agents read from and append to. The hub LLM decides which spokes to call and what to pass to each.
 
-We will run two sessions for metrics comparison:
+Two sessions for comparison:
 
 - **Session 1:** Fixed budget, no mid-session changes.
 - **Session 2:** User changes budget mid-session.
 
 ### Notebook 2 — Hub-and-Spoke with AgentCore Memory (Travel Planning)
 
-Same hub-and-spoke setup and scenarios as Notebook 1, but the shared memory is backed by **AgentCore Short-Term Memory**. Agents read with `get_last_k_turns` and write with `create_event` against a managed memory resource. Use this when you need persistence, session isolation, or multi-process access.
+Same hub-and-spoke setup as Notebook 1, but the shared memory is backed by **AgentCore Short-Term Memory**. Agents read with `get_last_k_turns` and write with `create_event` against a managed memory resource. Use this when you need persistence, session isolation, or multi-process access.
 
-Same two sessions as above, so the metrics can be compared head-to-head against the local-memory version.
+Same two sessions as above so the metrics can be compared head-to-head against the local-memory version.
 
-### Notebook 3 — Peer-to-Peer with Local Memory (Market Research)
+### Notebook 3 — Peer-to-Peer Dynamic Swarm (Market Research)
 
-Three peer agents (Market Trends → Customer Insights → Strategy Synthesizer) collaborate through a **shared in-process Python list**. Each peer reads what prior peers wrote and appends its own contribution.
+Three peer agents (Market Trends, Customer Insights, Strategy Synthesizer) collaborate through a **shared in-process Python list**. Each peer has `handoff_to_<agent>` tools and the LLM decides whether to hand off and to whom. A dispatcher loop starts with the first peer, reads which handoff (if any) was called, routes accordingly, and repeats until a peer responds without calling a handoff tool.
 
-We will run two sessions for metrics comparison:
+This is how real-world dynamic swarms work — peers can loop back, skip, or terminate early based on their own reasoning. Uses the same `ListMemoryHook` pattern as the hub-spoke notebooks because we don't control the invocation order.
 
-- **Session 1:** A research brief.
-- **Session 2:** A research brief where the research scope changes after the first swarm runs.
+Two sessions for comparison:
+
+- **Session 1:** One research brief, one swarm run. Peers decide their own handoff path.
+- **Session 2:** First run with baseline brief, then a second run where the scope expands (US → North America). Shared memory persists — tests whether peers choose different handoffs and reconcile stale analysis.
+
+### Notebook 4 — Peer-to-Peer Sequential Pipeline (Market Research)
+
+Same three peers as Notebook 3, but they run in a **fixed predetermined order** — each peer runs once, no peer decides who runs next.
+
+This is the simplest peer pattern. Instrumentation is a plain for loop (no hooks needed because we control every step), and execution order is predictable. Good for understanding the peer-to-peer pattern before moving to the dynamic version.
+
+Same two sessions as Notebook 3 for direct comparison between sequential and dynamic orchestration.
+
+---
+
+## 5. Where to Start
+
+Not sure which notebook to open first? Pick your path:
+
+| If you want to... | Start with |
+|-------------------|-----------|
+| Understand the eval pattern with the simplest code | **Notebook 4** — sequential pipeline. No hooks, no cloud memory, just a for loop. |
+| See a realistic coordinator-led multi-agent system | **Notebook 1** — hub-and-spoke with local memory. Real hub LLM picking which spoke to call. |
+| Use it in production with persistent memory | **Notebook 2** — hub-and-spoke with AgentCore Memory. Same evaluation, cloud-backed memory. |
+| Experiment with dynamic peer routing | **Notebook 3** — peers decide handoffs via tools. |
+
+**Recommended learning order:** 4 → 1 → 3 → 2. Notebook 4 teaches the instrumentation without orchestration complexity. Notebook 1 adds a coordinator. Notebook 3 adds LLM-driven routing. Notebook 2 swaps the memory backend once the pattern is clear.
+
+All four notebooks share the same `MetricsCollector`, produce the same reports, and use the same session structure (baseline + feedback). The orchestration pattern is the only thing that changes.
 
 ---
 
 ## 5. How This Sample Works
 
-### 5.1 Shared Memory — Two Backends
-
-The hub-and-spoke scenario is shown with two interchangeable memory backends so you can see the tradeoffs:
-
-- **Local memory (Notebook 1 and Notebook 3):** A plain Python list is passed into the agent hooks. Each agent reads the list on initialization (injecting prior entries into its system prompt) and appends its response on completion. Zero setup, zero cloud calls — the list lives for the duration of the session and is discarded at the end.
-
-- **AgentCore Short-Term Memory (Notebook 2):** A managed memory resource stores conversation turns keyed by `session_id` and `actor_id`. Agents read with `get_last_k_turns` and write with `create_event`. This adds real network latency but gives you persistence, isolation, and cross-process access.
-
-The `MetricsCollector` doesn't care which backend is in use. Notebooks wire the memory layer into the agent hooks, and the hooks call `collector.record_retrieved_context()`, `record_response()`, and the latency recorders — the collector evaluates whatever flowed through.
-
-### 5.2 TurnRecord and AgentRecord — the observation layer
-
-Memory alone isn't enough for evaluation. AgentCore Memory stores *what was written* but not *what was read*, not the original user query, and not timing or token data.
-
-A **Turn** = one user message → all agent work → final output delivered to the user. Inside each Turn, there are one or more **AgentRecords** — one per agent invocation.
+### 5.1 The Pieces at a Glance
 
 ```
-TurnRecord (1 per user message)
-├── turn_number: 1
-├── original_query: "Book trip LA→NYC, $1800..."
-├── agent_calls: [
-│     AgentRecord("flight", handoff=..., context=..., response=...),
-│     AgentRecord("hotel",  handoff=..., context=..., response=...),
-│     AgentRecord("itinerary", handoff=..., context=..., response=...),
-│   ]
-└── state_consistency: {score: 5, contradictions: []}
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Shared Memory   │───▶│ Agent runs with │───▶│ MetricsCollector│
+│ (list or cloud) │    │ memory injected │    │ captures data   │
+└─────────────────┘    └────────┬────────┘    └────────┬────────┘
+        ▲                       │                       │
+        │                       │                       ▼
+        └───────────────────────┘              ┌─────────────────┐
+           Agent appends response               │ LLM-as-Judge    │
+           to memory after running              │ scores metrics  │
+                                                │ after the run   │
+                                                └─────────────────┘
 ```
 
-Each AgentRecord captures what memory doesn't store:
+Three things cooperate:
 
-| Field | Source | Why memory doesn't have it |
-|-------|--------|---------------------------|
-| `original_query` | The user's actual message to the hub | Memory only stores the compressed handoff, not the original |
-| `handoff_query` | What the hub sent to the spoke | Same as what's written to memory, but paired with the original for comparison |
-| `retrieved_context` | What the agent read FROM memory | Memory doesn't record "what was read", only "what was written" |
-| `response` | The agent's output | Also in memory, but here it's paired with the above for metric computation |
-| Latency timers | `time.perf_counter()` around memory calls | Not stored anywhere else |
-| Token counts | From Strands Agent response | Not stored anywhere else |
-| LLM judge scores | Computed after the conversation | Not stored anywhere else |
+1. **Shared Memory** — where agents leave notes for each other. Either a Python list (simple) or AgentCore Memory (cloud-backed).
+2. **The Agent Run** — each agent reads memory, does its work, writes back.
+3. **The MetricsCollector** — an observation layer that watches everything and grades it afterwards.
 
-**TurnRecord = memory contents + the metadata around it that you need for evaluation.**
+### 5.2 Two Memory Backends (Hub-and-Spoke Only)
 
-### 5.3 Granularity
+| Backend | Where it lives | Use when |
+|---------|----------------|----------|
+| **Python list** (Notebook 1) | In-process, in RAM | You're learning or iterating fast |
+| **AgentCore Memory** (Notebook 2) | Managed AWS service | You need persistence, isolation, or multi-process access |
 
-This works the same for both patterns:
-- **Hub-and-spoke:** Turn 1 might have 3 agent calls (flight, hotel, itinerary). Turn 2 might have 2. Depends on what the hub dispatches.
-- **Swarm:** Turn 1 (topic 1) might have 3 agent calls. Turn 2 (topic 2) might have 1. Depends on how many peers contribute.
+Both expose the same shape (read prior context, write this response), so the rest of the system doesn't care which is in use.
 
-Metric computation:
-- **Per agent call:** Context Freshness, Handoff Completeness, Context Utilization, Write Accuracy, Redundant Context — one score per AgentRecord.
-- **Per turn (cross-agent):** State Consistency — compares all AgentRecords within a turn for factual agreement.
-- **Per session:** Each `run_session()` creates its own `MetricsCollector`. Metrics are self-contained — they surface problems without needing a baseline.
+### 5.3 The Observation Layer: TurnRecord and AgentRecord
 
-### Context Flow Trace
+Memory stores what the agents **said**. That's not enough to evaluate them. To grade the system you also need to know what each agent **received** and **read**, how **long** it took, and how **many tokens** it cost.
 
-Each notebook includes a trace report showing the exact data flow per agent call:
+We capture this alongside memory in two simple structures:
+
+- **TurnRecord** — one per user message. Wraps everything that happened in response to that message.
+- **AgentRecord** — one per agent invocation inside a turn. Holds the handoff, memory read, response, latencies, tokens, and (later) LLM judge scores.
 
 ```
-═══════════════════════════════════════════════════════
- TURN 1 — flight
-═══════════════════════════════════════════════════════
-
-📨 Original user message:
-   "Book a trip from LA to NYC, July 10-17, budget $1800..."
-
-📤 Handoff query (what the hub sent):
-   "Find morning flights LA→NYC, July 10-17, budget $1800"
-
-📥 Memory read (what the agent retrieved):
-   (empty — first turn)
-
-💬 Agent response:
-   "Delta DL123, 8:15am LAX→JFK, $650 round trip..."
-
-📝 Written to memory: user msg + assistant response
+Turn 1 ("Book trip LA→NYC, $1800...")
+  ├── Agent call: flight     → handoff, context, response, latency, tokens
+  ├── Agent call: hotel      → handoff, context, response, latency, tokens
+  └── Agent call: itinerary  → handoff, context, response, latency, tokens
 ```
 
-This lets you follow context flowing through the system and spot where things break.
+Why this layer exists: memory doesn't record the user's original message (it only has the compressed handoff), doesn't record what was *read* (only what was written), and doesn't have timings or token counts. TurnRecord fills those gaps so metrics have everything they need.
 
-## 6. Metric Details
+### 5.4 Orchestration Patterns — When a Hook Is Needed
 
-### Memory Context Metrics (LLM-as-judge, 1-5 scale)
+All four notebooks capture the same data. The difference is **who controls the order of agent calls**:
 
-| Metric | What it measures | Why it matters |
-|--------|-----------------|----------------|
-| Context Freshness | How often an agent used the latest available memory and plan versions | High freshness shows updates are propagating before work starts. Stale fields are listed in the judge output. |
-| Handoff Completeness | How much of the required context was actually included in a delegation | Incomplete handoffs force sub-agents to guess, re-query, or use defaults |
-| Context Utilization | Whether the agent actually incorporated the context it read from memory | Low utilization means memory is being written but not read — a silent failure |
-| State Consistency | Whether active agents agree on critical fields at the same stage of a run | Measures whether the system is operating on one shared reality |
-| Memory Write Accuracy | Whether what the agent wrote to memory is factually correct and consistent with its input | Prevents the system from spreading wrong facts as shared truth |
-| Redundant Context Transfer | How much repeated or irrelevant context is sent between agents | Captures the efficiency cost of over-sharing instead of curating state |
-| Context Compression Ratio | `len(handoff) / len(original)` — pure math, no LLM | Detects over-compression (losing facts) or under-compression (passing noise) |
-| C2 Alignment | Cosine similarity of agent responses via Bedrock Titan embeddings (Notebook 2 only) | Measures semantic divergence between peer agents |
+| Notebook | Orchestrator | Order is… | How we instrument |
+|----------|--------------|-----------|-------------------|
+| 1 — Hub-Spoke (local) | Hub LLM | Unpredictable — LLM picks | `ListMemoryHook` on each spoke |
+| 2 — Hub-Spoke (AgentCore) | Hub LLM | Unpredictable — LLM picks | AgentCore hook on each spoke |
+| 3 — Dynamic Swarm | Peer LLMs via handoff tools | Unpredictable — peers pick | `ListMemoryHook` on each peer |
+| 4 — Sequential Pipeline | Our for loop | Predictable — fixed order | Inline `record_*()` calls |
 
-All semantic judgments use Claude Opus as LLM-as-judge. This catches paraphrasing — if the hub says "Los Angeles" and the spoke says "LA", the LLM understands they're the same.
+The rule: **if you control the order (a for loop), you don't need a hook.** Write reads/writes inline. If an LLM controls the order (hub or handoff tools), attach a hook that fires on Strands' `on_agent_initialized` and `on_message_added` events.
 
-### Memory Latency Metrics (timers + token counts)
+Whichever path you use, it calls the same `MetricsCollector` methods. The collector is orchestration-agnostic.
 
-| Metric | What it measures |
-|--------|-----------------|
-| Memory Read Latency | Time to read shared memory (`list` access for local; `get_last_k_turns` for AgentCore) |
-| Memory Write Latency | Time to write shared memory (`list.append` for local; `create_event` for AgentCore) |
-| Coordination Latency % | `(read + write) / total agent time` |
-| Coordination Token % | `context tokens / total tokens` |
+### 5.5 Metric Computation — Three Granularities
 
-## 7. How Data is Collected
+| Level | What's compared | Metrics |
+|-------|-----------------|---------|
+| **Per agent call** | One AgentRecord's handoff, context, response | Context Freshness, Handoff Completeness, Context Utilization, Write Accuracy, Redundancy |
+| **Per turn** | All AgentRecords within one TurnRecord | State Consistency |
+| **Per session** | All turns in one `MetricsCollector` | Reports (trace, context metrics, latency metrics, comparison) |
+
+Each session is self-contained — the metrics surface problems on their own without needing a baseline to compare against.
+
+### 5.6 Context Flow Trace
+
+Every notebook can render a trace showing exactly what each agent saw and produced:
+
+```
+TURN 1 — flight
+  📨 User: "Book a trip from LA to NYC, July 10-17, budget $1800..."
+  📤 Handoff: "Find morning flights LA→NYC, July 10-17, budget $1800"
+  📥 Memory read: (empty — first turn)
+  💬 Response: "Delta DL123, 8:15am LAX→JFK, $650 round trip..."
+  📝 Written to memory
+```
+
+This is how you spot where context broke, before the metrics even run.
+
+## 6. How Data is Collected
 
 Three instrumentation points per agent call, plus turn boundaries:
 
@@ -188,11 +224,13 @@ Latency timers wrap the memory read/write calls inside the hooks (list access fo
 metrics/
 ├── README.md
 ├── requirements.txt
-├── model_config.py                                ← Centralised model IDs and prompts
-├── metrics_collector.py                           ← LLM judge + latency tracking + reports
-├── 01-hub-spoke-local-memory.ipynb                ← Hub-and-spoke, Python list memory
-├── 02-hub-spoke-agentcore-memory.ipynb            ← Hub-and-spoke, AgentCore Memory
-└── 02-peer-to-peer-market-research-metrics.ipynb  ← Peer-to-peer, Python list memory
+├── model_config.py                         ← Centralised model IDs and prompts
+├── metrics_collector.py                    ← LLM judge + latency tracking + reports
+├── eval_helpers.py                         ← Shared functions (format_memory, embeddings, etc.)
+├── 01-hub-spoke-local-memory.ipynb         ← Hub-and-spoke, Python list memory
+├── 02-hub-spoke-agentcore-memory.ipynb     ← Hub-and-spoke, AgentCore Memory
+├── 03-peer-to-peer-dynamic-swarm.ipynb     ← Peer-to-peer, dynamic handoffs via tools
+└── 04-peer-to-peer-sequential.ipynb        ← Peer-to-peer, fixed sequential order
 ```
 
 ## Prerequisites
