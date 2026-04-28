@@ -55,28 +55,40 @@ class LLMJudge:
         self.client = boto3.client("bedrock-runtime", region_name=region)
         self.model_id = model_id
 
-    def _call(self, prompt: str) -> dict:
+    def _call(self, prompt: str, max_retries: int = 5) -> dict:
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 1024,
             "temperature": 0.0,
             "messages": [{"role": "user", "content": prompt}],
         })
-        try:
-            resp = self.client.invoke_model(
-                modelId=self.model_id, body=body,
-                contentType="application/json", accept="application/json")
-            text = json.loads(resp["body"].read())["content"][0]["text"]
-            if "```" in text:
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            return json.loads(text.strip())
-        except Exception as e:
-            logger.error(f"LLM judge error: {e}")
-            import traceback
-            traceback.print_exc()
-            return {}
+        for attempt in range(max_retries):
+            try:
+                resp = self.client.invoke_model(
+                    modelId=self.model_id, body=body,
+                    contentType="application/json", accept="application/json")
+                text = json.loads(resp["body"].read())["content"][0]["text"]
+                if "```" in text:
+                    text = text.split("```")[1]
+                    if text.startswith("json"):
+                        text = text[4:]
+                return json.loads(text.strip())
+            except self.client.exceptions.ThrottlingException as e:
+                wait = 2 ** attempt + 1
+                logger.warning(f"Throttled (attempt {attempt+1}/{max_retries}), waiting {wait}s...")
+                time.sleep(wait)
+            except Exception as e:
+                if "ServiceUnavailable" in str(type(e).__name__) or "Too many connections" in str(e):
+                    wait = 2 ** attempt + 1
+                    logger.warning(f"Rate limited (attempt {attempt+1}/{max_retries}), waiting {wait}s...")
+                    time.sleep(wait)
+                else:
+                    logger.error(f"LLM judge error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    return {}
+        logger.error(f"LLM judge failed after {max_retries} retries")
+        return {}
 
     # -- Individual judge prompts ------------------------------------------
 
@@ -360,22 +372,27 @@ class MetricsCollector:
                 # Context Freshness
                 rec.judge_scores["context_freshness"] = self.judge.judge_context_freshness(
                     turn.original_query, rec.retrieved_context, rec.agent_name)
+                time.sleep(0.5)  # pace requests to avoid throttling
 
                 # Handoff Completeness
                 rec.judge_scores["handoff_completeness"] = self.judge.judge_handoff_completeness(
                     turn.original_query, rec.handoff_query, rec.agent_name)
+                time.sleep(0.5)
 
                 # Context Utilization
                 rec.judge_scores["context_utilization"] = self.judge.judge_context_utilization(
                     rec.retrieved_context, rec.response, rec.agent_name)
+                time.sleep(0.5)
 
                 # Memory Write Accuracy
                 rec.judge_scores["write_accuracy"] = self.judge.judge_memory_write_accuracy(
                     rec.handoff_query, rec.response, rec.agent_name)
+                time.sleep(0.5)
 
                 # Redundant Context
                 rec.judge_scores["redundant_context"] = self.judge.judge_redundant_context(
                     rec.retrieved_context, rec.agent_name)
+                time.sleep(0.5)
 
             # State Consistency (cross-agent per turn)
             if len(turn.agent_calls) >= 2:
