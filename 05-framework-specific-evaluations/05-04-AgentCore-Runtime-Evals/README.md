@@ -140,7 +140,7 @@ Each evaluation returns:
 
 - [AgentCore Runtime Documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html)
 - [AgentCore Evaluations Documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-evaluations.html)
-- [Strands Agents Framework](https://github.com/strands-agents/strands-agents)
+- [Strands Agents Framework](https://github.com/strands-agents/sdk-python)
 - [Amazon Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
 
 ## Troubleshooting

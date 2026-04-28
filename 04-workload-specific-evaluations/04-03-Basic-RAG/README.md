@@ -22,7 +22,7 @@ Each pipeline and component requires evaluation to ensure high performance.
 ## Folder Structure
 
 ```
-04-06-Basic-RAG/
+04-03-Basic-RAG/
 ├── data/                  # RAG context and validation datasets
 ├── example-notebook/      # Notebook for the evaluation
 |__ images/                # Visualizations
