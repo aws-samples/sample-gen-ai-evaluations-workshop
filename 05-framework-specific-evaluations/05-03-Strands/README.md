@@ -63,6 +63,6 @@ Before executing this notebook, ensure access to Global Claude 4.5 Haiku in your
 
 ## Resources
 
-- [Strands Evals Documentation](https://strandsagents.com/latest/documentation/docs/user-guide/evals-sdk/)
-- [Strands Agents GitHub](https://github.com/strands-agents/strands-agents)
-- [Evaluators Reference](https://strandsagents.com/latest/documentation/docs/user-guide/evals-sdk/evaluators/)
+- [Strands Evals Documentation](https://strandsagents.com/docs/user-guide/evals-sdk/quickstart/)
+- [Strands Agents GitHub](https://github.com/strands-agents/sdk-python)
+- [Evaluators Reference](https://strandsagents.com/docs/user-guide/evals-sdk/evaluators/)
