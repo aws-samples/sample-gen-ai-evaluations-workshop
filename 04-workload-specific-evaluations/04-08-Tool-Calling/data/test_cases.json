@@ -1,0 +1,149 @@
+[
+  {
+    "id": "tc-001",
+    "name": "Simple order lookup",
+    "category": "single_tool",
+    "input": "Can you check the status of my order ORD-48291?",
+    "expected_tools": ["lookup_order"],
+    "expected_params": {
+      "lookup_order": {"order_id": "ORD-48291"}
+    },
+    "should_call_tool": true,
+    "difficulty": "easy"
+  },
+  {
+    "id": "tc-002",
+    "name": "Casual greeting - no tool needed",
+    "category": "no_tool",
+    "input": "Hey there, how's it going?",
+    "expected_tools": [],
+    "expected_params": {},
+    "should_call_tool": false,
+    "difficulty": "easy"
+  },
+  {
+    "id": "tc-003",
+    "name": "Return with reason",
+    "category": "single_tool",
+    "input": "I want to return order ORD-33012. The item arrived broken.",
+    "expected_tools": ["initiate_return"],
+    "expected_params": {
+      "initiate_return": {"order_id": "ORD-33012", "reason": "defective"}
+    },
+    "should_call_tool": true,
+    "difficulty": "easy"
+  },
+  {
+    "id": "tc-004",
+    "name": "Multi-step: lookup then return",
+    "category": "multi_tool_sequence",
+    "input": "I received the wrong item in my last order. My order number is ORD-55123. Can you help me return it?",
+    "expected_tools": ["lookup_order", "initiate_return"],
+    "expected_params": {
+      "lookup_order": {"order_id": "ORD-55123"},
+      "initiate_return": {"order_id": "ORD-55123", "reason": "wrong_item"}
+    },
+    "should_call_tool": true,
+    "difficulty": "medium"
+  },
+  {
+    "id": "tc-005",
+    "name": "Ambiguous - mentions product but just asking general question",
+    "category": "no_tool",
+    "input": "Do you guys sell electronics? I'm thinking about getting a new laptop.",
+    "expected_tools": [],
+    "expected_params": {},
+    "should_call_tool": false,
+    "difficulty": "medium"
+  },
+  {
+    "id": "tc-006",
+    "name": "Inventory check with region",
+    "category": "single_tool",
+    "input": "Is the SKU-7890X wireless mouse available in the US West warehouse?",
+    "expected_tools": ["check_inventory"],
+    "expected_params": {
+      "check_inventory": {"product_id": "SKU-7890X", "warehouse_region": "us-west"}
+    },
+    "should_call_tool": true,
+    "difficulty": "easy"
+  },
+  {
+    "id": "tc-007",
+    "name": "Address update for pending order",
+    "category": "multi_tool_sequence",
+    "input": "I need to change the shipping address for order ORD-12345. I moved to 456 Oak Ave, Portland, OR 97201.",
+    "expected_tools": ["lookup_order", "update_shipping_address"],
+    "expected_params": {
+      "lookup_order": {"order_id": "ORD-12345"},
+      "update_shipping_address": {
+        "order_id": "ORD-12345",
+        "new_address": {"street": "456 Oak Ave", "city": "Portland", "state": "OR", "zip": "97201"}
+      }
+    },
+    "should_call_tool": true,
+    "difficulty": "medium"
+  },
+  {
+    "id": "tc-008",
+    "name": "Escalation needed - billing dispute",
+    "category": "escalation",
+    "input": "I was charged twice for order ORD-99001 and I want a refund immediately. This is unacceptable.",
+    "expected_tools": ["lookup_order", "escalate_to_human"],
+    "expected_params": {
+      "lookup_order": {"order_id": "ORD-99001"},
+      "escalate_to_human": {"priority": "high"}
+    },
+    "should_call_tool": true,
+    "difficulty": "hard"
+  },
+  {
+    "id": "tc-009",
+    "name": "Tricky - sounds like a command but is just curiosity",
+    "category": "no_tool",
+    "input": "What's your return policy? How many days do I have?",
+    "expected_tools": [],
+    "expected_params": {},
+    "should_call_tool": false,
+    "difficulty": "medium"
+  },
+  {
+    "id": "tc-010",
+    "name": "Customer profile lookup then order check",
+    "category": "multi_tool_sequence",
+    "input": "I'm a Gold tier member (customer ID CUST-4421) and I want to check on my recent order ORD-67890.",
+    "expected_tools": ["get_customer_profile", "lookup_order"],
+    "expected_params": {
+      "get_customer_profile": {"customer_id": "CUST-4421"},
+      "lookup_order": {"order_id": "ORD-67890"}
+    },
+    "should_call_tool": true,
+    "difficulty": "medium"
+  },
+  {
+    "id": "tc-011",
+    "name": "Distractor tools - should only check inventory",
+    "category": "distractor",
+    "input": "Is the BT-Speaker-Pro still in stock?",
+    "expected_tools": ["check_inventory"],
+    "expected_params": {
+      "check_inventory": {"product_id": "BT-Speaker-Pro"}
+    },
+    "should_call_tool": true,
+    "difficulty": "easy"
+  },
+  {
+    "id": "tc-012",
+    "name": "Complex multi-step with conditional logic",
+    "category": "multi_tool_sequence",
+    "input": "My customer ID is CUST-8832. I want to return the headphones from order ORD-44210 because they're not as described. But first, can you pull up my order details?",
+    "expected_tools": ["get_customer_profile", "lookup_order", "initiate_return"],
+    "expected_params": {
+      "get_customer_profile": {"customer_id": "CUST-8832"},
+      "lookup_order": {"order_id": "ORD-44210"},
+      "initiate_return": {"order_id": "ORD-44210", "reason": "not_as_described"}
+    },
+    "should_call_tool": true,
+    "difficulty": "hard"
+  }
+]
