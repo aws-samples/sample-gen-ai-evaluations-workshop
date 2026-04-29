@@ -96,7 +96,7 @@ Same two sessions as Notebook 3 for direct comparison between sequential and dyn
 
 ---
 
-## 5. Where to Start
+## Where to Start
 
 Not sure which notebook to open first? Pick your path:
 
