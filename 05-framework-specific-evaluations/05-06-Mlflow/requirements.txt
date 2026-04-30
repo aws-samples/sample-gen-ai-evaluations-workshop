@@ -1,0 +1,10 @@
+mlflow>=3.8.0
+sagemaker-mlflow>=0.3.0
+deepeval
+datasets
+boto3>=1.42.4
+botocore[crt]
+pandas
+nest_asyncio
+litellm
+python-dotenv
