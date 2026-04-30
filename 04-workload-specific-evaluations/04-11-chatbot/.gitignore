@@ -1,0 +1,15 @@
+# Virtual environment
+.venv/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# DeepEval files
+.deepeval/
+
+# Backup files
+*.backup
+
+# Python cache
+__pycache__/
+*.pyc
