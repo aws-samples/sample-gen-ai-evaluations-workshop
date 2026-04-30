@@ -1,4 +1,4 @@
-# 05-05 MLflow RAG Generation Evaluation with Amazon Bedrock
+# 05-06 MLflow RAG Generation Evaluation with Amazon Bedrock
 
 ## Overview
 
@@ -86,7 +86,7 @@ To customize the App name or S3 bucket, edit `MLFLOW_APP_NAME` / `MLFLOW_S3_BUCK
 
 ## Getting Started
 
-Open `05-05-01-Mlflow-Evaluation.ipynb` and run the cells top-to-bottom.
+Open `05-06-01-Mlflow-Evaluation.ipynb` and run the cells top-to-bottom.
 
 The notebook walks you through:
 
