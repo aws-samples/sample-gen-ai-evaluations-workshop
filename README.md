@@ -32,6 +32,16 @@ We strongly recommend going in order through the first 3 modules.  These cover t
   - AgentCore Evaluations
   - DSPy Prompt Optimization
 
+## Module Dependency Map
+
+```
+Module 01 (Operational Metrics) ──┐
+                                  ├──→ Module 04 (Workload-Specific)
+Module 02 (Quality Metrics) ──────┤
+         │                        ├──→ Module 05 (Framework-Specific)
+         └──→ Module 03 (Agentic) ┘
+```
+
 ## Choose Your Learning Mode
 
 This workshop supports two ways to learn:

@@ -32,3 +32,38 @@ Same as the main workshop:
 | 03 — Agentic Metrics | [03-agentic-metrics/challenge.md](./03-agentic-metrics/challenge.md) | Agent evaluation functions, tool selection accuracy, Strands SDK |
 | 04 — Workload Evals | [04-workload-evals/challenge.md](./04-workload-evals/challenge.md) | RAG retrieval metrics, faithfulness, guardrails, unified pipelines |
 | 05 — Framework Evals | [05-framework-evals/challenge.md](./05-framework-evals/challenge.md) | Promptfoo YAML configs, assertions, multi-provider comparison |
+
+## Facilitator Guide
+
+### Recommended Delivery Order
+
+Module 01 is recommended before Module 02. Module 02's SKILL.md lists Module 01 as a prerequisite, though the concepts are not strictly dependent.
+
+```
+Day 1:  Module 01 (Operational)  →  Module 02 (Quality)
+Day 2:  Module 03 (Agentic)     →  Module 04 (Workload) — pick 2 SKILLs
+Day 3:  Module 05 (Framework)   →  Capstone / Deep-Dive Challenge
+```
+
+### Time Estimates
+
+| Module | Content | Hands-on | Challenge | Total |
+|---|---|---|---|---|
+| 01 — Operational Metrics | 45 min | 60 min | — | ~2 hrs |
+| 02 — Quality Metrics | 45 min | 75 min | — | ~2 hrs |
+| 03 — Agentic Metrics | 45 min | 60 min | — | ~2 hrs |
+| 04 — Workload (2 SKILLs + capstone) | 60 min | 90 min | 60 min | ~3.5 hrs |
+| 05 — Framework (2 SKILLs + deep-dive) | 60 min | 90 min | 60 min | ~3.5 hrs |
+
+### Common Learner Issues
+
+| Issue | Fix |
+|---|---|
+| `AccessDeniedException` on Bedrock | Model access not enabled — Bedrock console → Model access → Request |
+| `ThrottlingException` in Module 01 | Reduce concurrency or switch to Nova Lite |
+| `ModuleNotFoundError: strands_agents` | `pip install strands-agents` (hyphen, not underscore) |
+| `ModuleNotFoundError: ddgs` | `pip install duckduckgo-search` (package name differs from import name) |
+| PromptFoo `command not found` | `npm install -g promptfoo` — requires Node.js 18+ |
+| ChromaDB sqlite3 version error | `pip install pysqlite3-binary` |
+| CloudWatch metrics not appearing | 1–2 min propagation delay; verify namespace spelling |
+| DSPy optimization hangs | Reduce `max_bootstrapped_demos` to 2 for workshop |

@@ -54,6 +54,54 @@ opensource-codeofconduct@amazon.com with any additional questions or comments.
 If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public github issue.
 
 
+## Workshop Development Setup
+
+### IAM Permissions
+
+Attach this policy to the learner role (or Studio execution role):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
+      "bedrock:Converse", "bedrock:ConverseStream",
+      "bedrock:CreateGuardrail", "bedrock:TagResource", "bedrock:ApplyGuardrail",
+      "bedrock:ListGuardrails", "bedrock:GetGuardrail",
+      "cloudwatch:PutMetricData",
+      "cloudwatch:PutDashboard", "cloudwatch:PutMetricAlarm",
+      "logs:FilterLogEvents", "ecr:DescribeRepositories"
+    ],
+    "Resource": "*"
+  }]
+}
+```
+
+### Environment Setup
+
+```bash
+# Core (all modules)
+pip install boto3 pandas numpy
+
+# Module 02 — Quality Metrics
+pip install matplotlib seaborn scipy
+
+# Module 03 — Agentic Metrics
+pip install strands-agents duckduckgo-search beautifulsoup4
+
+# Module 04 — Workload Evaluations
+pip install llama-index faiss-cpu chromadb python-dotenv PyPDF2
+
+# Module 05 — Framework Evaluations
+pip install strands-agents strands-agents-tools strands-agents-evals "dspy>=3.1,<4" bedrock-agentcore bedrock-agentcore-starter-toolkit duckduckgo-search
+
+# Requires Node.js 18+
+npm install -g promptfoo
+```
+
+
 ## Licensing
 
 See the [LICENSE](LICENSE) file for our project's licensing. We will ask you to confirm the licensing of your contribution.
