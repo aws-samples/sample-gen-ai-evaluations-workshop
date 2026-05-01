@@ -32,6 +32,15 @@ We strongly recommend going in order through the first 3 modules.  These cover t
   - AgentCore Evaluations
   - DSPy Prompt Optimization
 
+## Choose Your Learning Mode
+
+This workshop supports two ways to learn:
+
+- **Traditional**: Work through the Jupyter notebooks in modules 01–05 sequentially at your own pace.
+- **Interactive**: Use the agentic tutor in `06-interactive/` for guided challenges, exercises, and real-time feedback.
+
+If you prefer a hands-on, conversational experience, check out the [Interactive Mode instructions](06-interactive/README.md) to get started.
+
 ## Prerequisites
 
 - AWS account with Amazon Bedrock enabled
