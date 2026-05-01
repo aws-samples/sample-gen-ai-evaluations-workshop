@@ -10,7 +10,6 @@ An AI tutor skill file that instructs your AI assistant (Kiro, Claude, or simila
 
 Same as the main workshop:
 
-- AWS account with Amazon Bedrock model access (Nova Lite, Nova Pro, or Claude 3.7 Sonnet)
 - Python 3.10+ with boto3 installed
 - IAM permissions for CloudWatch and Bedrock Runtime (Module 01)
 - Node.js installed (Module 05 — promptfoo)
@@ -59,7 +58,6 @@ Day 3:  Module 05 (Framework)   →  Capstone / Deep-Dive Challenge
 
 | Issue | Fix |
 |---|---|
-| `AccessDeniedException` on Bedrock | Model access not enabled — Bedrock console → Model access → Request |
 | `ThrottlingException` in Module 01 | Reduce concurrency or switch to Nova Lite |
 | `ModuleNotFoundError: strands_agents` | `pip install strands-agents` (hyphen, not underscore) |
 | `ModuleNotFoundError: ddgs` | `pip install duckduckgo-search` (package name differs from import name) |
