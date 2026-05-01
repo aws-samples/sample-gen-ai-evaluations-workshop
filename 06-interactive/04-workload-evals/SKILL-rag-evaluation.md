@@ -301,7 +301,41 @@ print(f"\nBest strategy: {comparison_df.mean(axis=1).idxmax()}")
 
 ## Challenges
 
-**Challenge: Build a RAG evaluation dashboard for a new domain**
+**Challenge 1: Implement Retrieval Quality Metrics from Scratch**
+
+Write your own `precision_at_k`, `recall_at_k`, and `ndcg_at_k` functions (don't copy `IRMetricsCalculator` — implement them yourself first). Create a validation dataset with at least 8 queries and known relevant document IDs, then compute aggregate scores.
+
+**Success criteria:**
+- `precision_at_k(relevant, retrieved, k)` returns the fraction of top-k results that are relevant
+- `recall_at_k(relevant, retrieved, k)` returns the fraction of all relevant docs found in top-k
+- `ndcg_at_k(relevant, retrieved, k)` computes DCG/IDCG with log2 discounting
+- Validation dataset has at least 8 query/relevant-doc-ID pairs stored as a list of dicts or DataFrame
+- Print a summary table with mean precision@3, recall@3, NDCG@3, and precision@5, recall@5, NDCG@5
+- Explain what high recall + low precision would indicate about your retrieval configuration
+
+**Challenge 2: Build an LLM-as-Judge Faithfulness Scorer**
+
+Create an evaluation rubric and scoring function that judges whether a RAG-generated answer is faithful to its retrieved context. The rubric should score on at least 4 criteria.
+
+**Success criteria:**
+- Rubric prompt includes at least 4 criteria: Context Utilization, Completeness, Conciseness, and Clarity (or equivalents)
+- Each criterion is scored 0 or 1 (binary) with the judge providing reasoning in `<thinking>` tags and a total in `<score>` tags
+- Scoring function calls Bedrock, parses the structured output, and returns per-criterion scores plus total
+- Evaluate at least 5 question/context/answer triples (at least one should be deliberately unfaithful)
+- Print results showing which criteria the unfaithful answer fails on
+
+**Challenge 3: End-to-End RAG Evaluation Pipeline**
+
+Wire together retrieval + generation + evaluation into a single pipeline. Given a query, retrieve context, generate an answer, and score it.
+
+**Success criteria:**
+- Pipeline function accepts a query, retrieves top-k documents (simulated or real), generates an answer via Bedrock, and scores it with the Challenge 2 rubric
+- Run the pipeline on at least 5 queries that have ground-truth answers
+- Compare generated answers against ground truth using your faithfulness scorer
+- Print a summary: query, retrieval precision@3, faithfulness score (out of 4), and whether the answer matches ground truth
+- Identify which pipeline stage (retrieval vs. generation) is the bottleneck for your lowest-scoring queries
+
+**Challenge 4: Build a RAG Evaluation Dashboard for a New Domain**
 
 Select a document corpus of your choice (at least 20 documents). Build a complete evaluation pipeline that:
 1. Creates a validation dataset with at least 15 query/relevant-document pairs
@@ -310,7 +344,6 @@ Select a document corpus of your choice (at least 20 documents). Build a complet
 4. Produces a summary comparison showing which configuration performs best
 
 **Assessment criteria:**
-
 - Pipeline runs without errors end-to-end
 - Retrieval metrics (precision@k, recall@k, NDCG@k) are correctly computed and aggregated
 - LLM-as-a-Judge rubric includes faithfulness and relevance criteria with structured score extraction
@@ -318,11 +351,74 @@ Select a document corpus of your choice (at least 20 documents). Build a complet
 - Results include both retrieval-level and end-to-end evaluation scores
 - Learner can explain why one configuration outperforms another and what they would try next
 
+## Capstone Challenge
+
+This capstone brings together everything from Module 04. Build an end-to-end evaluation pipeline for a document-processing application that combines guardrails validation, RAG retrieval quality, and one workload-specific metric of your choice into a unified report.
+
+### Sub-groups
+
+Your custom metric (Stage 4) should draw from one of the following tracks:
+
+- **(a) IDP + Automated Reasoning** — Evaluate document extraction accuracy, reasoning correctness, or structured output validation
+- **(b) Guardrails (5 notebooks → 1 track)** — Extend guardrails evaluation with advanced policy composition, multi-turn validation, or custom guardrail logic
+- **(c) RAG + Multimodal RAG + Speech** — Evaluate speech transcription quality, multimodal retrieval, or audio/image understanding
+
+### Pipeline Architecture
+
+```
+Input Document(s)
+       │
+       ▼
+┌─────────────────┐
+│ Guardrails Stage │ → guardrail_results: {policy, pass/fail, violations[]}
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ RAG Eval Stage   │ → rag_results: {queries[], faithfulness[], relevance[], latency}
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ Custom Metric    │ → custom_results: {metric_name, scores[], methodology}
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ Report Generator │ → unified_report: per-stage summary table, aggregate score,
+└─────────────────┘   pass/fail determination, recommendations
+```
+
+### Starter Template
+
+| Section | Pre-built (provided) | Learner fills in |
+|---|---|---|
+| **1. Setup & Configuration** | Imports (boto3, json, pandas, datetime), helper utilities, `load_document()`, `format_report()` | AWS client configuration, model selection |
+| **2. Guardrails Evaluation Stage** | `GuardrailsEvaluator` class skeleton with `evaluate()` method signature, sample guardrail policy | `evaluate()` body — run input/output through guardrail, capture pass/fail/score |
+| **3. RAG Retrieval Quality Stage** | `RAGEvaluator` class skeleton with `retrieve_and_score()` signature, sample document corpus (3-5 docs), sample queries | Retrieval call, faithfulness metric, relevance metric |
+| **4. Custom Metric Stage** | `CustomMetricEvaluator` base class with `evaluate()` signature | Entire implementation — choose from IDP accuracy, speech quality, reasoning correctness, or define their own |
+| **5. Pipeline Orchestration** | `run_pipeline()` skeleton that calls stages in sequence | Data passing between stages, error handling, aggregation |
+| **6. Unified Report** | `ReportGenerator` class with `render()` method, Markdown/HTML template | Populate template with per-stage results, add summary + recommendations |
+
+### Assessment Criteria
+
+1. Runs without errors — pipeline executes all stages end-to-end
+2. Integrates 3+ evaluation types — guardrails + RAG + custom metric all produce results
+3. Uses guardrails checks — correctly applies policy and captures violations
+4. Handles multimodal input — pipeline doesn't break on non-text documents (or gracefully skips)
+5. Learner explains which metrics matter most for their use case and why they chose their custom metric
+
+### Tips
+
+- **Start with the skeleton** — Get `run_pipeline()` calling empty stage methods first, then fill in each stage incrementally
+- **Use the SKILL notebooks as reference** — Your guardrails and RAG stages can reuse patterns directly from [SKILL-guardrails.md](./SKILL-guardrails.md) and this document's earlier sections
+- **Pick a custom metric you care about** — The best evaluations measure what actually matters for your application
+- **Error handling matters** — A robust pipeline should not crash if one stage fails; use try/except blocks and partial results
+- **The report is your deliverable** — Spend time making it readable with a clear summary table and aggregate score
+- **Test with edge cases** — Try an empty document, a very long document, or a non-text file to verify multimodal handling
+
 ## Wrap-Up
 
 You built a multi-layered RAG evaluation system that measures retrieval quality, answer faithfulness, end-to-end relevance, and multimodal effectiveness. The key insight is that RAG evaluation requires examining each component independently — a failure in retrieval looks different from a failure in generation, and the fix is different too.
 
-These techniques form the foundation for the Module 04 capstone challenge. See `CHALLENGE-capstone.md` for a comprehensive exercise that combines RAG evaluation with other workload-specific evaluation patterns from this module.
+These techniques form the foundation for the Capstone Challenge above, which combines RAG evaluation with guardrails and other workload-specific evaluation patterns from this module.
 
 **Feedback prompt:** Which metric was most surprising in what it revealed about your system's performance? What would you change first based on your evaluation results?
 

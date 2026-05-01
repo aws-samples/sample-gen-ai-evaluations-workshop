@@ -397,6 +397,58 @@ Create an evaluation script that:
 5. Produces a summary table comparing before/after scores with at least one measurable improvement
 6. Learner can explain their approach and why they chose specific test cases
 
+---
+
+## Deep-Dive Challenge
+
+AgentCore is an **agent-focused** framework — it treats the system as a workflow with multiple steps, tool calls, and state transitions. You evaluate process quality in addition to final output. This deep-dive pushes you beyond notebook-level usage into advanced observability and failure analysis patterns.
+
+### Workflow
+
+| Stage | What you implement |
+|---|---|
+| Agent instrumentation | Capture traces/spans for a multi-step agent workflow |
+| Step-level metrics | Metrics per agent step (tool selection accuracy, retrieval quality, reasoning correctness) |
+| End-to-end metrics | Task completion, total latency, cost |
+| Failure analysis | Identify where and why the agent fails (wrong tool, bad retrieval, hallucination) |
+| Observability | Dashboard or structured log output showing per-step and aggregate health |
+
+### "Beyond" Examples for AgentCore
+
+- Custom metric plugin; cross-step metric correlation (retrieval quality → answer quality)
+- Custom CW dashboard with alarms; anomaly detection on metric trends; automated alerting
+- A/B evaluation of two agent configs; latency-quality tradeoff analysis; cost-per-quality-point metric
+
+### Scoring Rubric
+
+| Tier | Points | Criteria |
+|---|---|---|
+| **Functional** | 60-69 | Complete workflow runs end-to-end; uses only notebook-level features; results are valid |
+| **Extended** | 70-84 | Adds 1 capability not in notebook; clear justification for the extension |
+| **Advanced** | 85-94 | Adds 2+ capabilities; demonstrates iteration (before/after comparison); addresses a real evaluation gap |
+| **Exceptional** | 95-100 | Novel approach; production-quality output (CI-ready, dashboarded, or automated); teaches the reviewer something new |
+
+### Assessment Criteria
+
+| Criterion | Weight | Description |
+|---|---|---|
+| Complete workflow execution | 25% | All stages implemented and runnable; produces valid output |
+| Beyond-notebook features | 25% | Number and quality of capabilities not covered in source notebook |
+| Justification & analysis | 20% | Why each metric/feature was chosen; what evaluation gap it addresses |
+| Iteration evidence | 15% | Before/after comparison showing the pipeline caught or improved something |
+| "What was left out" | 10% | Identifies limitations; names what they'd need to cover them |
+| Code quality & documentation | 5% | Readable, commented, reproducible |
+
+### Tips
+
+1. **Start with the notebook** — get it running, then extend one piece at a time.
+2. **Define your "beyond" early** — decide what you're adding before you start coding.
+3. **Document as you go** — capture why you chose each metric and what gap it fills.
+4. **Show iteration** — run your eval, change something, re-run, and compare results. This is the strongest signal of understanding.
+5. **Name your limitations** — the rubric rewards honesty about what's missing.
+
+---
+
 ## Wrap-Up
 
 You have built a multi-layered evaluation pipeline for an agent-focused system. You can now assess agent quality across response dimensions (helpfulness, accuracy, clarity), tool selection behavior (precision/recall from CloudWatch logs), and end-to-end performance (native AgentCore evaluators against full execution traces).

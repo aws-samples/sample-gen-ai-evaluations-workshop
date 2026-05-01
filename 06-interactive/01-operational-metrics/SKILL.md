@@ -458,6 +458,13 @@ broken_dashboard = {
 3. Correctly identifies the missing dimension on the error metric
 4. Learner can explain the operational impact of each misconfiguration
 
+### Tips
+
+- Use the `MODEL_PRICING` dict from the lesson as your pricing reference.
+- The `response['metrics']['latencyMs']` field from `converse` gives end-to-end latency without streaming.
+- For streaming, `time.time()` around the stream iteration loop is more reliable than response metadata.
+- Set `ActionsEnabled=False` on alarms to avoid triggering SNS notifications during the workshop.
+
 ---
 
 ## Wrap-Up

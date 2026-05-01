@@ -196,6 +196,80 @@ Design and run a promptfoo evaluation for a **new domain** (not email classifica
 4. Results demonstrate comparison across providers with pass/fail reporting
 5. Learner can explain their choice of categories, why certain test cases were included, and what the results reveal about provider differences
 
+### Challenge: Add Custom Assertions
+
+Extend your test cases with assertion types beyond exact match. Add at least 3 test cases that use `contains`, `not-contains`, or regex-based assertions to validate output format and content.
+
+**Success criteria:**
+- At least 3 test cases in `dataset.csv` or a separate YAML test file use non-exact assertions
+- At least one `contains` assertion verifies the output includes a required keyword
+- At least one `not-contains` or `icontains-none` assertion verifies the output excludes unwanted content (e.g., explanations, apologies)
+- Re-run `promptfoo eval` and show that the new assertions produce meaningful pass/fail results
+- Explain why format assertions matter in addition to correctness assertions
+
+**Tip:** promptfoo supports assertion types like `contains`, `icontains`, `not-contains`, `is-json`, `regex`, and `javascript` — see promptfoo docs for the full list.
+
+### Challenge: Analyze Results and Iterate
+
+Examine your evaluation results, identify failure patterns, modify your prompt to address the most common failure mode, and re-run to show improvement.
+
+**Success criteria:**
+- Identify the category or assertion type with the lowest pass rate from prior results
+- Modify `prompts.py` to address the failure (e.g., add few-shot examples, clarify category definitions, add output format constraints)
+- Re-run `promptfoo eval` with the updated prompt
+- Print a before/after comparison: category, old pass rate, new pass rate
+- Explain what you changed in the prompt and why it helped (or didn't)
+
+---
+
+## Deep-Dive Challenge
+
+PromptFoo is an **eval-focused** framework — it treats the model as a function (input→output) and evaluates response quality across test cases. This deep-dive pushes you beyond notebook-level usage into production-grade evaluation patterns.
+
+### Workflow
+
+| Stage | What you implement |
+|---|---|
+| Test suite definition | 10+ test cases with inputs, expected outputs, and edge cases |
+| Metric configuration | 3+ metrics (at least 1 custom beyond built-in) |
+| Execution | Run eval suite against a live model endpoint |
+| Analysis | Score distribution, failure clustering, threshold tuning |
+| Iteration | Modify prompts or config based on results, re-run, show improvement |
+
+### "Beyond" Examples for PromptFoo
+
+- Custom JS/Python assertion provider
+- Multi-model tournament
+- CI integration with pass/fail gates
+
+### Scoring Rubric
+
+| Tier | Points | Criteria |
+|---|---|---|
+| **Functional** | 60-69 | Complete workflow runs end-to-end; uses only notebook-level features; results are valid |
+| **Extended** | 70-84 | Adds 1 capability not in notebook; clear justification for the extension |
+| **Advanced** | 85-94 | Adds 2+ capabilities; demonstrates iteration (before/after comparison); addresses a real evaluation gap |
+| **Exceptional** | 95-100 | Novel approach; production-quality output (CI-ready, dashboarded, or automated); teaches the reviewer something new |
+
+### Assessment Criteria
+
+| Criterion | Weight | Description |
+|---|---|---|
+| Complete workflow execution | 25% | All stages implemented and runnable; produces valid output |
+| Beyond-notebook features | 25% | Number and quality of capabilities not covered in source notebook |
+| Justification & analysis | 20% | Why each metric/feature was chosen; what evaluation gap it addresses |
+| Iteration evidence | 15% | Before/after comparison showing the pipeline caught or improved something |
+| "What was left out" | 10% | Identifies limitations; names what they'd need to cover them |
+| Code quality & documentation | 5% | Readable, commented, reproducible |
+
+### Tips
+
+1. **Start with the notebook** — get it running, then extend one piece at a time.
+2. **Define your "beyond" early** — decide what you're adding before you start coding.
+3. **Document as you go** — capture why you chose each metric and what gap it fills.
+4. **Show iteration** — run your eval, change something, re-run, and compare results. This is the strongest signal of understanding.
+5. **Name your limitations** — the rubric rewards honesty about what's missing.
+
 ---
 
 ## Wrap-Up

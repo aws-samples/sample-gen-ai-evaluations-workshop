@@ -354,6 +354,8 @@ def guardrails_evaluation_pipeline(test_file, region='us-west-2'):
 
 ## Challenges
 
+**Challenge 1: Domain-Specific Guardrails System**
+
 Design and implement a guardrails system for a domain of your choice (e.g., a math tutoring bot, a healthcare FAQ, or a financial advisor). Your system must include at least three guardrail policy types, an alignment technique, and an automated evaluation with at least 50 test cases spanning legitimate, out-of-scope, and adversarial categories.
 
 **Assessment criteria:**
@@ -365,10 +367,22 @@ Design and implement a guardrails system for a domain of your choice (e.g., a ma
 5. Test dataset includes legitimate (60%+), out-of-scope (15%+), and adversarial (10%+) categories
 6. Learner can explain their guardrail design choices and how they would iterate based on evaluation results
 
+**Challenge 2: Unified Evaluation Report with Guardrails**
+
+Add a guardrails validation stage to a RAG evaluation pipeline and produce a unified report that combines retrieval metrics, faithfulness scores, and guardrails pass/fail results.
+
+**Success criteria:**
+- Guardrails stage checks generated answers against at least one policy (e.g., no PII, no harmful content) using Bedrock Guardrails or a custom check function
+- Pipeline runs all three stages: retrieval eval → faithfulness eval → guardrails check
+- Unified report is a printed Markdown table with columns: Query, Precision@3, Faithfulness Score, Guardrails Pass/Fail, Overall Pass/Fail
+- Overall Pass/Fail requires: precision@3 > 0.5 AND faithfulness ≥ 3/4 AND guardrails pass
+- Run on at least 5 queries and print the report
+- Explain which metric you would prioritize in a production deployment and why
+
 ## Wrap-Up
 
 You've now built a multi-layered guardrails system that protects generative AI applications from harmful content, hallucinations, misalignment, and operational failures. You've learned to configure Bedrock Guardrails policies, implement alignment techniques at the agent level, apply operational limits, and—critically—evaluate all of these with an automated harness that produces actionable metrics.
 
-The Module 04 capstone challenge in `CHALLENGE-capstone.md` asks you to integrate guardrails evaluation into a complete workload-specific evaluation pipeline. Consider how your guardrails metrics (precision, recall, latency) fit alongside other evaluation dimensions like task accuracy, cost, and user satisfaction.
+The Module 04 Capstone Challenge in [SKILL-rag-evaluation.md](./SKILL-rag-evaluation.md#capstone-challenge) asks you to integrate guardrails evaluation into a complete workload-specific evaluation pipeline. Consider how your guardrails metrics (precision, recall, latency) fit alongside other evaluation dimensions like task accuracy, cost, and user satisfaction.
 
 **Next steps:** Review your evaluation results. Where is recall low? Add more topic policies or tighten thresholds. Where is precision low? Refine your denied topic definitions or adjust filter strengths. Guardrails are a living system—keep evaluating.

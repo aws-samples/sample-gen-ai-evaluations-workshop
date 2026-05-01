@@ -262,6 +262,13 @@ The notebook provides three reusable assets for this challenge:
 | "What was left out" analysis | 15% | Identifies meaningful gaps with data requirements and priority | Lists gaps without depth |
 | Use of notebook assets | 5% | Leverages multiple provided assets (traces + ground truth + eval functions) | Uses only one asset |
 
+**Tips:**
+
+- The SKILL doc's `evaluate_city_guess` function is the reference implementation for Section 1
+- For Section 2, stub tools are fine — the evaluation targets the agent's output format and routing, not tool correctness
+- `record_direct_tool_call=True` captures the agent's first tool choice before execution — this is what you compare against ground truth
+- Pre-built traces in `data/raw_traces.json` contain restaurant-booking agent conversations with TOOL_CALL entries if you prefer offline evaluation for Section 3
+
 ## Wrap-Up
 
 In this module you built three components of an agent evaluation framework: a structured evaluation function that parses and scores agent output, a Strands SDK agent scaffold that generates traceable multi-step executions, and a tool selection accuracy framework that measures routing decisions independently of output quality.
