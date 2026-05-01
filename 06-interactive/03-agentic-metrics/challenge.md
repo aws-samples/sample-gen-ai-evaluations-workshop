@@ -4,7 +4,7 @@ Build an evaluation framework for multi-step AI agents — scoring output accura
 
 ## Prerequisites
 
-- [SKILL: Agentic Metrics](../../module-03-agentic-metrics/SKILL.md)
+- [SKILL: Agentic Metrics](./SKILL.md)
 - Source notebook: [03-Agentic-Metrics.ipynb](../../03-agentic-metrics/03-Agentic-Metrics.ipynb)
 - Data files: [city_pop.csv](../../03-agentic-metrics/city_pop.csv), [test_cases.json](../../03-agentic-metrics/test_cases.json), [data/raw_traces.json](../../03-agentic-metrics/data/raw_traces.json), [data/labeled_traces.json](../../03-agentic-metrics/data/labeled_traces.json)
 

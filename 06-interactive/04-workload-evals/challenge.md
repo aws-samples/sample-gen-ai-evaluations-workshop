@@ -4,9 +4,9 @@ Build a RAG evaluation pipeline that measures retrieval quality, answer faithful
 
 ## Prerequisites
 
-- [SKILL: RAG Evaluation](../../module-04-workload-evals/SKILL-rag-evaluation.md)
-- [SKILL: Guardrails](../../module-04-workload-evals/SKILL-guardrails.md)
-- [CHALLENGE: Capstone](../../module-04-workload-evals/CHALLENGE-capstone.md)
+- [SKILL: RAG Evaluation](./SKILL-rag-evaluation.md)
+- [SKILL: Guardrails](./SKILL-guardrails.md)
+- [CHALLENGE: Capstone](./CHALLENGE-capstone.md)
 - Source notebooks: [04-03-Basic-RAG](../../04-workload-specific-evaluations/04-03-Basic-RAG/), [04-02-Guardrails](../../04-workload-specific-evaluations/04-02-Guardrails/)
 
 ## Exercise 1: Implement Retrieval Quality Metrics

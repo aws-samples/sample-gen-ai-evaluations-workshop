@@ -4,7 +4,7 @@ Build a CloudWatch observability stack for Amazon Bedrock LLM invocations. You w
 
 ## Prerequisites
 
-- [SKILL: Operational Metrics for LLMs](../../module-01-operational-metrics/SKILL.md)
+- [SKILL: Operational Metrics for LLMs](./SKILL.md)
 - Source notebook: [01-Operational-Metrics.ipynb](../../01-operational-metrics/01-Operational-Metrics.ipynb)
 
 ## Exercise 1: Publish Custom Cost and Latency Metrics

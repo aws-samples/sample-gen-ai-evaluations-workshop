@@ -4,7 +4,7 @@ Build LLM-as-Judge and LLM-as-Jury evaluation systems, measure inter-judge agree
 
 ## Prerequisites
 
-- [SKILL: LLM Quality Metrics](../../module-02-quality-metrics/SKILL.md)
+- [SKILL: LLM Quality Metrics](./SKILL.md)
 - Source notebooks: [01_LLM_as_Judge_analysis.ipynb](../../02-quality-metrics/01_LLM_as_Judge_analysis.ipynb), [02_LLM_as_Jury_evaluation_analysis.ipynb](../../02-quality-metrics/02_LLM_as_Jury_evaluation_analysis.ipynb), [03_Evaluating_your_Judge.ipynb](../../02-quality-metrics/03_Evaluating_your_Judge.ipynb)
 
 ## Exercise 1: Build a Structured LLM-as-Judge

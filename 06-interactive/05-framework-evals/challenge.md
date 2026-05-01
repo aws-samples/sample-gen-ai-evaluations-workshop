@@ -4,8 +4,8 @@ Set up a complete promptfoo evaluation pipeline — prompt templates, test cases
 
 ## Prerequisites
 
-- [SKILL: Promptfoo Evaluation Framework](../../module-05-framework-evals/SKILL-promptfoo.md)
-- [CHALLENGE: Deep-Dive](../../module-05-framework-evals/CHALLENGE-deep-dive.md)
+- [SKILL: Promptfoo Evaluation Framework](./SKILL-promptfoo.md)
+- [CHALLENGE: Deep-Dive](./CHALLENGE-deep-dive.md)
 - Source notebooks: [05-01-Prompt-Foo](../../05-framework-specific-evaluations/05-01-Prompt-Foo/)
 
 ## Exercise 1: Create a Prompt Template and Test Dataset
