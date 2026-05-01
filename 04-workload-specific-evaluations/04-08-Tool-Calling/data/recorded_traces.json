@@ -1,0 +1,148 @@
+[
+  {
+    "trace_id": "trace-001",
+    "test_case_id": "tc-001",
+    "input": "Can you check the status of my order ORD-48291?",
+    "messages": [
+      {"role": "user", "content": "Can you check the status of my order ORD-48291?"},
+      {"role": "assistant", "content": "I'll look up your order right away.", "tool_calls": [
+        {"tool": "lookup_order", "params": {"order_id": "ORD-48291"}}
+      ]},
+      {"role": "tool", "tool": "lookup_order", "content": "{\"order_id\": \"ORD-48291\", \"status\": \"shipped\", \"items\": [\"Wireless Mouse\", \"USB-C Cable\"], \"tracking\": \"1Z999AA10123456784\", \"estimated_delivery\": \"2026-04-12\"}"},
+      {"role": "assistant", "content": "Your order ORD-48291 has been shipped! It contains a Wireless Mouse and USB-C Cable. Your tracking number is 1Z999AA10123456784, and the estimated delivery date is April 12, 2026."}
+    ],
+    "tools_called": ["lookup_order"],
+    "params_used": {"lookup_order": {"order_id": "ORD-48291"}},
+    "final_output": "Your order ORD-48291 has been shipped! It contains a Wireless Mouse and USB-C Cable. Your tracking number is 1Z999AA10123456784, and the estimated delivery date is April 12, 2026.",
+    "label": "correct"
+  },
+  {
+    "trace_id": "trace-002",
+    "test_case_id": "tc-002",
+    "input": "Hey there, how's it going?",
+    "messages": [
+      {"role": "user", "content": "Hey there, how's it going?"},
+      {"role": "assistant", "content": "Let me check your account.", "tool_calls": [
+        {"tool": "get_customer_profile", "params": {"customer_id": "unknown"}}
+      ]},
+      {"role": "tool", "tool": "get_customer_profile", "content": "{\"error\": \"Customer not found\"}"},
+      {"role": "assistant", "content": "I'm sorry, I couldn't find your account. Could you provide your customer ID?"}
+    ],
+    "tools_called": ["get_customer_profile"],
+    "params_used": {"get_customer_profile": {"customer_id": "unknown"}},
+    "final_output": "I'm sorry, I couldn't find your account. Could you provide your customer ID?",
+    "label": "incorrect_unnecessary_tool_call"
+  },
+  {
+    "trace_id": "trace-003",
+    "test_case_id": "tc-003",
+    "input": "I want to return order ORD-33012. The item arrived broken.",
+    "messages": [
+      {"role": "user", "content": "I want to return order ORD-33012. The item arrived broken."},
+      {"role": "assistant", "content": "I'm sorry to hear that. Let me start the return process for you.", "tool_calls": [
+        {"tool": "initiate_return", "params": {"order_id": "ORD-33012", "reason": "defective"}}
+      ]},
+      {"role": "tool", "tool": "initiate_return", "content": "{\"return_auth\": \"RET-88421\", \"instructions\": \"Print the prepaid label and drop off at any UPS location within 14 days.\"}"},
+      {"role": "assistant", "content": "Your return has been initiated. Your return authorization number is RET-88421. Please print the prepaid shipping label and drop off the package at any UPS location within 14 days."}
+    ],
+    "tools_called": ["initiate_return"],
+    "params_used": {"initiate_return": {"order_id": "ORD-33012", "reason": "defective"}},
+    "final_output": "Your return has been initiated. Your return authorization number is RET-88421. Please print the prepaid shipping label and drop off the package at any UPS location within 14 days.",
+    "label": "correct"
+  },
+  {
+    "trace_id": "trace-004",
+    "test_case_id": "tc-004",
+    "input": "I received the wrong item in my last order. My order number is ORD-55123. Can you help me return it?",
+    "messages": [
+      {"role": "user", "content": "I received the wrong item in my last order. My order number is ORD-55123. Can you help me return it?"},
+      {"role": "assistant", "content": "I'll look up your order first and then process the return.", "tool_calls": [
+        {"tool": "lookup_order", "params": {"order_id": "ORD-55123"}}
+      ]},
+      {"role": "tool", "tool": "lookup_order", "content": "{\"order_id\": \"ORD-55123\", \"status\": \"delivered\", \"items\": [\"Blue Running Shoes Size 10\"], \"delivered_date\": \"2026-04-01\"}"},
+      {"role": "assistant", "content": "I can see your order was delivered on April 1st. Let me initiate the return for the wrong item.", "tool_calls": [
+        {"tool": "initiate_return", "params": {"order_id": "ORD-55123", "reason": "wrong_item"}}
+      ]},
+      {"role": "tool", "tool": "initiate_return", "content": "{\"return_auth\": \"RET-90112\", \"instructions\": \"Print the prepaid label and drop off at any UPS location within 14 days.\"}"},
+      {"role": "assistant", "content": "Your return has been processed. Return authorization: RET-90112. Please use the prepaid label to ship back the incorrect item within 14 days. We'll send the correct item once we receive the return."}
+    ],
+    "tools_called": ["lookup_order", "initiate_return"],
+    "params_used": {
+      "lookup_order": {"order_id": "ORD-55123"},
+      "initiate_return": {"order_id": "ORD-55123", "reason": "wrong_item"}
+    },
+    "final_output": "Your return has been processed. Return authorization: RET-90112. Please use the prepaid label to ship back the incorrect item within 14 days. We'll send the correct item once we receive the return.",
+    "label": "correct"
+  },
+  {
+    "trace_id": "trace-005",
+    "test_case_id": "tc-005",
+    "input": "Do you guys sell electronics? I'm thinking about getting a new laptop.",
+    "messages": [
+      {"role": "user", "content": "Do you guys sell electronics? I'm thinking about getting a new laptop."},
+      {"role": "assistant", "content": "Yes, we have a great selection of electronics including laptops! You can browse our catalog at the Electronics section. Is there a specific brand or feature you're looking for? I can help you find the right laptop."}
+    ],
+    "tools_called": [],
+    "params_used": {},
+    "final_output": "Yes, we have a great selection of electronics including laptops! You can browse our catalog at the Electronics section. Is there a specific brand or feature you're looking for? I can help you find the right laptop.",
+    "label": "correct"
+  },
+  {
+    "trace_id": "trace-006",
+    "test_case_id": "tc-006",
+    "input": "Is the SKU-7890X wireless mouse available in the US West warehouse?",
+    "messages": [
+      {"role": "user", "content": "Is the SKU-7890X wireless mouse available in the US West warehouse?"},
+      {"role": "assistant", "content": "Let me check the inventory for you.", "tool_calls": [
+        {"tool": "check_inventory", "params": {"product_id": "SKU-7890X"}}
+      ]},
+      {"role": "tool", "tool": "check_inventory", "content": "{\"product_id\": \"SKU-7890X\", \"available\": true, \"quantity\": 342, \"warehouse\": \"us-east\"}"},
+      {"role": "assistant", "content": "The SKU-7890X wireless mouse is in stock with 342 units available. However, I checked the US East warehouse. Let me note that you specifically asked about US West availability."}
+    ],
+    "tools_called": ["check_inventory"],
+    "params_used": {"check_inventory": {"product_id": "SKU-7890X"}},
+    "final_output": "The SKU-7890X wireless mouse is in stock with 342 units available.",
+    "label": "incorrect_missing_parameter"
+  },
+  {
+    "trace_id": "trace-007",
+    "test_case_id": "tc-008",
+    "input": "I was charged twice for order ORD-99001 and I want a refund immediately. This is unacceptable.",
+    "messages": [
+      {"role": "user", "content": "I was charged twice for order ORD-99001 and I want a refund immediately. This is unacceptable."},
+      {"role": "assistant", "content": "I sincerely apologize for the inconvenience. Let me look into this right away.", "tool_calls": [
+        {"tool": "lookup_order", "params": {"order_id": "ORD-99001"}}
+      ]},
+      {"role": "tool", "tool": "lookup_order", "content": "{\"order_id\": \"ORD-99001\", \"status\": \"delivered\", \"total\": \"$149.99\", \"payment_status\": \"charged\", \"charges\": [{\"amount\": \"$149.99\", \"date\": \"2026-03-28\"}, {\"amount\": \"$149.99\", \"date\": \"2026-03-28\"}]}"},
+      {"role": "assistant", "content": "I can see there were indeed two charges of $149.99 on your order. This needs to be handled by our billing team. Let me escalate this immediately.", "tool_calls": [
+        {"tool": "escalate_to_human", "params": {"reason": "Double charge on order ORD-99001 - customer requesting immediate refund", "priority": "high", "context_summary": "Customer was charged $149.99 twice for order ORD-99001. Order shows two charges on 2026-03-28. Customer is requesting immediate refund."}}
+      ]},
+      {"role": "tool", "tool": "escalate_to_human", "content": "{\"ticket\": \"ESC-2241\", \"estimated_wait\": \"5 minutes\"}"},
+      {"role": "assistant", "content": "I've escalated this to our billing team with high priority (ticket ESC-2241). A specialist will be with you in approximately 5 minutes to process your refund for the duplicate charge. I apologize again for this error."}
+    ],
+    "tools_called": ["lookup_order", "escalate_to_human"],
+    "params_used": {
+      "lookup_order": {"order_id": "ORD-99001"},
+      "escalate_to_human": {"reason": "Double charge on order ORD-99001 - customer requesting immediate refund", "priority": "high", "context_summary": "Customer was charged $149.99 twice for order ORD-99001."}
+    },
+    "final_output": "I've escalated this to our billing team with high priority (ticket ESC-2241). A specialist will be with you in approximately 5 minutes to process your refund for the duplicate charge.",
+    "label": "correct"
+  },
+  {
+    "trace_id": "trace-008",
+    "test_case_id": "tc-009",
+    "input": "What's your return policy? How many days do I have?",
+    "messages": [
+      {"role": "user", "content": "What's your return policy? How many days do I have?"},
+      {"role": "assistant", "content": "Let me look up the return policy for you.", "tool_calls": [
+        {"tool": "lookup_order", "params": {"order_id": "POLICY"}}
+      ]},
+      {"role": "tool", "tool": "lookup_order", "content": "{\"error\": \"Invalid order ID format\"}"},
+      {"role": "assistant", "content": "Our standard return policy allows returns within 30 days of delivery. Items must be in their original condition. Would you like to start a return for a specific order?"}
+    ],
+    "tools_called": ["lookup_order"],
+    "params_used": {"lookup_order": {"order_id": "POLICY"}},
+    "final_output": "Our standard return policy allows returns within 30 days of delivery.",
+    "label": "incorrect_unnecessary_tool_call_with_hallucinated_params"
+  }
+]

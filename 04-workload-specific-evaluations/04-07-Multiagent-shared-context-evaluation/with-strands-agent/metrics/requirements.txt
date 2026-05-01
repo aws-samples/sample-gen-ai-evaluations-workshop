@@ -1,0 +1,6 @@
+boto3
+botocore
+strands-agents
+bedrock-agentcore
+bedrock-agentcore-starter-toolkit
+matplotlib
