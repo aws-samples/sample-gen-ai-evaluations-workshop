@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# DeepEval files
+.deepeval/
+
+# Backup files
+*.backup
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local helper scripts (not part of the public module)
+_*.py
+_*.sh
