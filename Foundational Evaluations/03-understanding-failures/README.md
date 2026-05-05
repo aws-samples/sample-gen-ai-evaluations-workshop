@@ -59,11 +59,11 @@ Turn a discovered problem into a binary pass/fail evaluator prompt:
 
 This module sits at a key point in the workshop — it connects what you've already learned to what comes next:
 
-- **Module 01 — Operational Metrics** ([01-Operational-Metrics.ipynb](../01-operational-metrics/01-Operational-Metrics.ipynb)): Operational anomalies like high latency or unusual token counts are signals for *where* to look during trace review. If a set of conversations shows unusually high token usage, that's a good place to start reading.
+- **Module 01 — Operational Metrics** ([01-operational-metrics/01-Operational-Metrics.ipynb](../01-operational-metrics/01-Operational-Metrics.ipynb)): Operational anomalies like high latency or unusual token counts are signals for *where* to look during trace review. If a set of conversations shows unusually high token usage, that's a good place to start reading.
 
-- **Module 02 — Quality Metrics** ([01_LLM_as_Judge_analysis.ipynb](../02-quality-metrics/01_LLM_as_Judge_analysis.ipynb), [03_Evaluating_your_Judge.ipynb](../02-quality-metrics/03_Evaluating_your_Judge.ipynb)): The failure modes you discover here become the criteria for LLM-as-Judge evaluators. The binary pass/fail pattern used in the evaluator bridge section of this module is taught in depth in Module 02's judge calibration notebook.
+- **Module 02 — Quality Metrics** ([02-quality-metrics/01_LLM_as_Judge_analysis.ipynb](../02-quality-metrics/01_LLM_as_Judge_analysis.ipynb), [02-quality-metrics/03_Evaluating_your_Judge.ipynb](../02-quality-metrics/03_Evaluating_your_Judge.ipynb)): The failure modes you discover here become the criteria for LLM-as-Judge evaluators. The binary pass/fail pattern used in the evaluator bridge section of this module is taught in depth in Module 02's judge calibration notebook.
 
-- **Module 04 — Agentic Metrics** ([01-Agentic-Metrics.ipynb](../04-agentic-metrics/01-Agentic-Metrics.ipynb)): This module uses the same restaurant booking agent traces that Module 04 uses for agentic evaluation. The problem categories you build here directly inform what metrics to track there.
+- **Module 04 — Agentic Metrics** ([04-agentic-metrics/01-Agentic-Metrics.ipynb](../04-agentic-metrics/01-Agentic-Metrics.ipynb)): This module uses the same restaurant booking agent traces that Module 04 uses for agentic evaluation. The problem categories you build here directly inform what metrics to track there.
 
 ## Shared Data
 
