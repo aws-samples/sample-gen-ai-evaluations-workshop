@@ -131,9 +131,10 @@ Each evaluation returns:
 
 | File | Description |
 |------|-------------|
-| `05-04-AgentCore-Runtime-Evals.ipynb` | Main workshop notebook |
+| `05-04-03-AgentCore-Runtime-Online-Evals.ipynb` | Main workshop notebook — deploys a city search agent to AgentCore Runtime and runs online evaluations using built-in evaluators (Faithfulness, ToolSelectionAccuracy) |
+| `citysearch.py` | City Search Agent deployment script for AgentCore Runtime. Wraps a Strands agent with web search and page fetch tools in a `BedrockAgentCoreApp` entrypoint for managed deployment |
+| `city_pop.csv` | Test data with city names used as evaluation queries |
 | `requirements.txt` | Python dependencies |
-| `city_pop.csv` | Test data with city information |
 | `README.md` | This documentation |
 
 ## Additional Resources
