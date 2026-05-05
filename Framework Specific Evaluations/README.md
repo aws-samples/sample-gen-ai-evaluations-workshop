@@ -58,7 +58,7 @@ Key topics: `Signature` declarations, `dspy.Evaluate`, `BootstrapFewShot` optimi
 
 ---
 
-### [Mlflow](Mlflow/)
+### [MLflow](MLflow/)
 
 **Experiment tracking and model comparison with MLflow**
 
