@@ -30,6 +30,7 @@ seaborn==0.13.2
 # Utilities and progress tracking
 tqdm==4.67.1
 ipython==8.34.0
+setuptools
 
 # Media and file processing
 soundfile==0.13.1

@@ -1,0 +1,6 @@
+strands-agents
+strands-agents-evals
+deepeval
+boto3
+awscli
+ipywidgets

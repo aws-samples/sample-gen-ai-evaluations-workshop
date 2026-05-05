@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "input": "What is 234 + 876?",
+    "expected_tool": "calculator",
+    "expected_output": "1110"
+  },
+  {
+    "id": 2,
+    "input": "Multiply 45 by 19.",
+    "expected_tool": "calculator",
+    "expected_output": "855"
+  },
+  {
+    "id": 3,
+    "input": "What is (15 * 4) + 9?",
+    "expected_tool": "calculator",
+    "expected_output": "69"
+  },
+  {
+    "id": 4,
+    "input": "Read the contents of notes.txt",
+    "expected_tool": "file_read",
+    "expected_output": "File contents of notes.txt"
+  },
+  {
+    "id": 5,
+    "input": "Open and show me what's inside data.csv",
+    "expected_tool": "file_read",
+    "expected_output": "CSV content from data.csv"
+  },
+  {
+    "id": 6,
+    "input": "Display everything in todo.md",
+    "expected_tool": "file_read",
+    "expected_output": "Markdown content of todo.md"
+  },
+  {
+    "id": 7,
+    "input": "Write 'Hello World' into hello.txt",
+    "expected_tool": "file_write",
+    "expected_output": "File hello.txt created with 'Hello World'"
+  },
+  {
+    "id": 8,
+    "input": "Save the text 'AgentCore Rocks!' into core.txt",
+    "expected_tool": "file_write",
+    "expected_output": "File core.txt created with text"
+  },
+  {
+    "id": 9,
+    "input": "Create a file log.txt that contains 'run successful'",
+    "expected_tool": "file_write",
+    "expected_output": "File log.txt written"
+  },
+  {
+    "id": 10,
+    "input": "Run Python code: print(2+3)",
+    "expected_tool": "code_interpreter",
+    "expected_output": "5"
+  },
+  {
+    "id": 11,
+    "input": "Execute Python code: for i in range(3): print(i)",
+    "expected_tool": "code_interpreter",
+    "expected_output": "0\n1\n2"
+  },
+  {
+    "id": 12,
+    "input": "Run a Python snippet to calculate factorial of 5",
+    "expected_tool": "code_interpreter",
+    "expected_output": "120"
+  },
+  {
+    "id": 13,
+    "input": "What is the capital of France?",
+    "expected_tool": "none",
+    "expected_output": "Paris"
+  },
+  {
+    "id": 14,
+    "input": "Who is the CEO of Amazon?",
+    "expected_tool": "none",
+    "expected_output": "Andy Jassy"
+  },
+  {
+    "id": 15,
+    "input": "Divide 500 by 25.",
+    "expected_tool": "calculator",
+    "expected_output": "20"
+  },
+  {
+    "id": 16,
+    "input": "Square root of 144?",
+    "expected_tool": "calculator",
+    "expected_output": "12"
+  },
+  {
+    "id": 17,
+    "input": "Show me what's inside config.yaml",
+    "expected_tool": "file_read",
+    "expected_output": "YAML file content"
+  },
+  {
+    "id": 18,
+    "input": "Write 'Done for today' in status.txt",
+    "expected_tool": "file_write",
+    "expected_output": "status.txt written"
+  },
+  {
+    "id": 19,
+    "input": "Execute Python: sum([10,20,30])",
+    "expected_tool": "code_interpreter",
+    "expected_output": "60"
+  },
+  {
+    "id": 20,
+    "input": "What is 99 * 99?",
+    "expected_tool": "calculator",
+    "expected_output": "9801"
+  }
+]

@@ -1,0 +1,138 @@
+{
+  "scenario": "Customer Support Agent for an E-Commerce Platform",
+  "description": "An agent that helps customers with order inquiries, returns, account management, and product questions. Tools interact with backend systems but should NOT be called during casual conversation.",
+  "tools": [
+    {
+      "name": "lookup_order",
+      "description": "Look up order details by order ID. Returns order status, items, shipping info, and payment summary.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "description": "The order ID (format: ORD-XXXXX)",
+            "pattern": "^ORD-\\d{5}$"
+          }
+        },
+        "required": ["order_id"],
+        "additionalProperties": false
+      },
+      "returns": "Order details including status, items, shipping address, and total"
+    },
+    {
+      "name": "initiate_return",
+      "description": "Start a return process for a specific order. Requires order ID and reason. Only works for orders delivered within the last 30 days.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "description": "The order ID to return (format: ORD-XXXXX)"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["defective", "wrong_item", "changed_mind", "not_as_described", "arrived_late"],
+            "description": "Reason for the return"
+          },
+          "items": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "List of item SKUs to return. If empty, returns entire order."
+          }
+        },
+        "required": ["order_id", "reason"],
+        "additionalProperties": false
+      },
+      "returns": "Return authorization number and instructions"
+    },
+    {
+      "name": "check_inventory",
+      "description": "Check if a product is currently in stock. Returns availability and estimated restock date if out of stock.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "description": "Product SKU or ID"
+          },
+          "warehouse_region": {
+            "type": "string",
+            "enum": ["us-east", "us-west", "eu", "apac"],
+            "description": "Warehouse region to check. Defaults to nearest."
+          }
+        },
+        "required": ["product_id"],
+        "additionalProperties": false
+      },
+      "returns": "Stock availability, quantity, and estimated delivery time"
+    },
+    {
+      "name": "update_shipping_address",
+      "description": "Update the shipping address for an order that has not yet shipped.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "description": "The order ID (format: ORD-XXXXX)"
+          },
+          "new_address": {
+            "type": "object",
+            "properties": {
+              "street": {"type": "string"},
+              "city": {"type": "string"},
+              "state": {"type": "string"},
+              "zip": {"type": "string"},
+              "country": {"type": "string", "default": "US"}
+            },
+            "required": ["street", "city", "state", "zip"]
+          }
+        },
+        "required": ["order_id", "new_address"],
+        "additionalProperties": false
+      },
+      "returns": "Confirmation of address update or error if order already shipped"
+    },
+    {
+      "name": "get_customer_profile",
+      "description": "Retrieve customer profile information including order history summary, loyalty tier, and preferences.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "description": "Customer ID or email address"
+          }
+        },
+        "required": ["customer_id"],
+        "additionalProperties": false
+      },
+      "returns": "Customer profile with name, tier, order count, and preferences"
+    },
+    {
+      "name": "escalate_to_human",
+      "description": "Transfer the conversation to a human support agent. Use only when the issue cannot be resolved automatically.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Brief description of why escalation is needed"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "urgent"],
+            "description": "Priority level for the escalation"
+          },
+          "context_summary": {
+            "type": "string",
+            "description": "Summary of the conversation so far for the human agent"
+          }
+        },
+        "required": ["reason", "priority"],
+        "additionalProperties": false
+      },
+      "returns": "Escalation ticket number and estimated wait time"
+    }
+  ]
+}

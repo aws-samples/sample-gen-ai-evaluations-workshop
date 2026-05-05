@@ -1,0 +1,7 @@
+app:
+  name: evaluation-framework
+  version: 1.0
+  debug: false
+database:
+  host: localhost
+  port: 5432

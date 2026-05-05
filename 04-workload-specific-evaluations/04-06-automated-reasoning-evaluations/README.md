@@ -58,7 +58,8 @@ This module demonstrates how to evaluate **Automated Reasoning (AR) Checks** in 
 
 - AWS account with Amazon Bedrock access (us-west-2)
 - Python 3.10+
-- Install dependencies: `uv pip install -r requirements.txt` (or `pip install -r requirements.txt`)
+- Install dependencies: `uv venv .venv 2>/dev/null; source .venv/bin/activate && uv pip install -q -r requirements.txt` (or `python3 -m venv .venv
+source .venv/bin/activate pip install -r requirements.txt`)
 
 ## Getting Started
 

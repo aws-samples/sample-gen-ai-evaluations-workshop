@@ -136,14 +136,12 @@ Each evaluation returns:
 | `city_pop.csv` | Test data with city names used as evaluation queries |
 | `requirements.txt` | Python dependencies |
 | `README.md` | This documentation |
-| `city_pop.csv` | Test data with city information |
-| `README.md` | This documentation |
 
 ## Additional Resources
 
 - [AgentCore Runtime Documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html)
 - [AgentCore Evaluations Documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-evaluations.html)
-- [Strands Agents Framework](https://github.com/strands-agents/strands-agents)
+- [Strands Agents Framework](https://github.com/strands-agents/sdk-python)
 - [Amazon Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
 
 ## Troubleshooting

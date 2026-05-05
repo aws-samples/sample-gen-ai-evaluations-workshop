@@ -7,7 +7,7 @@ This workshop teaches systematic approaches to evaluating Generative AI workload
 
 ## How to use this repository
 
-We strongly recommend going in order through the first 3 modules.  These cover the core of generative AI evaluations which will be critical in all workloads.  After that, please feel free to select any of the workload and framework specific modules in any order, according to what is most relevant to you.
+We strongly recommend going in order through the first 3 modules.  These cover the core of generative AI evaluations which will be critical in all workloads.  After that, please feel free to select any of the workload- and framework-specific modules in any order, according to what is most relevant to you.
 
 ## What You'll Learn
 
@@ -27,23 +27,33 @@ We strongly recommend going in order through the first 3 modules.  These cover t
   
 - 05 Framework and Tool Specific Implementations
   - PromptFoo
-  - AgentCore (custom evaluations)
   - Strands Evaluations
   - AgentCore Evaluations
+  - DSPy Prompt Optimization
+
+- 06 [Interactive Learning Mode](06-interactive/README.md): guided challenges, exercises, and real-time feedback with an interactive tutor.
+
+## Choose Your Learning Mode
+
+This workshop supports two ways to learn:
+
+- **Traditional**: Work through the Jupyter notebooks in modules 01–05 sequentially at your own pace.
+- **Interactive**: Use the interactive tutor in `06-interactive/` for guided challenges, exercises, and real-time feedback.
+
+You can also combine both: work through a module's notebooks first, then use the interactive tutor to test your understanding before moving on.
 
 ## Prerequisites
 
 - AWS account with Amazon Bedrock enabled
 - Basic Python and ML familiarity
-- No security expertise required
+- No prior AI evaluation experience required
 
 ## Getting Started
 
 1. Clone the repository
 2. Configure AWS credentials
-3. Start with module 01-Operational-Metrics
-4. Complete the rest of the core modules, 02 and 03
-5. Review the workload and framework specific modules, choose any in any order.
+3. Work through each core module (01–03), using the [interactive tutor](06-interactive/README.md) to test your understanding after each one
+4. Review the workload- and framework-specific modules, choose any in any order.
 
 ## Security
 
@@ -52,4 +62,3 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
-

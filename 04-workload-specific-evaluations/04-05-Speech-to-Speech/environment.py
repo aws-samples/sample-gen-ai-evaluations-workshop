@@ -71,6 +71,11 @@ class _Environment:
 
     @property
     def frontend_url(self) -> str:
+        """URL for humans to open in a browser.
+
+        On SageMaker this is the authenticated proxy URL; locally it is
+        plain localhost.
+        """
         self._resolve()
         if self._base_url is None:
             return f"http://localhost:{FRONTEND_PORT}"
@@ -91,7 +96,7 @@ class _Environment:
         """
         Local  → ``npm run start``  (CRA dev server with hot-reload)
         SageMaker → ``npm run build && python3 -m http.server 3000 --directory build``
-                     (static build served through the Studio proxy)
+                     (builds first if needed, then serves static files)
         """
         if self.is_sagemaker:
             return (
@@ -120,7 +125,9 @@ class _Environment:
         """Backend command — activates venv first so dependencies are found.
 
         Local     → run_server_with_telemetry.sh (websockets + OpenTelemetry)
-        SageMaker → run_aiohttp_server.py (aiohttp, binds 0.0.0.0, no OTel)
+        SageMaker → run_aiohttp_server.py (aiohttp, binds 0.0.0.0)
+                     OTel is initialized programmatically via aws-opentelemetry-distro
+                     when OTEL_PYTHON_DISTRO is set in the .env file.
         """
         if self.is_sagemaker:
             return (
