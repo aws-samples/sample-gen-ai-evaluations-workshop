@@ -7,7 +7,11 @@ This workshop teaches systematic approaches to evaluating Generative AI workload
 
 ## How to use this repository
 
-We strongly recommend going in order through the Foundational Evaluations modules (01–04). These cover the core of generative AI evaluations which will be critical in all workloads. After that, please feel free to select any of the workload- and framework-specific modules in any order, according to what is most relevant to you.
+We strongly recommend going in order through the [Foundational Evaluations](Foundational%20Evaluations/) modules. These cover the core of generative AI evaluations which will be critical in all workloads. After that, please feel free to select any of the workload- and framework-specific modules in any order, according to what is most relevant to you.
+
+### Interactive Learning
+
+As an alternative to working through the Jupyter notebooks directly, you can use the [Interactive Learning](Interactive%20Learning/README.md) module as a skill file in your AI coding assistant (Kiro, Claude, or similar). The assistant reads the workshop's notebooks and skill docs, then guides you through hands-on challenges — asking you to write code, explain concepts, and debug configurations rather than passively reading. Tell the agent which module you want to work on and it will present exercises one at a time, check your understanding, provide hints when you're stuck, and adapt to your pace.
 
 ## What You'll Learn
 
@@ -19,35 +23,28 @@ We strongly recommend going in order through the Foundational Evaluations module
 
 ### Optional Modules - Do any of these in any order!
 - [Workload Specific Evaluations](Workload%20Specific%20Evaluations/)
-  - Intelligent Document Processing
-  - Guardrails
-  - Basic RAG
-  - MultiModal RAG
-  - Speech to Speech
-  - Automated Reasoning Evaluations
-  - Tool Calling
-  - Chatbot
-  - Red Teaming
-  - Multiagent Shared Context Evaluation
+  - Intelligent Document Processing: evaluate structured data extraction accuracy with field-level precision/recall.
+  - Guardrails: configure and test content filters, grounding checks, alignment, and operational controls.
+  - Basic RAG: evaluate retrieval quality and end-to-end answer generation with precision@k, NDCG, and faithfulness scoring.
+  - MultiModal RAG: evaluate retrieval across text, vision, and audio modalities using ImageBind embeddings.
+  - Speech to Speech: end-to-end evaluation of Nova Sonic interactions using CloudWatch telemetry and LLM-as-Judge.
+  - Automated Reasoning Evaluations: verify LLM outputs against formal policy rules using SMT solver-based guardrails.
+  - Tool Calling: evaluate agent tool-calling behavior without real tool execution using five progressively sophisticated approaches.
+  - Chatbot: evaluate multi-turn conversational AI with simulated users, custom binary evaluators, and synthetic data generation.
+  - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
+  - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
+  - Coding Assistant: coming soon.
   
 - [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
-  - PromptFoo
-  - Strands Evaluations
-  - AgentCore Evaluations
-  - AgentCore Runtime Evals
-  - DSPy Prompt Optimization
-  - MLflow
+  - Prompt Foo: configure YAML-based evaluations, write assertion test cases, and compare models across providers.
+  - Strands: evaluate agents using the Strands Evals SDK with output quality, trajectory, and custom evaluators.
+  - AgentCore: evaluate agents deployed on Amazon Bedrock AgentCore Runtime with LLM-as-Judge and CloudWatch log analysis.
+  - AgentCore Runtime Evals: run native AgentCore Evaluations API with built-in evaluators for helpfulness and tool selection accuracy.
+  - DSPy: optimize prompts automatically with BootstrapFewShot and measure improvement with custom metrics.
+  - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
+  - DeepEval: coming soon.
 
 - [Interactive Learning Mode](Interactive%20Learning/README.md): guided challenges, exercises, and real-time feedback with an interactive tutor.
-
-## Choose Your Learning Mode
-
-This workshop supports two ways to learn:
-
-- **Traditional**: Work through the Jupyter notebooks in the Foundational Evaluations modules sequentially at your own pace, then pick from Workload and Framework modules.
-- **Interactive**: Use the interactive tutor in `Interactive Learning/` for guided challenges, exercises, and real-time feedback.
-
-You can also combine both: work through a module's notebooks first, then use the interactive tutor to test your understanding before moving on.
 
 ## Prerequisites
 
@@ -59,8 +56,8 @@ You can also combine both: work through a module's notebooks first, then use the
 
 1. Clone the repository
 2. Configure AWS credentials
-3. Work through the Foundational Evaluations modules (01–04), using the [interactive tutor](Interactive%20Learning/README.md) to test your understanding after each one
-4. Review the Workload Specific and Framework Specific modules, choose any in any order.
+3. Work through the Foundational Evaluations modules in order
+4. Pick from the Workload Specific and Framework Specific modules based on what's relevant to you
 
 ## Security
 
