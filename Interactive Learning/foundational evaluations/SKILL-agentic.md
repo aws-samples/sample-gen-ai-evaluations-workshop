@@ -25,7 +25,7 @@ In this module you build an evaluation framework for AI agents that use tools ac
 1. Navigate to the module directory:
 
 ```bash
-cd 03-agentic-metrics/
+cd "Foundational Evaluations/04-agentic-metrics/"
 ```
 
 2. Verify data files are present:
@@ -243,10 +243,10 @@ The notebook provides three reusable assets for this challenge:
 
 | Asset | Location | What it provides |
 |---|---|---|
-| `data/raw_traces.json` | `03-agentic-metrics/data/` | 100 restaurant-booking agent traces with TOOL_CALL entries |
-| `data/labeled_traces.json` | `03-agentic-metrics/data/` | Same 100 traces + `last_success_state` and `first_failure_state` labels |
-| `city_pop.csv` | `03-agentic-metrics/` | Ground truth dataset (city, state, population, land_area) for agent evaluation |
-| `test_cases.json` | `03-agentic-metrics/` | 2 test cases with query, expected output, category for tool selection eval |
+| `data/raw_traces.json` | `Foundational Evaluations/04-agentic-metrics/data/` | 100 restaurant-booking agent traces with TOOL_CALL entries |
+| `data/labeled_traces.json` | `Foundational Evaluations/04-agentic-metrics/data/` | Same 100 traces + `last_success_state` and `first_failure_state` labels |
+| `city_pop.csv` | `Foundational Evaluations/04-agentic-metrics/` | Ground truth dataset (city, state, population, land_area) for agent evaluation |
+| `test_cases.json` | `Foundational Evaluations/04-agentic-metrics/` | 2 test cases with query, expected output, category for tool selection eval |
 | Agent scaffold (Cells 10-16) | Notebook | Strands `Agent` with `web_search` + `get_page` tools, `BedrockModel` config |
 | `evaluate_city_guess` (Cell 8) | Notebook | Eval function: extracts XML-tagged values, computes % error vs ground truth, captures token count + latency |
 | Tool selection framework (Cells 33-34) | Notebook | 20-case dataset + agent with `record_direct_tool_call=True` for tool routing accuracy |

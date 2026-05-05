@@ -17,7 +17,7 @@ Same as the main workshop:
 
 ## How to Use
 
-1. Point your AI assistant at the skill file: `06-interactive/claude/kiro.md`
+1. Point your AI assistant at the skill file: `Interactive Learning/claude/kiro.md`
 2. Tell the agent which module you want to work through (e.g., "Let's start Module 01")
 3. The agent will read the relevant notebooks and SKILL docs, then present challenges one at a time
 4. Write code, run it, and share your results — the agent will check your work and guide you forward
@@ -26,11 +26,11 @@ Same as the main workshop:
 
 | Module | Challenge File | Topics Covered |
 |--------|---------------|----------------|
-| 01 — Operational Metrics | [01-operational-metrics/challenge.md](./01-operational-metrics/challenge.md) | CloudWatch custom metrics, dashboards, alarms, TTFT/TTLT |
-| 02 — Quality Metrics | [02-quality-metrics/challenge.md](./02-quality-metrics/challenge.md) | LLM-as-Judge, LLM-as-Jury, agreement rates, confidence intervals |
-| 03 — Agentic Metrics | [03-agentic-metrics/challenge.md](./03-agentic-metrics/challenge.md) | Agent evaluation functions, tool selection accuracy, Strands SDK |
-| 04 — Workload Evals | [04-workload-evals/challenge.md](./04-workload-evals/challenge.md) | RAG retrieval metrics, faithfulness, guardrails, unified pipelines |
-| 05 — Framework Evals | [05-framework-evals/challenge.md](./05-framework-evals/challenge.md) | Promptfoo YAML configs, assertions, multi-provider comparison |
+| 01 — Operational Metrics | [foundational evaluations/SKILL-operational.md](./foundational%20evaluations/SKILL-operational.md) | CloudWatch custom metrics, dashboards, alarms, TTFT/TTLT |
+| 02 — Quality Metrics | [foundational evaluations/SKILL-quality.md](./foundational%20evaluations/SKILL-quality.md) | LLM-as-Judge, LLM-as-Jury, agreement rates, confidence intervals |
+| 03 — Agentic Metrics | [foundational evaluations/SKILL-agentic.md](./foundational%20evaluations/SKILL-agentic.md) | Agent evaluation functions, tool selection accuracy, Strands SDK |
+| 04 — Workload Evals | [workload evals/](./workload%20evals/) | RAG retrieval metrics, faithfulness, guardrails, unified pipelines |
+| 05 — Framework Evals | [framework evals/](./framework%20evals/) | Promptfoo YAML configs, assertions, multi-provider comparison |
 
 ## Facilitator Guide
 

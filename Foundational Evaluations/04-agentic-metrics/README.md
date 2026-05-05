@@ -109,7 +109,7 @@ Uses XML tags for programmatic evaluation:
 ## Files Structure
 
 ```
-├── 03-Agentic-Metrics.ipynb    # Main evaluation notebook
+├── 01-Agentic-Metrics.ipynb    # Main evaluation notebook
 ├── city_pop.csv                # Ground truth dataset
 ├── dataset.json                # Tool selection test cases
 ├── evaluation_results.json     # LLM judge results

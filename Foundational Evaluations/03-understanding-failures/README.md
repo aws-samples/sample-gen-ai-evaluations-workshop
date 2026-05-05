@@ -63,11 +63,11 @@ This module sits at a key point in the workshop — it connects what you've alre
 
 - **Module 02 — Quality Metrics** ([01_LLM_as_Judge_analysis.ipynb](../02-quality-metrics/01_LLM_as_Judge_analysis.ipynb), [03_Evaluating_your_Judge.ipynb](../02-quality-metrics/03_Evaluating_your_Judge.ipynb)): The failure modes you discover here become the criteria for LLM-as-Judge evaluators. The binary pass/fail pattern used in the evaluator bridge section of this module is taught in depth in Module 02's judge calibration notebook.
 
-- **Module 03 — Agentic Metrics** ([03-Agentic-Metrics.ipynb](../03-agentic-metrics/03-Agentic-Metrics.ipynb)): This module uses the same restaurant booking agent traces that Module 03 uses for agentic evaluation. The problem categories you build here directly inform what metrics to track there.
+- **Module 04 — Agentic Metrics** ([01-Agentic-Metrics.ipynb](../04-agentic-metrics/01-Agentic-Metrics.ipynb)): This module uses the same restaurant booking agent traces that Module 04 uses for agentic evaluation. The problem categories you build here directly inform what metrics to track there.
 
 ## Shared Data
 
-The `data/` directory contains `raw_traces.json` — restaurant booking agent conversations also used in Module 03 (Agentic Metrics). This is intentional: you discover the problems in this module, then build the metrics to track them in Module 03. Both modules follow the same agent through the same conversations, giving you a continuous narrative across the workshop.
+The `data/` directory contains `raw_traces.json` — restaurant booking agent conversations also used in Module 04 (Agentic Metrics). This is intentional: you discover the problems in this module, then build the metrics to track them in Module 04. Both modules follow the same agent through the same conversations, giving you a continuous narrative across the workshop.
 
 ## Prerequisites
 
