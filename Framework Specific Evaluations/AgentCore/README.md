@@ -169,6 +169,16 @@ Sample evaluation output:
 
 
 
+## 🚀 Follow-Up: Expert-Level Content
+
+This module covers deploying agents to AgentCore Runtime and running custom evaluations with X-Ray observability. To go deeper, explore the following resources:
+
+- **[Amazon Bedrock AgentCore Samples Repository](https://github.com/awslabs/amazon-bedrock-agentcore-samples)** — The official samples repo includes a dedicated `features/Evaluation` section with deep dives on built-in and custom evaluators for on-demand and online evaluation, plus end-to-end production applications combining multiple AgentCore capabilities.
+- **[Getting Started with Amazon Bedrock AgentCore - Workshop](https://catalog.workshops.aws)** — An official AWS hands-on workshop covering the fundamentals of building and deploying agents with AgentCore.
+- **[Diving Deep into Bedrock AgentCore - Workshop](https://catalog.workshops.aws)** — An advanced AWS workshop that goes beyond the basics into production-grade patterns, identity management, observability, and evaluation at scale.
+
+---
+
 ## 🔒 Optional - Account ID Security & Masking
 
 This repository includes automated security measures to prevent AWS account IDs from being exposed in published notebooks.
