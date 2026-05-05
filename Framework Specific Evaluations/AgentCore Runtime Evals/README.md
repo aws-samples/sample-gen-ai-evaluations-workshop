@@ -144,6 +144,16 @@ Each evaluation returns:
 - [Strands Agents Framework](https://github.com/strands-agents/sdk-python)
 - [Amazon Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
 
+## Follow-Up: Expert-Level Content
+
+This module covers deploying to AgentCore Runtime and using the native AgentCore Evaluations API with built-in evaluators. To go deeper, explore the following resources:
+
+- **[Amazon Bedrock AgentCore Samples Repository](https://github.com/awslabs/amazon-bedrock-agentcore-samples)** — The official samples repo includes a dedicated `features/Evaluation` section with advanced examples of built-in and custom evaluators, on-demand and online evaluation patterns, plus end-to-end production applications.
+- **[Getting Started with Amazon Bedrock AgentCore - Workshop](https://catalog.workshops.aws)** — An official AWS hands-on workshop covering the fundamentals of building and deploying agents with AgentCore.
+- **[Diving Deep into Bedrock AgentCore - Workshop](https://catalog.workshops.aws)** — An advanced AWS workshop that goes beyond the basics into production-grade patterns including evaluation at scale, identity, observability, and policy management.
+
+---
+
 ## Troubleshooting
 
 ### Agent Deployment Issues

@@ -66,3 +66,11 @@ Before executing this notebook, ensure access to Global Claude 4.5 Haiku in your
 - [Strands Evals Documentation](https://strandsagents.com/docs/user-guide/evals-sdk/quickstart/)
 - [Strands Agents GitHub](https://github.com/strands-agents/sdk-python)
 - [Evaluators Reference](https://strandsagents.com/docs/user-guide/evals-sdk/evaluators/)
+
+## Follow-Up: Expert-Level Content
+
+This module covers the fundamentals of output and trajectory evaluation with Strands Evals. To go deeper, explore the following resources:
+
+- **[Strands Agents Evals Repository](https://github.com/strands-agents/evals)** — The full evaluation framework includes advanced capabilities not covered in this workshop: multimodal evaluation (MLLM-as-a-Judge), multi-turn conversation simulation with ActorSimulator, LLM-powered tool simulation with shared state, automated experiment generation from context descriptions, and failure detection with root cause analysis.
+- **[Simulators Guide](https://strandsagents.com/docs/user-guide/evals-sdk/simulators/)** — Detailed documentation on using ActorSimulator for dynamic multi-turn testing and ToolSimulator for controlled tool behavior without live infrastructure.
+- **[Evaluators Reference](https://strandsagents.com/docs/user-guide/evals-sdk/evaluators/)** — Full catalog of built-in evaluators including trace-based evaluators (HelpfulnessEvaluator, FaithfulnessEvaluator, CoherenceEvaluator), session-level evaluators (GoalSuccessRateEvaluator), and multimodal evaluators.
