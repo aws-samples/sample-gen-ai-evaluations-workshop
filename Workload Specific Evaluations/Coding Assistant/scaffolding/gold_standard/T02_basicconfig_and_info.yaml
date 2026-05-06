@@ -1,0 +1,26 @@
+# Gold-standard entry: T02 done WRONG.
+#
+# Hits multiple red flags: adds `logging.basicConfig(...)`, uses
+# `logging.getLogger("kb")` instead of __name__, and uses logger.info
+# instead of debug — all three explicitly listed as fails in the rubric.
+
+pr_slug: T02_basicconfig_and_info
+pr_number: 1004
+pr_title: "T02 anti-pattern: basicConfig + named logger + info level"
+
+rubric_path: ../ground_truth/T02_replace_kb_client_prints_with_logging.md
+diff_path: ./diffs/T02_basicconfig_and_info.diff
+
+human_verdicts:
+  correctness: fail
+  scope_discipline: pass
+  logging_setup: fail
+
+human_red_flags_hit:
+  - "Adds `logging.basicConfig(...)` anywhere in this file."
+  - "Uses `logger.info` or `logger.warning` instead of `debug` — these messages will spam the gateway's logs in production."
+
+notes: |
+  scope_discipline still passes because the diff only touches kb_client.py.
+  But correctness fails (wrong level + wrong logger name) and
+  logging_setup fails (basicConfig in a library module).

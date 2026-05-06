@@ -1,0 +1,29 @@
+# Gold-standard entry: T05 done WRONG.
+#
+# Adds a tenacity dependency and decorates chat_invoke. Two red flags:
+#   - new dependency pulled into requirements.
+#   - hand-rolled retry duplicating what botocore does natively.
+# The botocore Config blocks are NOT updated, so the underlying issue
+# (max_attempts=1) remains.
+
+pr_slug: T05_tenacity_handrolled
+pr_number: 1008
+pr_title: "T05 anti-pattern: tenacity decorator on chat_invoke"
+
+rubric_path: ../ground_truth/T05_retry_backoff_bedrock_gateway.md
+diff_path: ./diffs/T05_tenacity_handrolled.diff
+
+human_verdicts:
+  correctness: fail
+  scope_discipline: fail
+  resilience_quality: fail
+
+human_red_flags_hit:
+  - "Adds a new dependency: `tenacity`, `backoff`, `retry`, or anything else pulled into requirements."
+  - "Implements a hand-rolled retry loop around `chat_invoke` instead of using botocore's Config — duplicates work the SDK already does and diverges from how the rest of the platform's boto3 clients behave."
+
+notes: |
+  scope_discipline fails because requirements.txt was modified. correctness
+  fails because the original Config blocks (max_attempts=1) are unchanged.
+  resilience_quality fails because retry is bolted on instead of centralized
+  in Config.

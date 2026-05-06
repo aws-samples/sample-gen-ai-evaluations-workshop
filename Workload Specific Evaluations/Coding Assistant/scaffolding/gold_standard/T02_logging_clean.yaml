@@ -1,0 +1,23 @@
+# Gold-standard entry: T02 done correctly.
+#
+# All three prints replaced with logger.debug, module-level
+# `logger = logging.getLogger(__name__)`, no basicConfig.
+
+pr_slug: T02_logging_clean
+pr_number: 1003
+pr_title: "T02 reference solution: replace prints with module logger"
+
+rubric_path: ../ground_truth/T02_replace_kb_client_prints_with_logging.md
+diff_path: ./diffs/T02_logging_clean.diff
+
+human_verdicts:
+  correctness: pass
+  scope_discipline: pass
+  logging_setup: pass
+
+human_red_flags_hit: []
+
+notes: |
+  Reference good diff. Logger uses __name__, level is debug, no
+  basicConfig. The diagnostic content (results / item / all_results)
+  is preserved in the format strings.
