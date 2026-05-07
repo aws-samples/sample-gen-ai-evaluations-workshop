@@ -41,9 +41,9 @@ model = BedrockModel(
 )
 ```
 
-## Section 1: The Case Abstraction
+## Section 1: Cases and Output Evaluation
 
-**Concept:** A `Case` is the atomic unit of evaluation — it bundles an input prompt, expected output, optional expected trajectory, and metadata. Cases are typed generics (`Case[InputType, OutputType]`) so evaluators know what they're comparing. Without structured cases, evaluation devolves into ad-hoc spot checks.
+**Concept:** A `Case` is the atomic unit of evaluation — it bundles an input prompt, expected output, optional expected trajectory, and metadata. Cases are typed generics (`Case[InputType, OutputType]`) so evaluators know what they're comparing. Without structured cases, evaluation devolves into ad-hoc spot checks. The `OutputEvaluator` uses an LLM judge to score agent responses against a rubric you define — the rubric is your evaluation contract that tells the judge exactly what "good" means.
 
 **Build:**
 
@@ -65,15 +65,7 @@ test_cases = [
         metadata={"category": "city_info", "city": "Phoenix"}
     ),
 ]
-```
 
-## Section 2: Output Evaluation with LLM-as-Judge
-
-**Concept:** The `OutputEvaluator` uses an LLM judge to score agent responses against a rubric you define. The rubric is your evaluation contract — it tells the judge exactly what "good" means (accuracy thresholds, completeness requirements, format expectations). This decouples evaluation criteria from the agent itself.
-
-**Build:**
-
-```python
 accuracy_evaluator = OutputEvaluator(
     rubric="""
     Evaluate the response based on:
@@ -88,9 +80,9 @@ accuracy_evaluator = OutputEvaluator(
 )
 ```
 
-## Section 3: Task Functions — Connecting Agent to Evaluator
+## Section 2: Task Functions and Running Experiments
 
-**Concept:** A task function bridges your agent and the evaluation harness. It receives a `Case`, runs the agent, and returns the output in the format evaluators expect. Creating a fresh agent per case prevents context contamination between test runs — each evaluation is independent.
+**Concept:** A task function bridges your agent and the evaluation harness. It receives a `Case`, runs the agent, and returns the output in the format evaluators expect. Creating a fresh agent per case prevents context contamination between test runs. An `Experiment` groups cases with evaluators and orchestrates the evaluation run — it handles iteration, error collection, and report generation. The result is a structured report with per-case scores, pass/fail status, and reasoning.
 
 **Build:**
 
@@ -105,15 +97,7 @@ def get_agent_response(case: Case) -> str:
     )
     response = agent(case.input)
     return str(response)
-```
 
-## Section 4: Running Experiments
-
-**Concept:** An `Experiment` groups cases with evaluators and orchestrates the evaluation run. It handles iteration, error collection, and report generation. The result is a structured report with per-case scores, pass/fail status, and reasoning — not just a number, but an explanation of why.
-
-**Build:**
-
-```python
 experiment = Experiment[str, str](
     cases=test_cases,
     evaluators=[accuracy_evaluator]
@@ -123,7 +107,7 @@ reports = experiment.run_evaluations(get_agent_response)
 reports[0].run_display()  # Visual report with scores and reasoning
 ```
 
-## Section 5: Trajectory Evaluation — Judging Tool Usage
+## Section 3: Trajectory Evaluation — Judging Tool Usage
 
 **Concept:** Output correctness doesn't guarantee good agent behavior. An agent might get the right answer through wasteful tool calls or skip tools it should use. The `TrajectoryEvaluator` scores HOW the agent solved the problem — which tools were called, in what order, and whether that sequence was efficient. Use `tools_use_extractor` to capture the actual trajectory from agent messages.
 
@@ -162,9 +146,9 @@ def get_response_with_trajectory(case: Case) -> dict:
     return {"output": str(response), "trajectory": trajectory}
 ```
 
-## Section 6: Custom Evaluators
+## Section 4: Custom Evaluators
 
-**Concept:** When rubric-based LLM judging isn't precise enough, subclass `Evaluator` to implement deterministic checks. Custom evaluators return an `EvaluationOutput` with score, pass/fail, reason, and label. Use these for format validation, regex checks, numeric thresholds — anything where you want exact, reproducible scoring without LLM variance.
+**Concept:** When rubric-based LLM judging isn't precise enough, subclass `Evaluator` to implement deterministic checks. Custom evaluators return a list of `EvaluationOutput` with score, pass/fail, reason, and label. Use these for format validation, regex checks, numeric thresholds — anything where you want exact, reproducible scoring without LLM variance.
 
 **Build:**
 
@@ -176,7 +160,7 @@ from strands_evals.types import EvaluationData, EvaluationOutput
 class XMLFormatEvaluator(Evaluator[str, str]):
     """Check that agent output contains required XML tags."""
     
-    def evaluate(self, evaluation_case: EvaluationData[str, str]) -> EvaluationOutput:
+    def evaluate(self, evaluation_case: EvaluationData[str, str]) -> list[EvaluationOutput]:
         response = evaluation_case.actual_output
         has_response = bool(re.search(r'<response>.*?</response>', response, re.DOTALL))
         has_pop = bool(re.search(r'<pop>\d+</pop>', response))
@@ -193,9 +177,9 @@ class XMLFormatEvaluator(Evaluator[str, str]):
         )]
 ```
 
-## Section 7: Multi-Evaluator Experiments
+## Section 5: Multi-Evaluator Experiments and Persistence
 
-**Concept:** Real agent evaluation is multi-dimensional — accuracy, tool usage, and format compliance are independent axes. Combining evaluators in one experiment gives a holistic view without running the agent multiple times. Each evaluator produces its own report, so you can identify exactly which dimension failed.
+**Concept:** Real agent evaluation is multi-dimensional — accuracy, tool usage, and format compliance are independent axes. Combining evaluators in one experiment gives a holistic view without running the agent multiple times. Each evaluator produces its own report, so you can identify exactly which dimension failed. Saving experiments to files lets you track performance over time, detect regressions after prompt changes, and compare agent versions.
 
 **Build:**
 
@@ -223,16 +207,8 @@ reports = experiment.run_evaluations(get_response_with_trajectory)
 for i, report in enumerate(reports):
     print(f"\nEvaluator {i+1}:")
     report.run_display()
-```
 
-## Section 8: Persisting Experiments for Regression
-
-**Concept:** Evaluation without history is just a snapshot. Saving experiments to files lets you track agent performance over time, detect regressions after prompt changes, and compare agent versions. The `to_file`/`from_file` pattern makes this trivial — serialize after each run, load previous runs for comparison.
-
-**Build:**
-
-```python
-# Save experiment results
+# Save experiment results for regression tracking
 experiment.to_file("agent_evaluation_results.json")
 
 # Load for comparison after agent changes
