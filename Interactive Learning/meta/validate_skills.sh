@@ -59,13 +59,13 @@ while IFS= read -r -d '' f; do
   if [[ "$f" == *framework*SKILL* ]]; then
     grep -qi 'CHALLENGE-deep-dive' "$f" || echo "  WARN: No reference to CHALLENGE-deep-dive.md"
   fi
-done < <(find . -name 'SKILL*.md' -print0)
+done < <(find . -name 'SKILL*.md' -not -path '*/meta/*' -print0)
 
 # Challenge validation
 while IFS= read -r -d '' f; do
   echo "Checking: $f"
   grep -q 'Assessment criteria\|Assessment Criteria\|Criterion' "$f" || { echo "  FAIL: missing scoring rubric"; ERRORS=$((ERRORS + 1)); }
-done < <(find . -name 'CHALLENGE*.md' -print0)
+done < <(find . -name 'CHALLENGE*.md' -not -path '*/meta/*' -print0)
 
 echo ""
 [ "$ERRORS" -eq 0 ] && echo "✅ All SKILL and CHALLENGE files valid." || { echo "❌ $ERRORS error(s) found"; exit 1; }
