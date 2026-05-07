@@ -185,12 +185,12 @@ class XMLFormatEvaluator(Evaluator[str, str]):
         score = sum([has_response, has_pop, has_area]) / 3.0
         missing = [t for t, p in [("<response>", has_response), ("<pop>", has_pop), ("<area>", has_area)] if not p]
         
-        return EvaluationOutput(
+        return [EvaluationOutput(
             score=score,
             test_pass=score >= 0.66,
             reason=f"Missing: {', '.join(missing)}" if missing else "All XML tags present",
             label="complete" if score == 1.0 else "incomplete"
-        )
+        )]
 ```
 
 ## Section 7: Multi-Evaluator Experiments

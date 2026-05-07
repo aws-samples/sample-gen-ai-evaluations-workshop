@@ -1,17 +1,13 @@
 ---
 name: AgentCore Evaluations
-description: Deploy agents to AgentCore Runtime and evaluate them using predefined metrics, CloudWatch log analysis, and the native Evaluations API
+description: Deploy agents to AgentCore Runtime and evaluate them using CloudWatch log analysis, LLM-as-judge scoring, and the native Evaluations API
 ---
 
 # AgentCore Runtime Evaluations
 
-## What You Will Build
+Build an end-to-end agent evaluation pipeline on AWS AgentCore Runtime. You will deploy a Strands-based agent, invoke it to generate traces, extract tool usage from CloudWatch logs, run LLM-as-judge quality assessments, and execute built-in evaluators via the AgentCore Evaluations API.
 
-An end-to-end agent evaluation pipeline on AWS AgentCore Runtime. You will deploy a Strands-based agent, invoke it to generate traces, extract tool usage from CloudWatch logs, run LLM-as-judge quality assessments, and execute built-in evaluators via the AgentCore Evaluations API.
-
-## Why This Matters
-
-AgentCore is an AGENT-FOCUSED framework — it treats the system as a multi-step workflow where tools, reasoning, and orchestration all need evaluation. Unlike single-prompt quality checks, agent evaluation must assess tool selection accuracy, response quality across turns, and operational reliability under managed infrastructure. AgentCore provides native observability and evaluation primitives that eliminate custom instrumentation.
+> **Note:** This module uses `strands-agents` for the deployed agent. Strands is under active development — APIs may change between versions.
 
 ## What This Does NOT Cover
 
@@ -23,23 +19,47 @@ AgentCore is an AGENT-FOCUSED framework — it treats the system as a multi-step
 ## Prerequisites
 
 - AWS account with Bedrock and AgentCore access
-- `strands-agents`, `bedrock-agentcore`, `bedrock-agentcore-starter-toolkit` installed
-- A deployed AgentCore agent (or willingness to deploy one)
 - CloudWatch Logs read access
+- A deployed AgentCore agent (or willingness to deploy one)
+
+## Learning Objectives
+
+1. Deploy a Strands-based agent to AgentCore Runtime and confirm READY status
+2. Invoke the deployed agent with session IDs that generate CloudWatch traces
+3. Extract tool usage from CloudWatch logs and compute selection accuracy
+4. Run LLM-as-judge evaluation producing structured multi-dimensional scores
+5. Execute AgentCore native evaluators via the Evaluations API
+
+## Setup
+
+```bash
+pip install strands-agents strands-agents-bedrock bedrock-agentcore bedrock-agentcore-starter-toolkit boto3
+```
+
+**Project structure:**
+```
+agentcore-evals/
+├── citysearch.py          # Agent entrypoint
+├── requirements.txt       # Runtime dependencies
+└── evaluate.py            # Evaluation harness
+```
 
 ---
 
-## Section 1: Deploy an Agent to AgentCore Runtime
+### Section 1: Deploy and Configure AgentCore Runtime
 
-**Concept:** AgentCore Runtime manages infrastructure for your agent — you provide a Python entrypoint decorated with `@app.entrypoint`, and the toolkit handles containerization, ECR publishing, and endpoint creation. The deployed agent gets automatic CloudWatch observability, which is the foundation for all evaluation in this module.
+**Concept:** AgentCore Runtime manages infrastructure for your agent — you provide a Python entrypoint decorated with `@app.entrypoint`, and the starter toolkit handles containerization, ECR publishing, and endpoint creation. The `configure()` + `launch()` pattern abstracts IAM roles, ECR repos, and Dockerfiles into two calls. You poll `status()` until READY before invoking.
 
 **Build:**
 
 ```python
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from bedrock_agentcore_starter_toolkit import Runtime
 from strands import Agent, tool
 from strands.models.bedrock import BedrockModel
+from boto3.session import Session
 
+# --- Agent definition ---
 app = BedrockAgentCoreApp()
 
 @tool
@@ -55,23 +75,10 @@ agent = Agent(model=model, tools=[web_search])
 @app.entrypoint
 def handler(prompt: str) -> str:
     return str(agent(prompt))
-```
 
----
-
-## Section 2: Configure and Launch to Runtime
-
-**Concept:** The starter toolkit abstracts deployment into two calls: `configure()` sets up IAM roles, ECR repos, and Dockerfiles; `launch()` builds the container and deploys the endpoint. You poll `status()` until READY before invoking.
-
-**Build:**
-
-```python
-from bedrock_agentcore_starter_toolkit import Runtime
-from boto3.session import Session
-
+# --- Deploy ---
 region = Session().region_name
 runtime = Runtime()
-
 runtime.configure(
     entrypoint="citysearch.py",
     auto_create_execution_role=True,
@@ -80,16 +87,15 @@ runtime.configure(
     region=region,
     agent_name="citysearch"
 )
-
 launch_result = runtime.launch(auto_update_on_conflict=True)
 agent_arn = launch_result.agent_arn
 ```
 
 ---
 
-## Section 3: Invoke the Deployed Agent
+### Section 2: Invoke and Extract Tool Usage from Logs
 
-**Concept:** Once deployed, you invoke the agent via `invoke_agent_runtime`. Each invocation requires a unique session ID (≥33 chars) that tags the execution trace in CloudWatch — this session ID is the key that links invocations to their evaluation data.
+**Concept:** Each invocation requires a unique session ID (≥33 chars) that tags the execution trace in CloudWatch. AgentCore logs every tool invocation under `/aws/bedrock-agentcore/runtimes/{agent_id}-{qualifier}`. By filtering logs for a session ID, you extract which tools were called — enabling tool selection accuracy evaluation without custom instrumentation.
 
 **Build:**
 
@@ -98,6 +104,7 @@ import boto3, json, uuid
 
 client = boto3.client('bedrock-agentcore', region_name='us-east-1')
 
+# Invoke
 session_id = f"eval-session-{uuid.uuid4()}"
 response = client.invoke_agent_runtime(
     agentRuntimeArn=agent_arn,
@@ -105,31 +112,16 @@ response = client.invoke_agent_runtime(
     payload=json.dumps({"prompt": "What is the population of Seattle?"}),
     qualifier="DEFAULT"
 )
-
 result = response['response'].read().decode('utf-8')
-```
 
----
-
-## Section 4: Extract Tool Usage from CloudWatch Logs
-
-**Concept:** AgentCore logs every tool invocation to CloudWatch under `/aws/bedrock-agentcore/runtimes/{agent_id}-{qualifier}`. By filtering logs for a session ID, you can extract which tools were called — enabling tool selection accuracy evaluation without custom instrumentation.
-
-**Build:**
-
-```python
-import boto3, json
-
+# Extract tool calls from CloudWatch
 def get_tool_calls(session_id: str, agent_arn: str, qualifier: str = "DEFAULT") -> list:
     logs_client = boto3.client('logs')
     agent_id = agent_arn.split('/')[-1]
     log_group = f"/aws/bedrock-agentcore/runtimes/{agent_id}-{qualifier}"
-
     response = logs_client.filter_log_events(
-        logGroupName=log_group,
-        filterPattern=session_id
+        logGroupName=log_group, filterPattern=session_id
     )
-
     tools = set()
     for event in response['events']:
         try:
@@ -143,11 +135,22 @@ def get_tool_calls(session_id: str, agent_arn: str, qualifier: str = "DEFAULT") 
         except (json.JSONDecodeError, KeyError):
             continue
     return list(tools)
+
+# Compute tool selection accuracy
+def tool_selection_score(expected: list, actual: list) -> dict:
+    if not expected and not actual:
+        return {"precision": 1.0, "recall": 1.0, "f1": 1.0}
+    expected_set, actual_set = set(expected), set(actual)
+    intersection = expected_set & actual_set
+    precision = len(intersection) / len(actual_set) if actual_set else 0.0
+    recall = len(intersection) / len(expected_set) if expected_set else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    return {"precision": precision, "recall": recall, "f1": f1}
 ```
 
 ---
 
-## Section 5: LLM-as-Judge Quality Evaluation
+### Section 3: LLM-as-Judge Quality Evaluation
 
 **Concept:** For dimensions that can't be computed deterministically (helpfulness, accuracy, clarity), you use a stronger model as an evaluator. The pattern: construct a rubric prompt, send the agent's response to the judge model, parse structured scores. This gives you multi-dimensional quality metrics per invocation.
 
@@ -180,32 +183,9 @@ Respond with ONLY a JSON object: {{"helpfulness": N, "accuracy": N, "clarity": N
 
 ---
 
-## Section 6: Tool Selection Accuracy Scoring
+### Section 4: Native Evaluations API
 
-**Concept:** Given expected tools and actual tools (from CloudWatch), compute precision/recall/F1 to quantify whether the agent chose the right tools. This separates "did the agent reason correctly about WHICH tool to use" from "did the tool produce good output."
-
-**Build:**
-
-```python
-def tool_selection_score(expected: list, actual: list) -> dict:
-    if not expected and not actual:
-        return {"precision": 1.0, "recall": 1.0, "f1": 1.0}
-
-    expected_set, actual_set = set(expected), set(actual)
-    intersection = expected_set & actual_set
-
-    precision = len(intersection) / len(actual_set) if actual_set else 0.0
-    recall = len(intersection) / len(expected_set) if expected_set else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-
-    return {"precision": precision, "recall": recall, "f1": f1}
-```
-
----
-
-## Section 7: AgentCore Native Evaluations API
-
-**Concept:** The AgentCore Evaluations API provides built-in evaluators (`Builtin.Helpfulness`, `Builtin.ToolSelectionAccuracy`) that automatically retrieve session spans from CloudWatch and score them. This is the highest-level evaluation primitive — one call replaces manual log retrieval + custom scoring.
+**Concept:** The AgentCore Evaluations API provides built-in evaluators (`Builtin.Helpfulness`, `Builtin.Accuracy`) that automatically retrieve session spans from CloudWatch and score them. This is the highest-level evaluation primitive — one call replaces manual log retrieval + custom scoring.
 
 **Build:**
 
@@ -218,7 +198,7 @@ agent_id = agent_arn.split('/')[-1]
 results = eval_client.run(
     agent_id=agent_id,
     session_id=session_id,
-    evaluators=["Builtin.Helpfulness", "Builtin.ToolSelectionAccuracy"]
+    evaluators=["Builtin.Helpfulness", "Builtin.Accuracy"]
 )
 
 for result in results.get_successful_results():
@@ -227,15 +207,15 @@ for result in results.get_successful_results():
 
 ---
 
-## Section 8: Full Evaluation Harness
+### Section 5: Full Evaluation Harness
 
-**Concept:** Combine all three approaches (CW log extraction, LLM-as-judge, native evaluators) into a single test harness that runs multiple test cases and produces an aggregate scorecard. This is the pattern you reuse for any AgentCore agent.
+**Concept:** Combine all three approaches (CloudWatch log extraction, LLM-as-judge, native evaluators) into a single test harness that runs multiple test cases and produces an aggregate scorecard. This is the pattern you reuse for any AgentCore agent.
 
 **Build:**
 
 ```python
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List
 
 @dataclass
 class TestCase:
@@ -263,9 +243,26 @@ for tc in test_cases:
     tool_score = tool_selection_score(tc.expected_tools, actual_tools)
     quality = evaluate_quality(tc.query, text, "us.anthropic.claude-sonnet-4-20250514-v1:0")
     results.append({"query": tc.query, "tool_f1": tool_score["f1"], **quality})
+
+# Aggregate
+import statistics
+print(f"Mean Tool F1: {statistics.mean(r['tool_f1'] for r in results):.2f}")
+print(f"Mean Accuracy: {statistics.mean(r['accuracy'] for r in results):.1f}/5")
 ```
 
 ---
+
+## Challenges
+
+Build a regression test suite that runs nightly against your deployed agent and alerts on score degradation. Your harness should cover at least 10 test cases across 3+ categories, combine all three evaluation layers, and produce a summary report.
+
+**Assessment criteria:**
+
+- Deploy an agent to AgentCore Runtime and confirm READY status
+- Extract tool usage from CloudWatch logs and compute precision/recall/F1
+- Run LLM-as-judge evaluation producing structured quality scores
+- Execute AgentCore native evaluators (`Builtin.Helpfulness`, `Builtin.Accuracy`) and interpret results
+- Combine all methods into a repeatable test harness with aggregate scoring
 
 ## Wrap-Up
 
@@ -278,17 +275,5 @@ You built a complete AgentCore evaluation pipeline covering three layers:
 | Native | AgentCore Evaluations API | Built-in composite scores |
 
 **Key takeaway:** AgentCore's native observability means you never instrument your agent code for evaluation — traces flow automatically, and the Evaluations API consumes them directly.
-
-## Assessment Criteria
-
-- Deploy an agent to AgentCore Runtime and confirm READY status
-- Invoke the agent with unique session IDs that generate CloudWatch traces
-- Extract tool usage from CloudWatch logs for a given session
-- Compute tool selection precision/recall against expected tools
-- Run LLM-as-judge evaluation producing structured quality scores
-- Execute AgentCore native evaluators and interpret results
-- Combine all methods into a repeatable test harness
-
-## Deep-Dive Challenge
 
 See **CHALLENGE-deep-dive.md** for the Module 05 extension challenge.

@@ -203,7 +203,7 @@ def confidence_based_decision(
 
 Given a new dataset of LLM responses (e.g., customer support answers), implement both evaluation approaches and recommend which to use.
 
-**Success criteria:**
+**Assessment criteria:**
 1. Runs without errors on the provided dataset
 2. Implements both single-judge (structured rubric) and multi-judge jury evaluation
 3. Handles judge disagreement by computing confidence intervals and flagging uncertain cases

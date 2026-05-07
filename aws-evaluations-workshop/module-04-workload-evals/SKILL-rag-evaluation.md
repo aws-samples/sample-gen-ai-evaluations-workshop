@@ -215,14 +215,41 @@ def compare_retrieval_strategies(
 
 1. **Retrieval diagnosis:** Given a RAG system with MAP=0.3 and MRR=0.8, explain what this means about the system's behavior and propose two specific changes to improve MAP without hurting MRR.
 
+**Assessment criteria:**
+- Runs without errors
+- Correctly interprets the MAP/MRR gap as "finds one relevant doc quickly but misses others"
+- Proposes changes that target recall (e.g., query expansion, hybrid search) without degrading first-result ranking
+- Explains the tradeoff between precision and recall in the proposed changes
+- Learner can explain their approach
+
 2. **Rubric design:** Create a custom evaluation rubric for a domain-specific RAG system (e.g., medical, legal, or code documentation) that adds domain-appropriate criteria beyond the generic 5-point rubric.
+
+**Assessment criteria:**
+- Runs without errors
+- Adds at least 2 domain-specific criteria (e.g., citation accuracy for legal, contraindication checking for medical)
+- Criteria are scorable as 0/1 and unambiguous enough for an LLM judge to apply consistently
+- Includes at least one test case demonstrating a score difference between the generic and custom rubric
+- Learner can explain their approach
 
 3. **Multimodal comparison:** Run the same 10 queries against text-only and multimodal retrieval strategies. Identify which query types benefit most from multimodal and explain why.
 
+**Assessment criteria:**
+- Runs without errors
+- Uses at least 10 queries spanning different content types (factual, visual, spatial)
+- Computes precision/recall for both strategies and presents a clear comparison
+- Identifies a pattern in which query types benefit from multimodal (not just "multimodal is better")
+- Learner can explain their approach
+
 ## Wrap-Up
+
+**Key takeaways:**
+- Retrieval metrics (precision, recall, NDCG) isolate whether the problem is "wrong documents" or "wrong generation"
+- MAP and MRR together diagnose systemic retrieval patterns — high MRR + low MAP means "finds one but misses many"
+- LLM-as-a-Judge with a structured 0/1 rubric pinpoints which generation quality dimension is failing
+- Multimodal retrieval comparison reveals content types that text embeddings cannot capture
 
 You can now evaluate RAG systems at every stage — retrieval quality, generation faithfulness, and cross-modal effectiveness. The key diagnostic pattern: start with retrieval metrics to confirm the right documents are found, then use LLM-as-a-Judge to assess generation quality, then compare modality strategies to find coverage gaps.
 
-This module does **NOT** cover: fine-tuning embedding models, reranker evaluation, chunk size optimization experiments, or production monitoring dashboards.
+This skill does **NOT** cover: fine-tuning embedding models, reranker evaluation, chunk size optimization experiments, or production monitoring dashboards.
 
 **Next:** Apply these evaluation patterns in the Module 04 capstone challenge — see `CHALLENGE-capstone.md` for a multi-component RAG evaluation task that combines retrieval scoring, faithfulness assessment, and strategy comparison into a single diagnostic workflow.

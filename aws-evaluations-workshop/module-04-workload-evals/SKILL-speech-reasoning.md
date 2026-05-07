@@ -54,6 +54,8 @@ print("Bedrock access verified")
 
 ## Section 1: Speech Evaluation Concepts
 
+> **Note:** The `S2SEvaluator` class is provided as a utility in the workshop repository. If you don't have a deployed speech application, use the sample trace data in `data/s2s_eval_data.jsonl` to complete these sections.
+
 **Concept:** Speech-to-speech applications produce conversations captured as telemetry spans in CloudWatch. Evaluating them requires three steps: (1) extract traces and reconstruct turn-by-turn conversations, (2) map sessions to validation categories so you know what "correct" looks like, and (3) run an LLM judge that scores each turn against category-specific criteria.
 
 The key insight is that speech interactions have temporal structure — turn order, response latency, and tool call sequences all matter. A text-only evaluation misses these signals. The S2SEvaluator class handles this by preserving span metadata (timestamps, tool calls, session state transitions) alongside the text content.
@@ -207,11 +209,39 @@ def compute_core_metrics(df, expected_col='expected_finding_type'):
 
 1. **Speech Pipeline Extension:** Add a custom scoring dimension to the LLM judge config (e.g., "empathy" or "technical accuracy") and run a comparative evaluation showing how scores change across categories.
 
+**Assessment criteria:**
+- Runs without errors
+- Adds a meaningful scoring dimension with a clear 0/1 or scaled rubric definition
+- Runs evaluation with and without the new dimension and shows score distribution differences
+- Demonstrates that the new dimension captures signal not already covered by existing criteria
+- Learner can explain their approach
+
 2. **AR Boundary Testing:** Create 5 test cases that probe exact numeric boundaries in your AR policy (e.g., "exactly 70 square feet" vs "69.9 square feet"). Predict the expected validation result for each, run them, and explain any mismatches.
+
+**Assessment criteria:**
+- Runs without errors
+- Creates at least 5 test cases targeting numeric boundary conditions in the policy
+- Predicts expected results before running (documented predictions vs actuals)
+- Explains mismatches using the premise/claim translation model rather than dismissing as "bugs"
+- Learner can explain their approach
 
 3. **Context Sensitivity Investigation:** Take one AR test case and run it with three different question phrasings while keeping the answer identical. Document how the validation result changes and explain why based on the premise/claim distinction.
 
+**Assessment criteria:**
+- Runs without errors
+- Uses at least 3 distinct question phrasings with the same answer text
+- Documents the validation result for each and identifies which changed
+- Explains the result differences in terms of how questions establish premises that affect claim validation
+- Learner can explain their approach
+
 4. **Capstone:** See CHALLENGE-capstone.md for the Module 04 capstone that integrates guardrails, structured data, RAG, speech, and reasoning evaluation into a unified assessment pipeline.
+
+**Assessment criteria:**
+- Runs without errors
+- Integrates at least 3 of the 4 evaluation domains from Module 04
+- Produces a unified report or dashboard showing cross-domain metrics
+- Identifies at least one insight that only emerges from combining evaluation approaches
+- Learner can explain their approach
 
 ## Wrap-Up
 

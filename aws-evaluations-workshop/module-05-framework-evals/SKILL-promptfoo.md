@@ -124,7 +124,7 @@ After execution, examine:
 
 Add a fifth classification category ("Billing Questions") to the system. This requires changes across all three files.
 
-**Success criteria:**
+**Assessment criteria:**
 - Evaluation runs without errors with the new category
 - At least 3 new test cases target the Billing Questions category
 - Prompt template explicitly includes the new category in instructions
@@ -145,6 +145,4 @@ Add a fifth classification category ("Billing Questions") to the system. This re
 - CI/CD integration for continuous evaluation
 - Promptfoo's caching and cost optimization strategies
 
-**Next steps:**
-- Module 05-02: Advanced promptfoo assertions and custom scorers
-- Module 05-03: Integrating evaluations into deployment pipelines
+**Next:** See [CHALLENGE-deep-dive.md](./CHALLENGE-deep-dive.md) for advanced assertions, CI integration, and custom scorers.
