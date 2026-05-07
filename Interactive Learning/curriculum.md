@@ -78,19 +78,19 @@ Each module includes SKILL docs (interactive lessons) and CHALLENGE files (integ
 
 | Sub-module | SKILL File | Notes |
 |------------|-----------|-------|
-| 01 Operational Metrics | `module-01-operational-metrics/SKILL.md` | |
-| 02 Quality Metrics | `module-02-quality-metrics/SKILL.md` | |
-| 03 Agentic Metrics | `module-03-agentic-metrics/SKILL.md` | |
-| 04-01 IDP | `module-04-workload-evals/SKILL-structured-data.md` | |
-| 04-02 Guardrails | `module-04-workload-evals/SKILL-guardrails.md` | Covers all 5 guardrails notebooks |
-| 04-03/04 RAG | `module-04-workload-evals/SKILL-rag-evaluation.md` | Covers basic + multimodal RAG |
-| 04-05/06 Speech+AR | `module-04-workload-evals/SKILL-speech-reasoning.md` | Covers speech-to-speech + automated reasoning |
-| 05-01 PromptFoo | `module-05-framework-evals/SKILL-promptfoo.md` | |
-| 05-02/04 AgentCore | `module-05-framework-evals/SKILL-agentcore.md` | Covers metrics, CW evals, and runtime |
-| 05-03 Strands | `module-05-framework-evals/SKILL-strands.md` | |
-| 05-05 DSPy | `module-05-framework-evals/SKILL-dspy.md` | |
-| **Module 04 Capstone** | `module-04-workload-evals/CHALLENGE-capstone.md` | Requires all module-04 SKILLs |
-| **Module 05 Deep-Dive** | `module-05-framework-evals/CHALLENGE-deep-dive.md` | Pick one framework, go deep |
+| 01 Operational Metrics | `./foundational evaluations/SKILL-operational.md` | |
+| 02 Quality Metrics | `./foundational evaluations/SKILL-quality.md` | |
+| 03 Agentic Metrics | `./foundational evaluations/SKILL-agentic.md` | |
+| 04-01 IDP | `./workload evals/SKILL-structured-data.md` | |
+| 04-02 Guardrails | `./workload evals/SKILL-guardrails.md` | Covers all 5 guardrails notebooks |
+| 04-03/04 RAG | `./workload evals/SKILL-rag-evaluation.md` | Covers basic + multimodal RAG |
+| 04-05/06 Speech+AR | `./workload evals/SKILL-speech-reasoning.md` | Covers speech-to-speech + automated reasoning |
+| 05-01 PromptFoo | `./framework evals/SKILL-promptfoo.md` | |
+| 05-02/04 AgentCore | `./framework evals/SKILL-agentcore.md` | Covers metrics, CW evals, and runtime |
+| 05-03 Strands | `./framework evals/SKILL-strands.md` | |
+| 05-05 DSPy | `./framework evals/SKILL-dspy.md` | |
+| **Module 04 Capstone** | `./workload evals/CHALLENGE-capstone.md` | Requires all module-04 SKILLs |
+| **Module 05 Deep-Dive** | `./framework evals/CHALLENGE-deep-dive.md` | Pick one framework, go deep |
 
 ## Setup Instructions
 

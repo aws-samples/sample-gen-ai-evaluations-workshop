@@ -1,373 +1,240 @@
 ---
-name: LLM Quality Metrics - Judge and Jury Evaluation
-description: Build LLM-as-Judge and LLM-as-Jury evaluation systems, compare agreement rates, calculate inter-judge reliability metrics, and recommend which approach to use for different evaluation scenarios.
+name: llm-quality-evaluation
+description: Build LLM-as-Judge and LLM-as-Jury evaluation systems. Activate when asked to "evaluate LLM outputs", "build a judge prompt", "compare judge vs jury", "measure inter-judge agreement", or "add confidence intervals to evaluations".
 ---
 
-In this module you will build two complementary evaluation systems for assessing LLM output quality. First, you'll implement an LLM-as-Judge pattern using structured scoring rubrics and prompt templates. Then you'll extend this into an LLM-as-Jury system with multiple judges, aggregate their scores, and measure inter-judge agreement. By the end, you'll be able to compare both approaches and recommend which to use based on the evaluation context.
+# LLM Quality Evaluation: Judge and Jury Patterns
+
+Build automated evaluation systems that score LLM outputs using structured judge prompts, then scale to multi-judge juries with statistical confidence — so you know *how much* to trust each score.
 
 ## Prerequisites
-
-- Completion of Module 01 (Programmatic Testing fundamentals)
-- AWS account with Amazon Bedrock access
-- Python 3.10+ with boto3, pandas, numpy, matplotlib, seaborn, scipy
-- Basic understanding of prompt engineering
+- Completion of Module 01 (concepts: operational metrics, CloudWatch dashboards, latency tracking)
+- Source notebooks: `../../Foundational Evaluations/02-quality-metrics/01_LLM_as_Judge_analysis.ipynb`, `../../Foundational Evaluations/02-quality-metrics/02_LLM_as_Jury_evaluation_analysis.ipynb`
+- AWS services: Amazon Bedrock (Claude 3.7 Sonnet)
+- Python libraries: boto3, numpy, pandas, matplotlib
 
 ## Learning Objectives
-
-- Implement an LLM-as-Judge evaluation pipeline with structured scoring rubrics
-- Create judge prompt templates that produce consistent, metric-based scores
-- Build an LLM-as-Jury system using multiple judge models
-- Calculate inter-judge agreement rates and reliability metrics
-- Compare Judge vs. Jury approaches and recommend which to deploy
+By the end of this module, you will:
+- Implement a structured LLM-as-Judge evaluation with a multi-criteria scoring rubric
+- Run parallel judge evaluations across a dataset of model responses
+- Build a multi-judge jury system that quantifies inter-judge reliability
+- Calculate bootstrap confidence intervals from jury scores
+- Configure dynamic pass/fail thresholds that adjust for judge disagreement
 
 ## Setup
 
-Install dependencies and configure the environment:
-
 ```python
-!pip install -q pandas seaborn scipy matplotlib boto3
-
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import boto3
-import warnings
-warnings.filterwarnings('ignore')
+import json
+from concurrent.futures import ThreadPoolExecutor
 
-plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
-
-bedrock = boto3.client("bedrock-runtime")
+bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
 JUDGE_MODEL_ID = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
 
 def call_judge_model(prompt: str) -> str:
-    """Call the judge model to evaluate a response."""
-    try:
-        response = bedrock.converse(
-            modelId=JUDGE_MODEL_ID,
-            messages=[{"role": "user", "content": [{"text": prompt}]}],
-            inferenceConfig={"temperature": 0.1, "maxTokens": 1000}
-        )
-        return response["output"]["message"]["content"][0]["text"]
-    except Exception as e:
-        return f"Error: {str(e)}"
+    """Call Bedrock to get a judge evaluation."""
+    response = bedrock.converse(
+        modelId=JUDGE_MODEL_ID,
+        messages=[{"role": "user", "content": [{"text": prompt}]}],
+        inferenceConfig={"maxTokens": 2048, "temperature": 0.0}
+    )
+    return response["output"]["message"]["content"][0]["text"]
 ```
 
-### Section 1: The Problem with Binary Pass/Fail Evaluation
+## Section 1: Designing a Judge Prompt with Scoring Rubric
 
-When evaluating LLM outputs, simple pass/fail judgments hide critical information. A single judge might give a response a 5/5 while another gives it 2/5. Which score should you trust? Binary evaluations are problematic because they can be driven by many factors, making it difficult for a judge to prioritize criteria. Details get lost, leading to false positives and negatives.
+**Concept:** A single LLM evaluating another LLM's output is only as good as its rubric. Vague instructions like "rate quality 1-10" produce inconsistent scores. Structured rubrics with named criteria force the judge to evaluate each dimension independently, producing scores you can decompose and act on.
 
-The solution is to move away from binary pass/fail and switch to a ranking system of custom metrics—and to add more judges for consensus.
-
-**Build: Demonstrate the Trust Problem**
-
-Create a simple judge evaluation and visualize how two judges can disagree on the same response:
+**Build:**
 
 ```python
-customer_question = "What kind of food are you serving in the cafeteria today?"
-model_answer = "Today we are serving chicken fingers, pizza and mixed fruits."
+JUDGE_PROMPT_TEMPLATE = """Evaluate the model response against these criteria:
 
-context = """
-Food|Price
-Pizza|2.00
-Chicken Fingers|6.00
-Mixed Fruits|4.00
+<question>{question}</question>
+<model_response>{response}</model_response>
+<context>{context}</context>
+
+Score each criterion 1-5:
+1. **Data Accuracy**: Are facts correct given the context?
+2. **Calculation Correctness**: Are mathematical operations sound?
+3. **Analytical Depth**: Does it provide insight beyond retrieval?
+4. **Completeness**: Does it address all parts of the question?
+
+Respond in this exact format:
+<scores>
+accuracy: X/5
+calculation: X/5
+depth: X/5
+completeness: X/5
+</scores>
+<reasoning>Your explanation</reasoning>
 """
 
-judge_prompt = f"""You will be given a question about our pirate themed mini golf company's facilities.
-Your task is to evaluate a model's response for accuracy, completeness, and analytical quality.
-
-Here is the question:
-<question>{customer_question}</question>
-
-Here is the model's response:
-<model_response>{model_answer}</model_response>
-
-Here is the context from the data:
-<dataset>{context}</dataset>
-
-If the model response is accurate, complete, and meets analytical quality return "MET CRITERIA", else return "FAIL TO MEET CRITERIA" ONLY.
-"""
-
-response = call_judge_model(judge_prompt)
-print(f"Model response: {response}")
-
-# Visualize disagreement between two judges
-judge_scores = {'Judge A (Model A)': 5, 'Judge B (Model B)': 2}
-
-fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-judges = list(judge_scores.keys())
-scores = list(judge_scores.values())
-colors = ['#3498db', '#e74c3c']
-
-bars = ax.bar(judges, scores, color=colors, alpha=0.7, edgecolor='black', linewidth=2)
-ax.axhline(y=3, color='gray', linestyle='--', label='Pass/Fail Threshold')
-ax.set_ylim(0, 5.5)
-ax.set_ylabel('Score', fontsize=12)
-ax.set_title('Same Response, Different Scores', fontsize=14, fontweight='bold')
-ax.legend()
-plt.tight_layout()
-plt.show()
+def build_judge_prompt(question: str, response: str, context: str = "") -> str:
+    return JUDGE_PROMPT_TEMPLATE.format(
+        question=question, response=response, context=context
+    )
 ```
 
-### Section 2: Judge Reliability Scoring
+## Section 2: Running Judge Evaluations at Scale
 
-Not all AI judges are created equal. Some are reluctant to vary their scores while others swing widely. By profiling judge behavior patterns, we can identify which judges to trust more. High agreement metrics (like Correctness at 1.0) are objective—like judging if a door is open or closed. Low agreement metrics (like Completeness at 0.85) are subjective—like judging if a meal is "complete."
+**Concept:** Evaluating one response is trivial. Evaluating thousands requires parallel execution and structured result parsing. The pattern is: build all prompts first, execute concurrently, then parse structured output into a DataFrame for analysis.
 
-**Build: Calculate Judge Reliability**
-
-Implement a reliability scoring framework that evaluates judges on consistency, discrimination, and centrality:
+**Build:**
 
 ```python
-def calculate_judge_reliability(judge_scores_history):
-    """
-    Calculate reliability score for a judge based on:
-    1. Consistency (low variance)
-    2. Discrimination (uses full scale)
-    3. Centrality (avoiding extreme bias)
-    """
-    reliability_components = {}
+def run_judge_evaluations(responses: list[dict]) -> list[dict]:
+    """Evaluate responses in parallel using the judge prompt."""
+    prompts = [
+        build_judge_prompt(r["question"], r["model_response"], r.get("context", ""))
+        for r in responses
+    ]
 
-    # Consistency (coefficient of variation)
-    cv = np.std(judge_scores_history) / np.mean(judge_scores_history) if np.mean(judge_scores_history) > 0 else 0
-    reliability_components['consistency'] = 1 - min(cv, 1)
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        raw_results = list(executor.map(call_judge_model, prompts))
 
-    # Discrimination (uses multiple scores)
-    unique_scores = len(np.unique(judge_scores_history))
-    reliability_components['discrimination'] = min(unique_scores / 5.0, 1.0)
-
-    # Central tendency (not always too high or too low)
-    mean_score = np.mean(judge_scores_history)
-    distance_from_center = abs(mean_score - 3) / 2
-    reliability_components['centrality'] = 1 - distance_from_center
-
-    reliability_score = np.mean(list(reliability_components.values()))
-    return reliability_score, reliability_components
-
-# Compare two judges
-judge_a_scores = [5, 5, 4, 5, 5, 5, 4, 5, 5, 5]  # Consistent but lacks discrimination
-judge_b_scores = [3, 4, 5, 4, 3, 5, 4, 4, 3, 5]  # More varied, better discrimination
-
-reliability_a, components_a = calculate_judge_reliability(judge_a_scores)
-reliability_b, components_b = calculate_judge_reliability(judge_b_scores)
-
-print(f"Judge A Reliability: {reliability_a:.3f}")
-for k, v in components_a.items():
-    print(f"  {k}: {round(v, 2)}")
-print(f"\nJudge B Reliability: {reliability_b:.3f}")
-for k, v in components_b.items():
-    print(f"  {k}: {round(v, 2)}")
+    parsed = []
+    for raw in raw_results:
+        scores = {}
+        for line in raw.split("\n"):
+            for criterion in ["accuracy", "calculation", "depth", "completeness"]:
+                if criterion in line and "/" in line:
+                    scores[criterion] = int(line.split("/")[0].strip()[-1])
+        parsed.append(scores)
+    return parsed
 ```
 
-### Section 3: From Scores to Confidence (Jury Aggregation)
+## Section 3: Multi-Judge Jury and Reliability Scoring
 
-Instead of just averaging scores, we can use bootstrap confidence intervals to transform point estimates into ranges of trust. When judges agree (scores: 4,4,5), we're more confident than when they disagree (scores: 2,4,5), even if both average similarly. This is the foundation of the LLM-as-Jury approach.
+**Concept:** A single judge can be biased — lenient, harsh, or inconsistent across metrics. LLM-as-Jury uses multiple judges evaluating the same response. But not all judges are equally trustworthy. Reliability scoring profiles each judge on consistency (low variance), discrimination (uses full scale), and centrality (not systematically biased).
 
-**Build: Bootstrap Confidence Intervals**
-
-Implement bootstrap resampling to calculate confidence intervals from multiple judge scores:
+**Build:**
 
 ```python
-def bootstrap_confidence_interval(scores, n_bootstrap=1000, confidence=0.95):
-    """Calculate bootstrap confidence interval for jury scores."""
-    bootstrap_means = []
+def calculate_judge_reliability(scores_history: list[int]) -> dict:
+    """Score a judge's reliability from their evaluation history."""
+    arr = np.array(scores_history)
+    mean = np.mean(arr)
 
-    for _ in range(n_bootstrap):
-        bootstrap_sample = np.random.choice(scores, size=len(scores), replace=True)
-        bootstrap_means.append(np.mean(bootstrap_sample))
+    # Consistency: low coefficient of variation = more reliable
+    cv = np.std(arr) / mean if mean > 0 else 0
+    consistency = 1 - min(cv, 1)
+
+    # Discrimination: uses multiple distinct scores (not all 4s)
+    unique_ratio = len(np.unique(arr)) / 5  # scale is 1-5
+    discrimination = min(unique_ratio, 1.0)
+
+    # Centrality: not systematically extreme
+    centrality = 1 - abs(mean - 3.0) / 2.0
+
+    overall = 0.4 * consistency + 0.35 * discrimination + 0.25 * centrality
+    return {
+        "consistency": round(consistency, 3),
+        "discrimination": round(discrimination, 3),
+        "centrality": round(centrality, 3),
+        "overall_reliability": round(overall, 3)
+    }
+```
+
+## Section 4: Bootstrap Confidence Intervals from Jury Scores
+
+**Concept:** Three judges score a response: 3, 4, 5. The average is 4 — but how confident are you? Bootstrap resampling answers this by simulating thousands of possible jury compositions from your actual scores, producing a confidence interval like "95% confident the true score is between 3.0 and 4.7." Wide intervals mean judges disagree; narrow intervals mean you can trust the score.
+
+**Build:**
+
+```python
+def bootstrap_confidence_interval(
+    scores: list, n_bootstrap: int = 1000, confidence: float = 0.95
+) -> tuple[float, float, float]:
+    """Calculate bootstrap CI for jury scores."""
+    scores = np.array(scores)
+    bootstrap_means = [
+        np.mean(np.random.choice(scores, size=len(scores), replace=True))
+        for _ in range(n_bootstrap)
+    ]
 
     alpha = 1 - confidence
-    lower_percentile = (alpha / 2) * 100
-    upper_percentile = (1 - alpha / 2) * 100
-
-    ci_lower = np.percentile(bootstrap_means, lower_percentile)
-    ci_upper = np.percentile(bootstrap_means, upper_percentile)
-
-    return np.mean(scores), ci_lower, ci_upper, bootstrap_means
-
-# Three judges score a response
-example_scores = [4, 5, 4]
-mean_score, ci_lower, ci_upper, bootstrap_dist = bootstrap_confidence_interval(example_scores)
-
-print(f"Mean Score: {mean_score:.2f}")
-print(f"95% CI: [{ci_lower:.2f}, {ci_upper:.2f}]")
-
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-ax1.bar(range(len(example_scores)), example_scores, color='steelblue', alpha=0.7)
-ax1.axhline(y=mean_score, color='red', linestyle='-', linewidth=2, label=f'Mean: {mean_score:.2f}')
-ax1.set_title('Original Judge Scores', fontweight='bold')
-ax1.legend()
-
-ax2.hist(bootstrap_dist, bins=30, alpha=0.7, color='green', edgecolor='black')
-ax2.axvline(x=ci_lower, color='orange', linestyle='--', linewidth=2)
-ax2.axvline(x=ci_upper, color='orange', linestyle='--', linewidth=2)
-ax2.axvspan(ci_lower, ci_upper, alpha=0.2, color='orange', label=f'95% CI: [{ci_lower:.2f}, {ci_upper:.2f}]')
-ax2.set_title('Bootstrap Confidence Interval', fontweight='bold')
-ax2.legend()
-plt.tight_layout()
-plt.show()
+    ci_lower = np.percentile(bootstrap_means, (alpha / 2) * 100)
+    ci_upper = np.percentile(bootstrap_means, (1 - alpha / 2) * 100)
+    return float(np.mean(scores)), float(ci_lower), float(ci_upper)
 ```
 
-### Section 4: Agreement Rate Calculation
+## Section 5: Dynamic Thresholds — When Jury Beats Single Judge
 
-The key metric for a jury system is the agreement rate between judges. High agreement means the evaluation is objective and reliable. Low agreement signals subjectivity that requires additional buffer zones. We measure this per-metric to understand which dimensions of quality are most contested.
+**Concept:** Fixed pass/fail thresholds ignore uncertainty. A score of 3.1 with tight agreement (CI: 3.0–3.2) is genuinely passing. A score of 3.1 with wide disagreement (CI: 2.0–4.2) is unreliable. Dynamic thresholds adjust upward when judges disagree, preventing false positives. This is precisely when a jury beats a single judge: when you need to *quantify* how much to trust the evaluation.
 
-**Build: Calculate Agreement Rates Across Metrics**
-
-```python
-def calculate_agreement_rate(scores_matrix, threshold=1):
-    """
-    Calculate pairwise agreement rate for a jury.
-    scores_matrix: list of lists, each inner list is one judge's scores for N items.
-    threshold: max difference to count as 'agreement'.
-    """
-    n_judges = len(scores_matrix)
-    n_items = len(scores_matrix[0])
-    agreements = 0
-    comparisons = 0
-
-    for item_idx in range(n_items):
-        for i in range(n_judges):
-            for j in range(i + 1, n_judges):
-                comparisons += 1
-                if abs(scores_matrix[i][item_idx] - scores_matrix[j][item_idx]) <= threshold:
-                    agreements += 1
-
-    return agreements / comparisons if comparisons > 0 else 0
-
-# Simulate jury scores across metrics
-np.random.seed(42)
-metrics = ['Correctness', 'Completeness', 'Relevance', 'Coherence']
-n_items = 20
-n_judges = 3
-
-results = {}
-for metric in metrics:
-    base_scores = np.random.choice([3, 4, 5], size=n_items, p=[0.2, 0.5, 0.3])
-    judge_scores = []
-    for j in range(n_judges):
-        noise = np.random.normal(0, 0.3 if metric != 'Completeness' else 0.7, size=n_items)
-        scores = np.clip(np.round(base_scores + noise), 1, 5).astype(int)
-        judge_scores.append(scores.tolist())
-    results[metric] = calculate_agreement_rate(judge_scores)
-
-print("Agreement Rates by Metric:")
-for metric, rate in sorted(results.items(), key=lambda x: x[1]):
-    print(f"  {metric}: {rate:.2f}")
-```
-
-### Section 5: Judge vs. Jury — When to Use Which
-
-The single-judge approach is faster and cheaper but vulnerable to bias and inconsistency. The jury approach provides confidence intervals and catches disagreement but costs more. The decision depends on the stakes of the evaluation, the subjectivity of the metrics, and the budget.
-
-Use a single judge when: metrics are objective (factual correctness), speed matters, and the judge has high reliability scores. Use a jury when: metrics are subjective (completeness, style), high-stakes decisions depend on the evaluation, or you need confidence intervals for reporting.
-
-**Build: Compare Both Approaches on the Same Dataset**
+**Build:**
 
 ```python
-def compare_judge_vs_jury(responses, context_list, n_jury=3):
-    """Run both single-judge and jury evaluation, compare results."""
-    single_judge_scores = []
-    jury_scores = []
-    jury_confidence_widths = []
+def confidence_based_decision(
+    scores: list, base_threshold: float = 3.0, confidence_level: float = 0.95
+) -> dict:
+    """Make pass/fail decision accounting for judge disagreement."""
+    mean, ci_low, ci_high = bootstrap_confidence_interval(scores, confidence=confidence_level)
+    ci_width = ci_high - ci_low
 
-    for i, (resp, ctx) in enumerate(zip(responses, context_list)):
-        # Single judge
-        single_score = np.random.choice([3, 4, 5], p=[0.1, 0.4, 0.5])
-        single_judge_scores.append(single_score)
+    # Widen threshold when judges disagree
+    adjusted_threshold = base_threshold + (ci_width * 0.5)
 
-        # Jury of n judges
-        jury = [np.clip(single_score + np.random.normal(0, 0.5), 1, 5) for _ in range(n_jury)]
-        mean, ci_low, ci_high, _ = bootstrap_confidence_interval(jury)
-        jury_scores.append(mean)
-        jury_confidence_widths.append(ci_high - ci_low)
-
-    agreement = np.mean([1 if abs(s - j) <= 0.5 else 0
-                         for s, j in zip(single_judge_scores, jury_scores)])
-
-    print(f"Agreement Rate (Judge vs Jury mean): {agreement:.2%}")
-    print(f"Average Jury Confidence Width: {np.mean(jury_confidence_widths):.2f}")
-    print(f"\nRecommendation:")
-    if agreement > 0.85:
-        print("  → Single judge is sufficient for this task (high agreement).")
+    if ci_low >= base_threshold:
+        decision, conf = "PASS", 0.95
+    elif ci_high < base_threshold:
+        decision, conf = "FAIL", 0.95
+    elif mean >= adjusted_threshold:
+        decision, conf = "PASS", 0.7
     else:
-        print("  → Use jury approach (significant disagreement detected).")
+        decision, conf = "FAIL", 0.7
 
-# Simulate
-responses = [f"Response {i}" for i in range(30)]
-contexts = [f"Context {i}" for i in range(30)]
-compare_judge_vs_jury(responses, contexts)
+    return {
+        "decision": decision,
+        "confidence": conf,
+        "mean_score": round(mean, 2),
+        "ci": (round(ci_low, 2), round(ci_high, 2)),
+        "adjusted_threshold": round(adjusted_threshold, 2),
+        "judges_agree": ci_width < 1.0
+    }
 ```
 
 ## Challenges
 
-### Challenge 1: Build a Structured LLM-as-Judge
+### Challenge: End-to-End Judge vs. Jury Evaluation
 
-Write a judge prompt template and evaluation function that scores LLM responses on a multi-dimensional rubric. The judge should evaluate responses to customer support questions for a retail company.
+Given a new dataset of LLM responses (e.g., customer support answers), implement both evaluation approaches and recommend which to use.
 
-**Success criteria:**
-- Judge prompt includes at least 3 scoring dimensions (e.g., Correctness, Completeness, Relevance) each scored 1–5
-- Prompt constrains the judge to output structured scores (e.g., XML tags or JSON) with a brief justification per dimension
-- Evaluation function calls Bedrock with `temperature=0.1`, parses the structured output, and returns a dict of dimension scores
-- Run the judge on at least 5 different question/answer pairs and print a summary table of scores per dimension
+**Assessment criteria:**
+1. Runs without errors on the provided dataset
+2. Implements both single-judge (structured rubric) and multi-judge jury evaluation
+3. Handles judge disagreement by computing confidence intervals and flagging uncertain cases
+4. Uses an appropriate multi-criteria scoring rubric (not binary pass/fail)
+5. Learner explains when jury evaluation beats a single judge — with evidence from their own results (e.g., "jury caught 3 false positives the single judge missed because CI crossed threshold")
 
-### Challenge 2: Calculate Judge Reliability
-
-Extend the `calculate_judge_reliability` function from Section 2 by adding a 4th reliability component: **bias detection** (measuring whether a judge systematically scores higher or lower than peers). Profile a judge's behavior across multiple evaluations.
-
-**Success criteria:**
-- Function accepts a list of scores from a single judge and returns a reliability score (0–1) with component breakdowns
-- Consistency component uses coefficient of variation (lower CV = higher consistency)
-- Discrimination component measures how many unique score values the judge uses relative to the scale
-- Run the same 5 question/answer pairs through the judge 3 times each and compute reliability from the 15 scores
-- Print reliability score and explain whether this judge is trustworthy
-
-### Challenge 3: Build an LLM-as-Jury System
-
-Extend your single-judge into a jury of 3 judges using different models or temperature settings. Implement **weighted jury voting** where each judge's score is weighted by their reliability score from Challenge 2, and aggregate using bootstrap confidence intervals.
-
-**Success criteria:**
-- Jury uses at least 2 distinct Bedrock models (e.g., Nova Pro and Claude Haiku) or the same model at different temperatures
-- Each jury member scores the same 5 responses on the same rubric from Challenge 1
-- Bootstrap confidence interval function resamples jury scores 1000 times and returns mean, 95% CI lower, and 95% CI upper
-- Print a comparison table: response ID, single-judge score, jury mean, CI width
-- Identify which responses have the widest confidence intervals and explain why
-
-### Challenge 4: Agreement Rate Analysis and Recommendation
-
-Calculate pairwise agreement rates across your jury members for each scoring dimension. Produce a written recommendation on when to use single-judge vs. jury evaluation.
-
-**Success criteria:**
-- Agreement rate function computes pairwise agreement (scores within ±1) for each dimension across all jury members
-- Print agreement rates per dimension and identify which dimensions are most/least contested
-- Written recommendation (3–5 sentences) addresses: cost tradeoff, when jury adds value, which dimensions need jury consensus
-- Recommendation references specific agreement rate numbers from your results
-
-### Challenge 5: Full Judge and Jury Evaluation Pipeline
-
-Given a new dataset of LLM outputs (at least 20 responses), implement both a single-judge and a jury evaluation pipeline. Compare agreement rates across at least 3 metrics, handle judge disagreement with confidence intervals, and produce a written recommendation on which approach to use.
-
-**Success criteria:**
-- Pipeline runs without errors on the provided dataset
-- Implements both single-judge and multi-judge (jury) evaluation patterns
-- Handles judge disagreement using bootstrap confidence intervals or equivalent
-- Uses an appropriate multi-dimensional scoring rubric (at least 3 metrics)
-- Learner explains when jury evaluation beats single-judge evaluation and why
-
-### Tips
-
-- Use `temperature=0.1` for judges to maximize consistency; use `temperature=0.7` only if you want to test variance
-- The `bootstrap_confidence_interval` function from Section 3 is a good starting point for Challenge 3
-- Wide confidence intervals signal subjective dimensions — these are where jury evaluation adds the most value
-- Keep your test dataset consistent across all exercises so results are comparable
+**Starter structure:**
+```python
+# 1. Define your rubric (adapt criteria to your domain)
+# 2. Run single-judge evaluation across all responses
+# 3. Run 3-judge jury on the same responses
+# 4. Compare: where do single-judge and jury disagree?
+# 5. For disagreements, show CI width and threshold adjustment
+# 6. Recommend: single judge (fast, cheap) vs jury (reliable, costly)
+```
 
 ## Wrap-Up
 
-In this module you built two evaluation systems—LLM-as-Judge for fast, single-model scoring and LLM-as-Jury for robust, multi-model consensus. You learned to measure judge reliability, calculate agreement rates, and use confidence intervals to quantify uncertainty in evaluations.
+**Key takeaways:**
+- Structured rubrics with named criteria produce decomposable, actionable scores
+- Bootstrap confidence intervals transform point estimates into ranges of trust
+- Dynamic thresholds prevent false positives when judges disagree — this is the core advantage of jury over single judge
 
-**Feedback:** How did this module go? What would you improve? Please share your thoughts.
+**What this does NOT cover:**
+- Human-in-the-loop calibration workflows
+- Cost optimization for multi-judge systems (token budgets)
+- Fine-tuning judge models on domain-specific rubrics
+- RAG pipeline construction (covered in Module 01 context section)
+- Statistical tests beyond bootstrap (Krippendorff's alpha, Cohen's kappa)
 
-**Profile update:** Consider adding "LLM Evaluation Systems" and "Inter-Judge Reliability" to your skills profile.
-
-**Next module:** Module 03 explores automated evaluation pipelines at scale, including continuous monitoring and drift detection.
+**Next steps:**
+- Module 03: Agentic Metrics (evaluating multi-step agent behavior)
+- Extend jury to weighted voting using reliability scores from Section 3
+- Build a monitoring dashboard (Module 01) tracking judge agreement over time

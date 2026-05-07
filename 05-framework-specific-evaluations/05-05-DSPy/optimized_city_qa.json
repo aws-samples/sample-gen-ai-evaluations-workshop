@@ -1,0 +1,47 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [
+    {
+      "augmented": true,
+      "question": "What is the population of New York, NY?",
+      "answer": "8335897"
+    },
+    {
+      "augmented": true,
+      "question": "What is the population density (people per square mile) of New York, NY?",
+      "answer": "27016"
+    },
+    {
+      "augmented": true,
+      "question": "What is the population of Los Angeles, CA?",
+      "answer": "3897503"
+    },
+    {
+      "augmented": true,
+      "question": "What is the population of Chicago, IL?",
+      "answer": "2693976"
+    }
+  ],
+  "signature": {
+    "instructions": "Answer factual questions about US cities using your knowledge.",
+    "fields": [
+      {
+        "prefix": "Question:",
+        "description": "A question about a US city's population or demographics"
+      },
+      {
+        "prefix": "Answer:",
+        "description": "A precise numeric answer to the question"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.11",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

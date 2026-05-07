@@ -1,66 +1,46 @@
 ---
-name: "Promptfoo Evaluation Framework"
-description: "Use when learner needs to set up promptfoo YAML configs, define test cases with assertions, run eval CLI commands, and compare model outputs across providers using Amazon Bedrock"
+name: promptfoo-basic-evaluation
+description: Set up and run your first promptfoo evaluation against Amazon Bedrock models. Activate when asked to "evaluate prompts with promptfoo", "set up promptfoo", "run model evaluations", "compare LLM outputs", or "test prompt quality".
 ---
 
-# Promptfoo Evaluation Framework
+# Basic Promptfoo Evaluation Setup and Execution
 
-Promptfoo is an **eval-focused framework** that treats the model as a function: you define inputs, send them through a prompt template to one or more providers, and compare the outputs against expected results. Unlike agent frameworks that orchestrate multi-step workflows, promptfoo focuses purely on the input→output evaluation loop. In this skill, you will build a complete evaluation pipeline—from YAML configuration through test execution—for an email classification system using Amazon Bedrock. By the end, you will be able to configure providers, write assertion-based test cases, run evaluations from the CLI, and interpret pass/fail results across multiple models.
+Build a complete promptfoo evaluation pipeline that tests an email classification prompt against multiple Bedrock models and validates outputs with assertions. Promptfoo treats models as functions (input→output), making it an eval-focused framework distinct from orchestration tools.
 
 ## Prerequisites
-
-- Completed Module 01 (evaluation fundamentals and terminology)
-- Completed Module 02 (test case design patterns)
-- AWS account with Amazon Bedrock model access (Nova Lite, Claude 3.5 Haiku)
-- Node.js installed (for npm-based promptfoo installation)
-- Familiarity with YAML syntax and CSV files
+- Completion of foundational prompt engineering modules (concepts: prompt templates, model invocation, Bedrock access)
+- Source notebook: `../../Framework Specific Evaluations/Prompt Foo/01 Promptfoo basic.ipynb`
+- AWS services: Amazon Bedrock (Nova Lite, Claude 3.5 Haiku)
+- Tools: Node.js (for `npm install -g promptfoo`)
 
 ## Learning Objectives
-
-- Configure a promptfoo YAML evaluation file specifying prompts, providers, and test cases
-- Write test cases with expected-output assertions in CSV format
-- Execute evaluations using the promptfoo CLI and interpret pass/fail results
-- Compare model performance across multiple Bedrock providers in a single evaluation run
+By the end of this module, you will:
+- Configure a promptfoo evaluation pipeline with YAML config, prompt files, and test datasets
+- Execute evaluations against multiple Bedrock providers simultaneously
+- Define test cases with expected outputs and interpret pass/fail assertion results
+- Compare model performance across classification categories
 
 ## Setup
 
-Install promptfoo globally via npm:
+```python
+# Install promptfoo CLI globally
+# Run in terminal or notebook cell:
+# !npm install -g promptfoo --loglevel=error --no-fund
 
-```bash
-npm install -g promptfoo --loglevel=error --no-fund
+# Project structure you'll create:
+# ./prompts.py            - Prompt template functions
+# ./dataset.csv           - Test cases with expected outputs
+# ./promptfooconfig.yaml  - Evaluation configuration
 ```
 
-Verify the installation:
+## Section 1: Prompt Template Design
 
-```bash
-promptfoo --version
-```
+**Concept:** Promptfoo loads prompts from Python functions, enabling version control, reuse, and parameterization. Each function receives variables from test cases and returns the complete prompt string. This separation keeps prompt logic independent of evaluation config.
 
-Create a working directory for this module:
-
-```bash
-mkdir -p ~/promptfoo-eval && cd ~/promptfoo-eval
-```
-
-Confirm your AWS credentials are configured and you have Bedrock model access in your target region (us-west-2 or us-east-1).
-
----
-
-### Section 1: Prompt Templates as Python Functions
-
-**Concept**
-
-Before you can evaluate a model, you need a repeatable way to format inputs into prompts. Promptfoo supports prompt templates defined as Python functions, which gives you modularity—your prompt logic lives in code, separate from configuration. This separation means you can version-control prompts independently, reuse them across evaluations, and swap them without touching your test cases.
-
-The function receives a variable (the input) and returns the fully-formatted prompt string. Promptfoo calls this function for each test case, injecting the test variable automatically.
-
-**Build**
-
-Create a file called `prompts.py` with the classification prompt:
+**Build:**
 
 ```python
 # prompts.py
-
 def classify_email(email_content):
     return f"""You are an AI assistant for GlobalMart's customer support team. Your task is to classify the following email into one of these categories: Order Issues, Product Inquiries, Technical Support, or Returns/Refunds.
 
@@ -71,21 +51,11 @@ Provide your classification as a single word or phrase, choosing from the catego
 Classification:"""
 ```
 
-This function takes `email_content` as input and returns a structured prompt that constrains the model to output only a category label.
+## Section 2: Test Case Dataset
 
----
+**Concept:** Promptfoo reads test cases from CSV files where column names map to prompt variables. The special `__expected` column defines the ground-truth label for automatic assertion. This input→expected-output pattern is the core of eval-focused testing: you define what correct looks like, then measure how often the model gets there.
 
-### Section 2: Test Cases with Expected Outputs
-
-**Concept**
-
-Evaluations are only as good as your test data. Promptfoo uses a convention where test cases define input variables and expected outputs. When you store test cases in a CSV file, the column `__expected` (double underscore prefix) tells promptfoo what the correct output should be. At evaluation time, promptfoo compares the model's actual response against this expected value.
-
-This is the core of the eval-focused paradigm: you define the ground truth, run the model, and measure how often reality matches expectation. The CSV format scales well—you can add hundreds of test cases without changing any code or configuration.
-
-**Build**
-
-Create a file called `dataset.csv` with labeled email examples:
+**Build:**
 
 ```csv
 email_content,__expected
@@ -101,21 +71,11 @@ email_content,__expected
 "What's your return policy for electronics?",Returns/Refunds
 ```
 
-Each row is one test case. The `email_content` column maps to the variable in your prompt function. The `__expected` column is the assertion target.
+## Section 3: YAML Configuration
 
----
+**Concept:** The `promptfooconfig.yaml` ties together prompts, providers, and tests into a single evaluation run. You can test the same prompt against multiple models in one pass — critical for model selection decisions. The config is the orchestration layer of the eval pipeline.
 
-### Section 3: YAML Configuration — Bringing It Together
-
-**Concept**
-
-The `promptfooconfig.yaml` file is the central orchestration point. It declares four things: a description of the evaluation, which prompt functions to use, which model providers to test against, and where to find test cases. This single file defines your entire evaluation run.
-
-The provider configuration is where promptfoo's multi-model comparison shines. You can list multiple Bedrock models and promptfoo will run every test case against every provider, producing a side-by-side comparison matrix. This lets you answer questions like "Does Nova Lite classify as accurately as Haiku 3.5?" in a single command.
-
-**Build**
-
-Create `promptfooconfig.yaml`:
+**Build:**
 
 ```yaml
 description: "GlobalMart Email Classification Evaluation"
@@ -138,152 +98,51 @@ tests:
   - file://dataset.csv
 ```
 
-Key structure:
-- `prompts` — references the Python function using `filename:function_name` syntax
-- `providers` — each entry specifies a Bedrock model ID, a human-readable label, and region config
-- `tests` — points to the CSV file using the `file://` protocol
+## Section 4: Running and Interpreting Evaluations
 
----
+**Concept:** The `promptfoo eval` command executes your full test matrix (prompts × providers × test cases) and reports pass/fail per assertion. The `--no-cache` flag ensures fresh model calls each run — important during development when you need to observe variance. Results can be shared via `promptfoo share` for team collaboration.
 
-### Section 4: Running Evaluations and Interpreting Results
-
-**Concept**
-
-With configuration, prompts, and test cases in place, you execute the evaluation from the CLI. Promptfoo processes each test case through each provider, compares outputs to expected values, and reports pass/fail counts. The CLI flags control caching behavior and output formatting.
-
-Understanding the results means looking at overall accuracy (what percentage passed), per-category performance (are some categories harder?), and per-provider differences (which model is more reliable?). This is where the eval-focused approach pays off—you get quantitative answers, not anecdotal impressions.
-
-**Build**
-
-Run the evaluation:
+**Build:**
 
 ```bash
+# Run evaluation (fresh results, no progress bar for notebook compatibility)
 promptfoo eval --no-progress-bar --no-cache
+
+# Share results (requires free promptfoo account — one-time setup)
+# promptfoo auth login --host https://api.promptfoo.app --api-key YOUR_KEY
+# promptfoo share
 ```
 
-Flag reference:
-- `--no-progress-bar` — cleaner output in notebook/script environments
-- `--no-cache` — forces fresh API calls (no cached responses from prior runs)
-
-After the run completes, promptfoo prints a results table showing each test case, the model output, and whether it matched the expected value.
-
-To share results or view them in a web UI:
-
-```bash
-promptfoo share
-```
-
-This generates a unique URL with an interactive results viewer showing the full comparison matrix.
-
-Examine the output for:
-1. **Overall accuracy** — what percentage of test cases passed per provider?
-2. **Category patterns** — are certain categories consistently misclassified?
-3. **Provider differences** — does one model outperform the other on specific categories?
-
----
+After execution, examine:
+1. **Overall accuracy** — percentage of emails correctly classified per model
+2. **Per-category performance** — which categories each model handles best
+3. **Misclassification patterns** — systematic errors revealing prompt weaknesses
 
 ## Challenges
 
-### Challenge: Build a Multi-Category Product Evaluation
+### Challenge 1: Extend the Evaluation Pipeline
 
-Design and run a promptfoo evaluation for a **new domain** (not email classification). Choose a text classification or extraction task relevant to your work, configure at least two Bedrock providers, and write a minimum of 8 test cases with expected outputs.
+Add a fifth classification category ("Billing Questions") to the system. This requires changes across all three files.
 
 **Assessment criteria:**
+- Evaluation runs without errors with the new category
+- At least 3 new test cases target the Billing Questions category
+- Prompt template explicitly includes the new category in instructions
+- Learner can explain why adding a category might reduce accuracy on existing categories and how to measure that
 
-1. Evaluation runs without errors using `promptfoo eval`
-2. YAML config correctly references a custom prompt function and at least two providers
-3. Test cases use the `__expected` column convention with at least 8 distinct inputs
-4. Results demonstrate comparison across providers with pass/fail reporting
-5. Learner can explain their choice of categories, why certain test cases were included, and what the results reveal about provider differences
-
-### Challenge: Add Custom Assertions
-
-Extend your test cases with assertion types beyond exact match. Add at least 3 test cases that use `contains`, `not-contains`, or regex-based assertions to validate output format and content.
-
-**Success criteria:**
-- At least 3 test cases in `dataset.csv` or a separate YAML test file use non-exact assertions
-- At least one `contains` assertion verifies the output includes a required keyword
-- At least one `not-contains` or `icontains-none` assertion verifies the output excludes unwanted content (e.g., explanations, apologies)
-- Re-run `promptfoo eval` and show that the new assertions produce meaningful pass/fail results
-- Explain why format assertions matter in addition to correctness assertions
-
-**Tip:** promptfoo supports assertion types like `contains`, `icontains`, `not-contains`, `is-json`, `regex`, and `javascript` — see promptfoo docs for the full list.
-
-### Challenge: Analyze Results and Iterate
-
-Examine your evaluation results, identify failure patterns, modify your prompt to address the most common failure mode, and re-run to show improvement.
-
-**Success criteria:**
-- Identify the category or assertion type with the lowest pass rate from prior results
-- Modify `prompts.py` to address the failure (e.g., add few-shot examples, clarify category definitions, add output format constraints)
-- Re-run `promptfoo eval` with the updated prompt
-- Print a before/after comparison: category, old pass rate, new pass rate
-- Explain what you changed in the prompt and why it helped (or didn't)
-
----
-
-## Deep-Dive Challenge
-
-PromptFoo is an **eval-focused** framework — it treats the model as a function (input→output) and evaluates response quality across test cases. This deep-dive pushes you beyond notebook-level usage into production-grade evaluation patterns.
-
-### Workflow
-
-| Stage | What you implement |
-|---|---|
-| Test suite definition | 10+ test cases with inputs, expected outputs, and edge cases |
-| Metric configuration | 3+ metrics (at least 1 custom beyond built-in) |
-| Execution | Run eval suite against a live model endpoint |
-| Analysis | Score distribution, failure clustering, threshold tuning |
-| Iteration | Modify prompts or config based on results, re-run, show improvement |
-
-### "Beyond" Examples for PromptFoo
-
-- Custom JS/Python assertion provider
-- Multi-model tournament
-- CI integration with pass/fail gates
-
-### Scoring Rubric
-
-| Tier | Points | Criteria |
-|---|---|---|
-| **Functional** | 60-69 | Complete workflow runs end-to-end; uses only notebook-level features; results are valid |
-| **Extended** | 70-84 | Adds 1 capability not in notebook; clear justification for the extension |
-| **Advanced** | 85-94 | Adds 2+ capabilities; demonstrates iteration (before/after comparison); addresses a real evaluation gap |
-| **Exceptional** | 95-100 | Novel approach; production-quality output (CI-ready, dashboarded, or automated); teaches the reviewer something new |
-
-### Assessment Criteria
-
-| Criterion | Weight | Description |
-|---|---|---|
-| Complete workflow execution | 25% | All stages implemented and runnable; produces valid output |
-| Beyond-notebook features | 25% | Number and quality of capabilities not covered in source notebook |
-| Justification & analysis | 20% | Why each metric/feature was chosen; what evaluation gap it addresses |
-| Iteration evidence | 15% | Before/after comparison showing the pipeline caught or improved something |
-| "What was left out" | 10% | Identifies limitations; names what they'd need to cover them |
-| Code quality & documentation | 5% | Readable, commented, reproducible |
-
-### Tips
-
-1. **Start with the notebook** — get it running, then extend one piece at a time.
-2. **Define your "beyond" early** — decide what you're adding before you start coding.
-3. **Document as you go** — capture why you chose each metric and what gap it fills.
-4. **Show iteration** — run your eval, change something, re-run, and compare results. This is the strongest signal of understanding.
-5. **Name your limitations** — the rubric rewards honesty about what's missing.
-
----
+> **Deep-dive challenge:** See `CHALLENGE-deep-dive.md` in this directory for an extended version that explores assertion types, custom scorers, and threshold-based pass criteria.
 
 ## Wrap-Up
 
-You have built a complete promptfoo evaluation pipeline: prompt templates as Python functions, CSV-based test cases with assertions, YAML configuration orchestrating multiple Bedrock providers, and CLI execution with results interpretation.
+**Key takeaways:**
+- Promptfoo is an eval-focused framework: define inputs, expected outputs, and let it measure model performance as a function
+- YAML config + Python prompts + CSV test cases form a portable, version-controllable evaluation pipeline
+- Multi-provider testing in a single run enables direct model comparison without code changes
 
-Key takeaways:
-- Promptfoo treats evaluation as input→output comparison, making it ideal for classification, extraction, and formatting tasks
-- The YAML config is the single source of truth for an evaluation run
-- Multi-provider comparison reveals model differences without writing custom comparison code
-- The `__expected` convention turns test cases into automated assertions
+**What this does NOT cover:**
+- Custom assertion functions (Python-based scoring beyond exact match)
+- Red-teaming and adversarial test generation
+- CI/CD integration for continuous evaluation
+- Promptfoo's caching and cost optimization strategies
 
-**Ready for more?** Take on the [Module 05 Deep-Dive Challenge](CHALLENGE-deep-dive.md) to push your framework evaluation skills further—combining promptfoo patterns with advanced assertion types and custom scoring.
-
-**Feedback:** What worked well in this skill? What was confusing? Share with your instructor or post in the workshop channel.
-
-**Next steps:** Explore the other framework evaluations in Module 05 to see how agent-focused and observability-focused tools compare to promptfoo's eval-focused approach.
+**Next:** See [CHALLENGE-deep-dive.md](./CHALLENGE-deep-dive.md) for advanced assertions, CI integration, and custom scorers.

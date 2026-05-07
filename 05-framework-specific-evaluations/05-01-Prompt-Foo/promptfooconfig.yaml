@@ -1,0 +1,18 @@
+description: "GlobalMart Email Classification Evaluation"
+
+prompts:
+  - prompts.py:classify_email
+
+providers:
+  - id: bedrock:us.amazon.nova-lite-v1:0
+    label: "Nova Lite"
+    config:
+      region: us-west-2 # change to us-east-1 depending on your deployment region
+
+  - id: bedrock:us.anthropic.claude-3-5-haiku-20241022-v1:0
+    label: "Haiku 3.5"
+    config:
+      region: us-west-2 # change to us-east-1 depending on your deployment region
+
+tests:
+  - file://dataset.csv
