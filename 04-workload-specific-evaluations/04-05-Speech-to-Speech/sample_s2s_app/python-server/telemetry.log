@@ -1,5 +1,0 @@
-Warning: .env file not found
-  File "server.py", line 41
-    f"Health check request received from {client_ip} for path: {self.path}"
-                                                                          ^
-SyntaxError: invalid syntax
