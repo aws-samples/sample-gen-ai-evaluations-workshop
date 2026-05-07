@@ -1,39 +1,40 @@
 ---
 name: RAG Evaluation
-description: Use when learners need to evaluate retrieval-augmented generation systems using retrieval quality metrics, faithfulness scoring, relevance scoring, and multimodal document handling.
+description: Teach learners to evaluate RAG systems using retrieval quality metrics, faithfulness scoring, relevance assessment, and multimodal document handling
 ---
 
-In this skill, you build a complete RAG evaluation pipeline that measures both retrieval quality and end-to-end answer generation. You start by implementing information retrieval metrics like precision@k, recall@k, and NDCG@k to assess whether your vector search returns the right documents. You then construct an LLM-as-a-Judge evaluation rubric that scores generated answers on faithfulness, relevance, and context utilization. Finally, you extend your evaluation to multimodal RAG systems that handle text, images, and audio using unified embedding spaces.
+# RAG System Evaluation
+
+Evaluate Retrieval-Augmented Generation systems end-to-end — from measuring whether the right documents are retrieved, to scoring whether generated answers are faithful to context, to extending evaluation across text, vision, and audio modalities.
 
 ## Prerequisites
 
-- Completion of Module 01 (evaluation fundamentals) and Module 02 (LLM-as-a-Judge patterns)
-- Working knowledge of Python, pandas, and numpy
-- Familiarity with vector databases and embedding models
-- AWS account with Amazon Bedrock access configured
+- Completed Module 01 (operational metrics) and Module 02 (quality metrics with LLM-as-a-Judge)
+- Working AWS credentials with Bedrock access (Titan Embed Text V2, Claude Haiku)
+- Python environment with `chromadb`, `pandas`, `numpy`, `boto3`
+- Familiarity with embeddings and vector similarity concepts
 
 ## Learning Objectives
 
-- Implement precision@k, recall@k, and NDCG@k scoring functions to measure retrieval quality against a curated validation dataset
-- Construct an LLM-as-a-Judge evaluation rubric that scores RAG responses on context utilization, completeness, conciseness, context relevancy, and clarity
-- Compute faithfulness and relevance metrics for end-to-end RAG system outputs using ground truth comparisons
-- Evaluate multimodal retrieval systems across text, vision, and audio modalities using unified embeddings and FAISS indices
+By the end of this module, learners will be able to:
+
+1. **Calculate** precision@k, recall@k, and NDCG@k for a retrieval pipeline against a labeled validation set
+2. **Implement** an LLM-as-a-Judge rubric that scores RAG responses on faithfulness, completeness, and context relevancy
+3. **Design** a multimodal retrieval evaluation that compares text-only, vision-only, and combined strategies using shared embedding spaces
+4. **Interpret** aggregate retrieval metrics (MAP, MRR) to diagnose whether poor RAG output stems from retrieval failure or generation failure
 
 ## Setup
 
-Install required dependencies and initialize clients:
-
 ```python
 import boto3
-from botocore.config import Config
-import chromadb
-import pandas as pd
-import numpy as np
 import json
-import re
+import numpy as np
+import pandas as pd
 from typing import List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from botocore.config import Config
 
+# Initialize Bedrock client
 config = Config(retries={'max_attempts': 10, 'mode': 'standard'})
 session = boto3.Session()
 region = session.region_name or 'us-east-1'
@@ -44,382 +45,211 @@ bedrock = session.client(
     config=config
 )
 
-chroma_client = chromadb.PersistentClient(path="./data/chroma")
+# Embedding model for retrieval experiments
+EMBEDDING_MODEL_ID = 'amazon.titan-embed-text-v2:0'
 ```
 
-Prepare a validation dataset with queries and their known relevant document IDs. Each entry maps a `query_text` to a list of `relevant_doc_ids` representing ground truth:
+## Section 1: Retrieval Quality Metrics
 
-```python
-eval_df = pd.read_csv('./data/eval-datasets/1_embeddings_validation.csv')
-eval_df = eval_df.rename(columns=lambda x: x.strip())
-eval_df = eval_df.dropna(how='all')
-eval_df['relevant_doc_ids'] = eval_df['relevant_doc_ids'].astype(str)
-```
+**Concept:** A RAG system can fail at two stages: retrieval (wrong documents) or generation (wrong answer from right documents). Retrieval metrics isolate the first failure mode. Precision@k asks "of the top-k results, how many are relevant?" Recall@k asks "of all relevant documents, how many appeared in top-k?" NDCG@k penalizes relevant documents that appear lower in the ranked list.
 
-### Section 1: Retrieval Quality Metrics
+Without these metrics, you cannot distinguish "the model hallucinated" from "the model never saw the right context."
 
-Retrieval is the foundation of any RAG system. If your retrieval step returns irrelevant documents, no amount of prompt engineering will save the final answer. Unlike LLMs or embedding models, there are no public leaderboards for your specific RAG configuration — your chunk size, embedding model, and retrieval strategy create a unique system that must be evaluated empirically.
-
-The core question is: given a user query, does the retrieval step surface the documents that actually contain the answer? Precision@k tells you what fraction of the top-k results are relevant. Recall@k tells you what fraction of all relevant documents appear in the top-k. NDCG@k accounts for ranking position — relevant documents ranked higher contribute more to the score.
-
-These metrics together paint a complete picture. High recall with low precision means you're retrieving too much noise. High precision with low recall means you're missing relevant content. NDCG reveals whether your ranking puts the best documents first.
-
-**Build: Implement the IRMetricsCalculator**
-
-Create a class that computes retrieval metrics given relevant and retrieved document lists:
+**Build:**
 
 ```python
 class IRMetricsCalculator:
-    def __init__(self, df):
-        self.df = df
-
     @staticmethod
-    def precision_at_k(relevant, retrieved, k):
+    def precision_at_k(relevant: List[str], retrieved: List[str], k: int) -> float:
         retrieved_k = retrieved[:k]
         return len(set(relevant) & set(retrieved_k)) / k if k > 0 else 0
 
     @staticmethod
-    def recall_at_k(relevant, retrieved, k):
+    def recall_at_k(relevant: List[str], retrieved: List[str], k: int) -> float:
         retrieved_k = retrieved[:k]
-        return len(set(relevant) & set(retrieved_k)) / len(relevant) if len(relevant) > 0 else 0
+        return len(set(relevant) & set(retrieved_k)) / len(relevant) if relevant else 0
 
     @staticmethod
-    def dcg_at_k(relevant, retrieved, k):
+    def ndcg_at_k(relevant: List[str], retrieved: List[str], k: int) -> float:
         retrieved_k = retrieved[:k]
-        dcg = 0
-        for i, item in enumerate(retrieved_k):
-            if item in relevant:
-                dcg += 1 / np.log2(i + 2)
-        return dcg
-
-    @staticmethod
-    def ndcg_at_k(relevant, retrieved, k):
-        dcg = IRMetricsCalculator.dcg_at_k(relevant, retrieved, k)
-        idcg = IRMetricsCalculator.dcg_at_k(relevant, relevant, k)
+        dcg = sum(1 / np.log2(i + 2) for i, item in enumerate(retrieved_k) if item in relevant)
+        idcg = sum(1 / np.log2(i + 2) for i in range(min(len(relevant), k)))
         return dcg / idcg if idcg > 0 else 0
 
-    def calculate_metrics(self, k_values=[1, 3, 5, 10]):
+    def calculate_metrics(self, df: pd.DataFrame, k_values=[1, 3, 5]) -> pd.DataFrame:
         for k in k_values:
-            self.df[f'precision@{k}'] = self.df.apply(lambda row: self.precision_at_k(
-                json.loads(row['relevant_doc_ids']),
-                json.loads(row['retrieved_doc_ids']), k), axis=1)
-            self.df[f'recall@{k}'] = self.df.apply(lambda row: self.recall_at_k(
-                json.loads(row['relevant_doc_ids']),
-                json.loads(row['retrieved_doc_ids']), k), axis=1)
-            self.df[f'ndcg@{k}'] = self.df.apply(lambda row: self.ndcg_at_k(
-                json.loads(row['relevant_doc_ids']),
-                json.loads(row['retrieved_doc_ids']), k), axis=1)
-        return self.df
-```
-
-Run the retrieval task against your validation dataset and compute aggregate metrics:
-
-```python
-runner = RetrievalTaskRunner(eval_df, retrieval_task)
-results_df = runner.run()
-
-# Summarize results
-summary = {
-    'Mean Precision@5': results_df['precision@5'].mean(),
-    'Mean Recall@5': results_df['recall@5'].mean(),
-    'Mean NDCG@5': results_df['ndcg@5'].mean(),
-    '% Queries with Relevant Doc in Top 5': (results_df['precision@5'] > 0).mean() * 100
-}
-print(pd.DataFrame(summary.items(), columns=['Metric', 'Value']))
-```
-
-### Section 2: Faithfulness Scoring
-
-Once retrieval delivers relevant context, the next failure mode is the generation step producing answers that aren't grounded in that context. Faithfulness measures whether the generated answer uses only information present in the retrieved passages — without hallucinating facts or introducing external knowledge.
-
-This matters because a RAG system that hallucinates defeats its own purpose. Users trust RAG answers because they believe the system is citing real sources. An unfaithful answer erodes that trust and can cause real harm in domains like legal, medical, or financial applications.
-
-The LLM-as-a-Judge approach works well here: you provide the context, the question, and the generated answer to a judge model, then ask it to verify each claim against the source material. A binary score per criterion (0 or 1) keeps evaluation crisp and actionable.
-
-**Build: Create the evaluation rubric and client**
-
-Define the evaluation rubric that scores faithfulness alongside other quality criteria:
-
-```python
-RUBRIC_SYSTEM_PROMPT = """You are an expert judge evaluating RAG applications.
-Evaluation Criteria (Score either 0 or 1 for each, total score is the sum):
-1. Context Utilization: Does the answer use only information from the context?
-2. Completeness: Does the answer address all key elements of the question?
-3. Conciseness: Does the answer avoid unnecessary redundancy?
-4. Context Relevancy: Is the context sufficient to answer like the ground truth?
-5. Clarity: Is the answer easy to understand and follow?"""
-
-RUBRIC_USER_PROMPT = """Evaluate the following RAG response:
-
-Question: {query_text}
-Ground Truth: {ground_truth}
-Generated answer: {llm_response}
-Context: {context}
-
-For each criterion, assign 0 or 1. Present evaluation in <thinking></thinking> tags.
-Include total score in <score></score> tags."""
-```
-
-Implement the evaluation client that extracts scores:
-
-```python
-class EvaluationClient:
-    def __init__(self, bedrock_client, user_prompt, system_prompt, model_id, hyper_params):
-        self.client = bedrock_client
-        self.user_prompt = user_prompt
-        self.system_prompt = system_prompt
-        self.model_id = model_id
-        self.hyper_params = hyper_params
-
-    def extract_score_and_thinking(self, llm_output):
-        thinking_match = re.search(r'<thinking>(.*?)</thinking>', llm_output, re.DOTALL)
-        score_match = re.search(r'<score>(.*?)</score>', llm_output, re.DOTALL)
-        thinking = thinking_match.group(1).strip() if thinking_match else "No thinking found"
-        score = float(score_match.group(1)) if score_match else None
-        return score, thinking
-
-    def evaluate(self, df):
-        df = df.copy()
-        # Build prompts and call model for each row
-        for _, row in df.iterrows():
-            prompt = self.user_prompt.format(**row)
-            # ... call bedrock and extract scores
+            df[f'precision@{k}'] = df.apply(
+                lambda row: self.precision_at_k(row['relevant_ids'], row['retrieved_ids'], k), axis=1)
+            df[f'recall@{k}'] = df.apply(
+                lambda row: self.recall_at_k(row['relevant_ids'], row['retrieved_ids'], k), axis=1)
+            df[f'ndcg@{k}'] = df.apply(
+                lambda row: self.ndcg_at_k(row['relevant_ids'], row['retrieved_ids'], k), axis=1)
         return df
 ```
 
-### Section 3: Relevance Scoring
+**Key insight:** recall@5 is often the most important single metric — it tells you whether the answer *exists* in the context window the model will see.
 
-Relevance scoring closes the loop between retrieval and generation. Where faithfulness asks "did the answer stay within the context?", relevance asks "did the context actually help answer the question?" A system can be perfectly faithful to irrelevant context and still produce a useless answer.
+## Section 2: Faithfulness and End-to-End Scoring
 
-End-to-end relevance evaluation requires ground truth answers. You compare the generated response against a known-good answer to determine whether the retrieval + generation pipeline produced something useful. This catches cases where retrieval returns tangentially related documents that don't contain the actual answer.
+**Concept:** Once retrieval delivers context, the generation model must use it faithfully. End-to-end evaluation uses LLM-as-a-Judge with a structured rubric to score: (1) context utilization — does the answer use only provided context? (2) completeness — are all question aspects addressed? (3) faithfulness — no fabricated details? (4) context relevancy — was the retrieved context sufficient? (5) clarity — is the answer understandable?
 
-The combination of retrieval metrics (Section 1), faithfulness (Section 2), and relevance scoring gives you a complete diagnostic view. Low retrieval scores point to embedding or chunking problems. Low faithfulness points to prompt or model problems. Low relevance despite good retrieval points to context window or prompt formatting issues.
+Scoring each criterion as 0 or 1 produces a 0–5 composite that pinpoints *which* aspect failed.
 
-**Build: Run end-to-end evaluation with ground truth**
-
-Set up the RAG client and run the full pipeline:
+**Build:**
 
 ```python
-RAG_SYSTEM_PROMPT = """You are an AI assistant specialized in RAG.
-Use only information from the provided context. Be concise and accurate.
-Place your response in <response></response> tags."""
+RUBRIC_SYSTEM_PROMPT = """You are an expert judge evaluating RAG applications.
+Score each criterion 0 or 1:
+1. Context Utilization: Uses only provided context, no external details?
+2. Completeness: Addresses all key elements from available context?
+3. Conciseness: Efficiently worded without redundancy?
+4. Context Relevancy: Retrieved context sufficient for a correct answer?
+5. Clarity: Easy to understand and follow?
+Present evaluation in <thinking> tags, total score in <score> tags."""
 
-RAG_USER_PROMPT = """Answer using only the provided context:
-<query>{query_text}</query>
-<context>{context}</context>"""
+RUBRIC_USER_PROMPT = """Evaluate this RAG response:
+Question: {query_text}
+Ground Truth: {ground_truth}
+Generated Answer: {llm_response}
+Context Used: {context}
 
-HAIKU_ID = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+Score each criterion 0 or 1. Total in <score></score> tags."""
 
-# Generate RAG responses
-rag_client = RAGClient(
-    bedrock, RAG_USER_PROMPT, RAG_SYSTEM_PROMPT, HAIKU_ID,
-    {"temperature": 0.5, "maxTokens": 2096}, retrieval_task
-)
-rag_df = rag_client.process(eval_df)
-
-# Evaluate with LLM-as-a-Judge
-eval_client = EvaluationClient(
-    bedrock, RUBRIC_USER_PROMPT, RUBRIC_SYSTEM_PROMPT, HAIKU_ID,
-    {"temperature": 0.7, "maxTokens": 4096}
-)
-results_df = eval_client.evaluate(rag_df)
-
-# Summarize
-mean_score = results_df['grade'].astype(float).mean()
-print(f"Mean E2E Score: {mean_score:.2f} / 5.0")
-print(f"Score Distribution:\n{results_df['grade'].value_counts().sort_index()}")
+def evaluate_rag_response(query, ground_truth, llm_response, context) -> int:
+    """Returns 0-5 composite score from LLM judge."""
+    messages = [{"role": "user", "content": [{"text": RUBRIC_USER_PROMPT.format(
+        query_text=query, ground_truth=ground_truth,
+        llm_response=llm_response, context=context
+    )}]}]
+    response = bedrock.converse(
+        modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+        messages=messages,
+        system=[{"text": RUBRIC_SYSTEM_PROMPT}],
+        inferenceConfig={"temperature": 0.0, "maxTokens": 1024}
+    )
+    text = response['output']['message']['content'][0]['text']
+    import re
+    match = re.search(r'<score>(\d+)</score>', text)
+    return int(match.group(1)) if match else 0
 ```
 
-### Section 4: Multimodal RAG Evaluation
+## Section 3: Aggregate Diagnostics — MAP and MRR
 
-Real-world documents contain more than text. PDFs have diagrams, knowledge bases include images, and media archives contain audio. A text-only retrieval system misses visual and auditory signals that could identify the correct content. Multimodal evaluation extends your metrics to measure whether the system leverages all available modalities effectively.
+**Concept:** Individual query metrics are noisy. Aggregate metrics reveal systemic patterns. Mean Average Precision (MAP) averages precision across all relevant documents for each query, then averages across queries — it rewards systems that rank *all* relevant docs highly. Mean Reciprocal Rank (MRR) measures how quickly the *first* relevant result appears — critical for single-answer use cases.
 
-The key insight from multimodal evaluation is that different modalities excel at different tasks. Text embeddings capture conceptual meaning but miss visual context. Vision embeddings identify scenes and objects but can't parse dialogue. Audio embeddings capture tone, music, and sound effects. A unified embedding space (like ImageBind) maps all modalities into the same vector space, enabling cross-modal retrieval and comparison.
+Together: high MRR + low MAP = "finds one good doc but misses others." Low MRR + high recall = "relevant docs exist but aren't ranked first."
 
-Evaluating multimodal RAG requires testing each modality independently and in combination. You measure whether adding modalities improves retrieval accuracy, and whether the system correctly identifies which modality provides the strongest signal for each query.
-
-**Build: Evaluate retrieval across modalities**
-
-Create embeddings and FAISS indices for multimodal retrieval:
+**Build:**
 
 ```python
-import torch
+def mean_average_precision(df: pd.DataFrame) -> float:
+    """MAP across all queries. Expects 'relevant_ids' and 'retrieved_ids' columns."""
+    aps = []
+    for _, row in df.iterrows():
+        relevant = set(row['relevant_ids'])
+        retrieved = row['retrieved_ids']
+        hits, running_sum = 0, 0.0
+        for i, doc in enumerate(retrieved, 1):
+            if doc in relevant:
+                hits += 1
+                running_sum += hits / i
+        aps.append(running_sum / len(relevant) if relevant else 0)
+    return np.mean(aps)
+
+def mean_reciprocal_rank(df: pd.DataFrame) -> float:
+    """MRR — how quickly does the first relevant doc appear?"""
+    rrs = []
+    for _, row in df.iterrows():
+        relevant = set(row['relevant_ids'])
+        for i, doc in enumerate(row['retrieved_ids'], 1):
+            if doc in relevant:
+                rrs.append(1.0 / i)
+                break
+        else:
+            rrs.append(0.0)
+    return np.mean(rrs)
+```
+
+## Section 4: Multimodal Retrieval Evaluation
+
+**Concept:** Text-only retrieval fails when the answer lives in visual or audio content. Multimodal evaluation compares retrieval strategies (text-only, vision-only, audio-only, combined) using a shared embedding space. Models like ImageBind create unified vectors where semantically similar content across modalities clusters together — enabling cross-modal retrieval and fair comparison.
+
+The evaluation pattern: run the same queries against each strategy, compute the same metrics (precision, recall, NDCG), then compare. The strategy that wins depends on the content type — text excels for factual lookup, vision for scene identification, audio for speaker/tone matching.
+
+**Build:**
+
+```python
 import faiss
 from sklearn.preprocessing import normalize
 
-# Assume ImageBind model is loaded and embeddings are created
-# embeddings = {'text': np.array(...), 'vision': np.array(...), 'audio': np.array(...)}
+def create_faiss_index(embeddings: np.ndarray) -> faiss.IndexFlatIP:
+    """Create a FAISS index from normalized embeddings for cosine similarity search."""
+    normalized = normalize(embeddings, axis=1).astype('float32')
+    index = faiss.IndexFlatIP(normalized.shape[1])
+    index.add(normalized)
+    return index
 
-def create_separate_indices(embeddings):
-    """Create FAISS indices for each modality."""
-    indices = {}
-    normalized = {}
-    for modality, emb in embeddings.items():
-        norm_emb = normalize(emb, axis=1).astype('float32')
-        index = faiss.IndexFlatIP(norm_emb.shape[1])
-        index.add(norm_emb)
-        indices[modality] = index
-        normalized[modality] = norm_emb
-    return indices, normalized
-
-def create_multimodal_indices(normalized_embeddings):
-    """Create combined indices by averaging modality embeddings."""
-    combined = {}
-    # Full multimodal: average all three
-    full = np.mean([
-        normalized_embeddings['text'],
-        normalized_embeddings['vision'],
-        normalized_embeddings['audio']
-    ], axis=0)
-    full_norm = normalize(full, axis=1).astype('float32')
-    index = faiss.IndexFlatIP(full_norm.shape[1])
-    index.add(full_norm)
-    combined['full_multimodal'] = index
-    return combined, {'full_multimodal': full_norm}
+def compare_retrieval_strategies(
+    query_embedding: np.ndarray,
+    indices: Dict[str, faiss.IndexFlatIP],
+    ground_truth_ids: List[int],
+    k: int = 5
+) -> Dict[str, Dict[str, float]]:
+    """Compare precision/recall across modality-specific indices."""
+    results = {}
+    query_norm = normalize(query_embedding.reshape(1, -1)).astype('float32')
+    for strategy_name, index in indices.items():
+        distances, retrieved_ids = index.search(query_norm, k)
+        retrieved = retrieved_ids[0].tolist()
+        results[strategy_name] = {
+            'precision@k': len(set(ground_truth_ids) & set(retrieved)) / k,
+            'recall@k': len(set(ground_truth_ids) & set(retrieved)) / len(ground_truth_ids),
+            'top_similarity': float(distances[0][0])
+        }
+    return results
 ```
 
-Compare retrieval strategies and compute metrics per modality:
-
-```python
-strategies = ['text_only', 'vision_only', 'audio_only', 'full_multimodal']
-results = {}
-
-for strategy in strategies:
-    # Run retrieval with the appropriate index
-    # Compute precision@1, MRR@5, NDCG@5
-    results[strategy] = {
-        'precision@1': precision_score,
-        'mrr@5': mrr_score,
-        'ndcg@5': ndcg_score
-    }
-
-comparison_df = pd.DataFrame(results).T
-print(comparison_df)
-# Identify which modality performs best for each metric
-print(f"\nBest strategy: {comparison_df.mean(axis=1).idxmax()}")
-```
+**Key insight:** If text-only recall is low but multimodal recall is high, your knowledge base contains information that text embeddings cannot capture — visual diagrams, audio explanations, or cross-modal relationships.
 
 ## Challenges
 
-**Challenge 1: Implement Retrieval Quality Metrics from Scratch**
-
-Write your own `precision_at_k`, `recall_at_k`, and `ndcg_at_k` functions (don't copy `IRMetricsCalculator` — implement them yourself first). Create a validation dataset with at least 8 queries and known relevant document IDs, then compute aggregate scores.
-
-**Success criteria:**
-- `precision_at_k(relevant, retrieved, k)` returns the fraction of top-k results that are relevant
-- `recall_at_k(relevant, retrieved, k)` returns the fraction of all relevant docs found in top-k
-- `ndcg_at_k(relevant, retrieved, k)` computes DCG/IDCG with log2 discounting
-- Validation dataset has at least 8 query/relevant-doc-ID pairs stored as a list of dicts or DataFrame
-- Print a summary table with mean precision@3, recall@3, NDCG@3, and precision@5, recall@5, NDCG@5
-- Explain what high recall + low precision would indicate about your retrieval configuration
-
-**Challenge 2: Build an LLM-as-Judge Faithfulness Scorer**
-
-Create an evaluation rubric and scoring function that judges whether a RAG-generated answer is faithful to its retrieved context. The rubric should score on at least 4 criteria.
-
-**Success criteria:**
-- Rubric prompt includes at least 4 criteria: Context Utilization, Completeness, Conciseness, and Clarity (or equivalents)
-- Each criterion is scored 0 or 1 (binary) with the judge providing reasoning in `<thinking>` tags and a total in `<score>` tags
-- Scoring function calls Bedrock, parses the structured output, and returns per-criterion scores plus total
-- Evaluate at least 5 question/context/answer triples (at least one should be deliberately unfaithful)
-- Print results showing which criteria the unfaithful answer fails on
-
-**Challenge 3: End-to-End RAG Evaluation Pipeline**
-
-Wire together retrieval + generation + evaluation into a single pipeline. Given a query, retrieve context, generate an answer, and score it.
-
-**Success criteria:**
-- Pipeline function accepts a query, retrieves top-k documents (simulated or real), generates an answer via Bedrock, and scores it with the Challenge 2 rubric
-- Run the pipeline on at least 5 queries that have ground-truth answers
-- Compare generated answers against ground truth using your faithfulness scorer
-- Print a summary: query, retrieval precision@3, faithfulness score (out of 4), and whether the answer matches ground truth
-- Identify which pipeline stage (retrieval vs. generation) is the bottleneck for your lowest-scoring queries
-
-**Challenge 4: Build a RAG Evaluation Dashboard for a New Domain**
-
-Select a document corpus of your choice (at least 20 documents). Build a complete evaluation pipeline that:
-1. Creates a validation dataset with at least 15 query/relevant-document pairs
-2. Implements retrieval metrics and runs at least two experiments with different configurations (e.g., different chunk sizes or embedding models)
-3. Implements an LLM-as-a-Judge rubric with at least 4 evaluation criteria
-4. Produces a summary comparison showing which configuration performs best
+1. **Retrieval diagnosis:** Given a RAG system with MAP=0.3 and MRR=0.8, explain what this means about the system's behavior and propose two specific changes to improve MAP without hurting MRR.
 
 **Assessment criteria:**
-- Pipeline runs without errors end-to-end
-- Retrieval metrics (precision@k, recall@k, NDCG@k) are correctly computed and aggregated
-- LLM-as-a-Judge rubric includes faithfulness and relevance criteria with structured score extraction
-- At least two configurations are compared with clear summary metrics
-- Results include both retrieval-level and end-to-end evaluation scores
-- Learner can explain why one configuration outperforms another and what they would try next
+- Runs without errors
+- Correctly interprets the MAP/MRR gap as "finds one relevant doc quickly but misses others"
+- Proposes changes that target recall (e.g., query expansion, hybrid search) without degrading first-result ranking
+- Explains the tradeoff between precision and recall in the proposed changes
+- Learner can explain their approach
 
-## Capstone Challenge
+2. **Rubric design:** Create a custom evaluation rubric for a domain-specific RAG system (e.g., medical, legal, or code documentation) that adds domain-appropriate criteria beyond the generic 5-point rubric.
 
-This capstone brings together everything from Module 04. Build an end-to-end evaluation pipeline for a document-processing application that combines guardrails validation, RAG retrieval quality, and one workload-specific metric of your choice into a unified report.
+**Assessment criteria:**
+- Runs without errors
+- Adds at least 2 domain-specific criteria (e.g., citation accuracy for legal, contraindication checking for medical)
+- Criteria are scorable as 0/1 and unambiguous enough for an LLM judge to apply consistently
+- Includes at least one test case demonstrating a score difference between the generic and custom rubric
+- Learner can explain their approach
 
-### Sub-groups
+3. **Multimodal comparison:** Run the same 10 queries against text-only and multimodal retrieval strategies. Identify which query types benefit most from multimodal and explain why.
 
-Your custom metric (Stage 4) should draw from one of the following tracks:
-
-- **(a) IDP + Automated Reasoning** — Evaluate document extraction accuracy, reasoning correctness, or structured output validation
-- **(b) Guardrails (5 notebooks → 1 track)** — Extend guardrails evaluation with advanced policy composition, multi-turn validation, or custom guardrail logic
-- **(c) RAG + Multimodal RAG + Speech** — Evaluate speech transcription quality, multimodal retrieval, or audio/image understanding
-
-### Pipeline Architecture
-
-```
-Input Document(s)
-       │
-       ▼
-┌─────────────────┐
-│ Guardrails Stage │ → guardrail_results: {policy, pass/fail, violations[]}
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ RAG Eval Stage   │ → rag_results: {queries[], faithfulness[], relevance[], latency}
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ Custom Metric    │ → custom_results: {metric_name, scores[], methodology}
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ Report Generator │ → unified_report: per-stage summary table, aggregate score,
-└─────────────────┘   pass/fail determination, recommendations
-```
-
-### Starter Template
-
-| Section | Pre-built (provided) | Learner fills in |
-|---|---|---|
-| **1. Setup & Configuration** | Imports (boto3, json, pandas, datetime), helper utilities, `load_document()`, `format_report()` | AWS client configuration, model selection |
-| **2. Guardrails Evaluation Stage** | `GuardrailsEvaluator` class skeleton with `evaluate()` method signature, sample guardrail policy | `evaluate()` body — run input/output through guardrail, capture pass/fail/score |
-| **3. RAG Retrieval Quality Stage** | `RAGEvaluator` class skeleton with `retrieve_and_score()` signature, sample document corpus (3-5 docs), sample queries | Retrieval call, faithfulness metric, relevance metric |
-| **4. Custom Metric Stage** | `CustomMetricEvaluator` base class with `evaluate()` signature | Entire implementation — choose from IDP accuracy, speech quality, reasoning correctness, or define their own |
-| **5. Pipeline Orchestration** | `run_pipeline()` skeleton that calls stages in sequence | Data passing between stages, error handling, aggregation |
-| **6. Unified Report** | `ReportGenerator` class with `render()` method, Markdown/HTML template | Populate template with per-stage results, add summary + recommendations |
-
-### Assessment Criteria
-
-1. Runs without errors — pipeline executes all stages end-to-end
-2. Integrates 3+ evaluation types — guardrails + RAG + custom metric all produce results
-3. Uses guardrails checks — correctly applies policy and captures violations
-4. Handles multimodal input — pipeline doesn't break on non-text documents (or gracefully skips)
-5. Learner explains which metrics matter most for their use case and why they chose their custom metric
-
-### Tips
-
-- **Start with the skeleton** — Get `run_pipeline()` calling empty stage methods first, then fill in each stage incrementally
-- **Use the SKILL notebooks as reference** — Your guardrails and RAG stages can reuse patterns directly from [SKILL-guardrails.md](./SKILL-guardrails.md) and this document's earlier sections
-- **Pick a custom metric you care about** — The best evaluations measure what actually matters for your application
-- **Error handling matters** — A robust pipeline should not crash if one stage fails; use try/except blocks and partial results
-- **The report is your deliverable** — Spend time making it readable with a clear summary table and aggregate score
-- **Test with edge cases** — Try an empty document, a very long document, or a non-text file to verify multimodal handling
+**Assessment criteria:**
+- Runs without errors
+- Uses at least 10 queries spanning different content types (factual, visual, spatial)
+- Computes precision/recall for both strategies and presents a clear comparison
+- Identifies a pattern in which query types benefit from multimodal (not just "multimodal is better")
+- Learner can explain their approach
 
 ## Wrap-Up
 
-You built a multi-layered RAG evaluation system that measures retrieval quality, answer faithfulness, end-to-end relevance, and multimodal effectiveness. The key insight is that RAG evaluation requires examining each component independently — a failure in retrieval looks different from a failure in generation, and the fix is different too.
+**Key takeaways:**
+- Retrieval metrics (precision, recall, NDCG) isolate whether the problem is "wrong documents" or "wrong generation"
+- MAP and MRR together diagnose systemic retrieval patterns — high MRR + low MAP means "finds one but misses many"
+- LLM-as-a-Judge with a structured 0/1 rubric pinpoints which generation quality dimension is failing
+- Multimodal retrieval comparison reveals content types that text embeddings cannot capture
 
-These techniques form the foundation for the Capstone Challenge above, which combines RAG evaluation with guardrails and other workload-specific evaluation patterns from this module.
+You can now evaluate RAG systems at every stage — retrieval quality, generation faithfulness, and cross-modal effectiveness. The key diagnostic pattern: start with retrieval metrics to confirm the right documents are found, then use LLM-as-a-Judge to assess generation quality, then compare modality strategies to find coverage gaps.
 
-**Feedback prompt:** Which metric was most surprising in what it revealed about your system's performance? What would you change first based on your evaluation results?
+This skill does **NOT** cover: fine-tuning embedding models, reranker evaluation, chunk size optimization experiments, or production monitoring dashboards.
 
-**Next steps:** Apply these evaluation patterns to your own RAG system, or explore the structured data evaluation skill for complementary techniques.
+**Next:** Apply these evaluation patterns in the Module 04 capstone challenge — see `CHALLENGE-capstone.md` for a multi-component RAG evaluation task that combines retrieval scoring, faithfulness assessment, and strategy comparison into a single diagnostic workflow.
