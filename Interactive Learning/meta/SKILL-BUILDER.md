@@ -40,10 +40,12 @@ Every SKILL file MUST have:
   6. `## Wrap-Up` (must reference the correct CHALLENGE file)
 - **3–5 lesson sections** — never fewer, never more
 - **"Assessment criteria"** — never "Success criteria"
+- **Assessment criteria must be specific and measurable** — use quantified thresholds (e.g., "produces ≥3 categories with frequency counts") not vague statements (e.g., "demonstrates understanding of categorization")
 - **At least one** `python` or `bash` fenced code block
 - **≤500 lines** preferred (quality > brevity — exceeding is acceptable if content demands it)
 - **Challenges must require novel application** — not just repeating the taught workflow on different data. Include at least one decision the learner wasn't explicitly taught (e.g., handling ambiguity, resolving conflicts, adapting when the approach doesn't fit cleanly)
 - **Match sibling SKILLs' framework/API surface** — if other SKILLs in the same category use a specific framework (e.g., boto3 + bedrock.converse()), your SKILL should use the same. If the source notebook uses a different framework, adapt the code examples to match the category's established pattern.
+- **Two-tier challenges:** Each SKILL has an embedded `## Challenges` section testing that module's concepts. Standalone CHALLENGE files (CHALLENGE-capstone.md, CHALLENGE-deep-dive.md) are separate cross-module integrative exercises — don't duplicate their content in your SKILL's challenge
 
 ## Three Warnings
 
@@ -173,6 +175,7 @@ Common failures to watch for:
 - Sections exceeding one screen height (~60 lines) — split or trim
 - Challenge difficulty miscalibrated (too easy = just repeats teaching; too hard = requires untaught concepts)
 - Wrap-Up missing CHALLENGE cross-reference
+- Setup requires expensive data generation — default to using provided data files (Path A), and offer generating fresh data (Path B) as a fallback for learners who want to explore further
 
 Re-run `bash meta/validate_skills.sh` after each revision.
 
