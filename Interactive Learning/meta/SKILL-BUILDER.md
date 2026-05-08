@@ -44,7 +44,7 @@ Every SKILL file MUST have:
 - **At least one** `python` or `bash` fenced code block
 - **≤500 lines** preferred (quality > brevity — exceeding is acceptable if content demands it)
 - **Challenges must require novel application** — not just repeating the taught workflow on different data. Include at least one decision the learner wasn't explicitly taught (e.g., handling ambiguity, resolving conflicts, adapting when the approach doesn't fit cleanly)
-- **Match sibling SKILLs' framework/API surface** — if other SKILLs in the same category use a specific framework (e.g., boto3 + bedrock.converse()), your SKILL should use the same. If the source notebook uses a different framework, adapt the code examples to match the category's established pattern.
+- **The source notebook is the ground truth for framework and API usage** — use the same framework the notebook uses
 - **Two-tier challenges:** Each SKILL has an embedded `## Challenges` section testing that module's concepts. Standalone CHALLENGE files (CHALLENGE-capstone.md, CHALLENGE-deep-dive.md) are separate cross-module integrative exercises — don't duplicate their content in your SKILL's challenge
 
 ## Three Warnings
