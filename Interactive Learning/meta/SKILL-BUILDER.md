@@ -45,6 +45,8 @@ Every SKILL file MUST have:
 - **≤500 lines** preferred (quality > brevity — exceeding is acceptable if content demands it)
 - **Challenges must require novel application** — not just repeating the taught workflow on different data. Include at least one decision the learner wasn't explicitly taught (e.g., handling ambiguity, resolving conflicts, adapting when the approach doesn't fit cleanly)
 - **The source notebook is the ground truth for framework and API usage** — use the same framework the notebook uses
+- **Code blocks must work in a plain terminal or script** — no Jupyter magic commands (%%writefile, %pip, !command). Use standard Python file I/O or bash code blocks instead
+- **If source notebooks import from helper .py files, include that code inline** — either in Setup or in the section that uses it. Never reference an external .py file the learner doesn't have
 - **Two-tier challenges:** Each SKILL has an embedded `## Challenges` section testing that module's concepts. Standalone CHALLENGE files (CHALLENGE-capstone.md, CHALLENGE-deep-dive.md) are separate cross-module integrative exercises — don't duplicate their content in your SKILL's challenge
 
 ## Three Warnings
