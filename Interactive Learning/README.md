@@ -1,67 +1,50 @@
-# Interactive / Agentic Mode
+# Interactive Learning Mode
 
-This directory contains an AI-powered tutor that reads the workshop modules and presents them as guided, hands-on challenges. Instead of passively reading notebooks, you work through exercises with an AI assistant that checks your understanding, provides hints when you're stuck, and adapts to your pace.
-
-## What It Is
-
-An AI tutor skill file that instructs your AI assistant (Kiro, Claude, or similar) to act as an evaluations workshop facilitator. The agent reads the relevant module's notebooks and SKILL docs, then guides you through challenge exercises — asking you to write code, explain concepts, and debug configurations rather than lecturing at you.
-
-## Prerequisites
-
-Same as the main workshop:
-
-- Python 3.10+ with boto3 installed
-- IAM permissions for CloudWatch and Bedrock Runtime (Module 01)
-- Node.js installed (Module 05 — promptfoo)
-- Familiarity with Jupyter notebooks
+This directory contains AI-tutored interactive lessons for the AWS Evaluations Workshop. Each SKILL file is a self-contained module that an AI coding assistant can use to teach you hands-on evaluation techniques.
 
 ## How to Use
 
-1. Point your AI assistant at the skill file: `Interactive Learning/claude/kiro.md`
-2. Tell the agent which module you want to work through (e.g., "Let's start Module 01")
-3. The agent will read the relevant notebooks and SKILL docs, then present challenges one at a time
-4. Write code, run it, and share your results — the agent will check your work and guide you forward
+1. Set up your AI coding tool (Claude Code, Kiro, or Codex) — see `agents.md` for configuration
+2. Pick a skill from the map below
+3. Tell your AI assistant: "Teach me about [topic]" — it will match your request to the right SKILL
 
-## Module Challenges
+## Skill Map
 
-| Module | Challenge File | Topics Covered |
-|--------|---------------|----------------|
-| 01 — Operational Metrics | [foundational evaluations/SKILL-operational.md](./foundational%20evaluations/SKILL-operational.md) | CloudWatch custom metrics, dashboards, alarms, TTFT/TTLT |
-| 02 — Quality Metrics | [foundational evaluations/SKILL-quality.md](./foundational%20evaluations/SKILL-quality.md) | LLM-as-Judge, LLM-as-Jury, agreement rates, confidence intervals |
-| 03 — Agentic Metrics | [foundational evaluations/SKILL-agentic.md](./foundational%20evaluations/SKILL-agentic.md) | Agent evaluation functions, tool selection accuracy, Strands SDK |
-| 04 — Workload Evals | [workload evals/](./workload%20evals/) | RAG retrieval metrics, faithfulness, guardrails, unified pipelines |
-| 05 — Framework Evals | [framework evals/](./framework%20evals/) | Promptfoo YAML configs, assertions, multi-provider comparison |
+### Foundational Evaluations
+| Skill | What You'll Build |
+|-------|-------------------|
+| [SKILL-operational](foundational%20evaluations/SKILL-operational.md) | CloudWatch metrics, dashboards, and alarms for LLM monitoring |
+| [SKILL-quality](foundational%20evaluations/SKILL-quality.md) | LLM-as-Judge and Jury evaluation with agreement scoring |
+| [SKILL-agentic](foundational%20evaluations/SKILL-agentic.md) | Agent trace evaluation, tool selection metrics, metric reuse |
 
-## Facilitator Guide
+### Workload-Specific Evaluations
+| Skill | What You'll Build |
+|-------|-------------------|
+| [SKILL-structured-data](workload%20evals/SKILL-structured-data.md) | Document extraction accuracy scoring |
+| [SKILL-guardrails](workload%20evals/SKILL-guardrails.md) | Bedrock Guardrails: filters, grounding, alignment, evaluation |
+| [SKILL-rag-evaluation](workload%20evals/SKILL-rag-evaluation.md) | RAG retrieval quality + multimodal evaluation |
+| [SKILL-speech-reasoning](workload%20evals/SKILL-speech-reasoning.md) | Speech-to-speech + automated reasoning verification |
+| [CHALLENGE-capstone](workload%20evals/CHALLENGE-capstone.md) | **Capstone:** Integrate guardrails + RAG + custom metric |
 
-### Recommended Delivery Order
+### Framework-Specific Evaluations
+| Skill | What You'll Build |
+|-------|-------------------|
+| [SKILL-promptfoo](framework%20evals/SKILL-promptfoo.md) | PromptFoo CLI: YAML configs, assertions, eval runs |
+| [SKILL-agentcore](framework%20evals/SKILL-agentcore.md) | AgentCore: deploy, invoke, evaluate with native API |
+| [SKILL-strands](framework%20evals/SKILL-strands.md) | Strands Evals: Cases, Experiments, custom evaluators |
+| [SKILL-dspy](framework%20evals/SKILL-dspy.md) | DSPy: signatures, metrics, optimization loops |
+| [CHALLENGE-deep-dive](framework%20evals/CHALLENGE-deep-dive.md) | **Deep-dive:** Pick one framework, go beyond the notebook |
 
-Module 01 is recommended before Module 02. Module 02's SKILL.md lists Module 01 as a prerequisite, though the concepts are not strictly dependent.
+## Prerequisites
 
-```
-Day 1:  Module 01 (Operational)  →  Module 02 (Quality)
-Day 2:  Module 03 (Agentic)     →  Module 04 (Workload) — pick 2 SKILLs
-Day 3:  Module 05 (Framework)   →  Capstone / Deep-Dive Challenge
-```
+- AWS account with Bedrock model access (Claude, Titan)
+- Python 3.11+ with boto3
+- An AI coding assistant (Claude Code, Kiro, or Codex)
 
-### Time Estimates
+## Dependencies
 
-| Module | Content | Hands-on | Challenge | Total |
-|---|---|---|---|---|
-| 01 — Operational Metrics | 45 min | 60 min | — | ~2 hrs |
-| 02 — Quality Metrics | 45 min | 75 min | — | ~2 hrs |
-| 03 — Agentic Metrics | 45 min | 60 min | — | ~2 hrs |
-| 04 — Workload (2 SKILLs + capstone) | 60 min | 90 min | 60 min | ~3.5 hrs |
-| 05 — Framework (2 SKILLs + deep-dive) | 60 min | 90 min | 60 min | ~3.5 hrs |
+Foundational skills (01-03) have no prerequisites. Workload and Framework skills recommend completing at least one foundational skill first. See [curriculum.md](curriculum.md) for the full dependency map.
 
-### Common Learner Issues
+## Contributing a New Skill
 
-| Issue | Fix |
-|---|---|
-| `ThrottlingException` in Module 01 | Reduce concurrency or switch to Nova Lite |
-| `ModuleNotFoundError: strands_agents` | `pip install strands-agents` (hyphen, not underscore) |
-| `ModuleNotFoundError: ddgs` | `pip install duckduckgo-search` (package name differs from import name) |
-| PromptFoo `command not found` | `npm install -g promptfoo` — requires Node.js 18+ |
-| ChromaDB sqlite3 version error | `pip install pysqlite3-binary` |
-| CloudWatch metrics not appearing | 1–2 min propagation delay; verify namespace spelling |
-| DSPy optimization hangs | Reduce `max_bootstrapped_demos` to 2 for workshop |
+Use the skill-doc-builder in `.kiro/skills/skill-doc-builder/SKILL.md` to generate new skills from notebooks. Run `scripts/validate_skills.sh` to verify structural compliance.

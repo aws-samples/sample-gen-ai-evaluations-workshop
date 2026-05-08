@@ -1,28 +1,28 @@
 ---
-name: "Operational Metrics for LLMs"
-description: "How to monitor LLM performance with CloudWatch, set up latency and cost dashboards, create alarms for Bedrock throttling and errors, publish custom metrics like time to first token"
+name: Operational Metrics for LLMs
+description: Learn to measure LLM operational metrics like cost, latency, TTFT, and throughput. Activate when asked to "measure bedrock performance", "track LLM costs", "set up CloudWatch for bedrock", "compare model latency", or "build an LLM metrics dashboard".
 ---
 
-In this module you build a complete CloudWatch observability stack for Amazon Bedrock LLM invocations. You will publish custom metrics (latency, cost, TTFT), create a dashboard that visualizes them, configure alarms for throttling and error conditions, and run synthetic load to verify the alarms fire. By the end you will have a reusable monitoring pattern for any Bedrock-powered application.
+# Operational Metrics for LLMs on Amazon Bedrock
+
+Measure what matters before optimizing. This module builds a complete observability pipeline for LLM applications — from per-call cost tracking through streaming latency to a CloudWatch dashboard that surfaces problems before users notice them.
 
 ## Prerequisites
 
-- AWS account with Amazon Bedrock model access (Nova Lite, Nova Pro, or Claude 3.7 Sonnet)
+- AWS account with Amazon Bedrock model access (Nova Lite, Nova Pro, Claude 3.7 Sonnet)
 - Python 3.10+
-- `boto3` library installed
-- IAM permissions for CloudWatch (`PutMetricData`, `PutDashboard`, `PutMetricAlarm`) and Bedrock Runtime (`InvokeModel`, `Converse`, `ConverseStream`)
+- `boto3` installed and configured with appropriate IAM permissions
+- CloudWatch PutMetricData permissions
 
 ## Learning Objectives
 
-- Publish custom CloudWatch metrics with appropriate dimensions using `PutMetricData`
-- Create a CloudWatch dashboard that visualizes LLM latency, cost, and error rates
-- Configure CloudWatch alarms that detect throttling, elevated latency, and invocation errors
-- Generate synthetic Bedrock load to validate alarm thresholds
-- Analyze tradeoffs between model speed, cost, and throughput using metric data
+1. **Calculate** per-invocation cost from token usage and model pricing tables
+2. **Measure** end-to-end latency and tokens-per-second using the Converse API
+3. **Distinguish** TTFT from TTLT using streaming responses and explain when each matters
+4. **Publish** custom operational metrics to CloudWatch with appropriate dimensions
+5. **Compare** model performance across cost, speed, and throughput for a real workload
 
 ## Setup
-
-Install dependencies and configure your Bedrock and CloudWatch clients:
 
 ```python
 import boto3
@@ -35,89 +35,91 @@ from decimal import Decimal
 
 bedrock_client = boto3.client("bedrock-runtime")
 cloudwatch = boto3.client("cloudwatch")
-```
 
-Verify access by running a quick Bedrock call:
-
-```python
-response = bedrock_client.converse(
-    modelId="us.amazon.nova-lite-v1:0",
-    messages=[{"role": "user", "content": [{"text": "Hello"}]}],
-    inferenceConfig={"maxTokens": 10, "temperature": 0.1}
-)
-print(f"Bedrock OK — latency: {response['metrics']['latencyMs']}ms")
-```
-
----
-
-### Publishing Custom Metrics to CloudWatch
-
-When you run an LLM in production, the built-in Bedrock metrics (invocation count, latency) only tell part of the story. You also need application-level signals — cost per request, time to first token, tokens per second — to make informed decisions about model selection and scaling. CloudWatch custom metrics let you emit these signals alongside AWS-native metrics so everything lives in one place.
-
-The key building block is `PutMetricData`. Each data point belongs to a **namespace** (a logical container) and can carry **dimensions** that let you slice the data — for example, by model ID. Dimensions are critical: without them you cannot compare Nova Lite vs Claude on the same graph.
-
-**Build: Publish a cost metric per invocation**
-
-Create a function that calculates cost from token counts and publishes it to CloudWatch:
-
-```python
+# Pricing per 1K tokens — update as pricing changes
 MODEL_PRICING = {
     "us.amazon.nova-lite-v1:0": {"input": 0.00006, "output": 0.000015},
     "us.amazon.nova-pro-v1:0": {"input": 0.0008, "output": 0.0002},
-    "us.anthropic.claude-3-7-sonnet-20250219-v1:0": {"input": 0.003, "output": 0.015}
+    "us.anthropic.claude-3-7-sonnet-20250219-v1:0": {"input": 0.003, "output": 0.015},
 }
+```
 
-def publish_cost_metric(model_id: str, input_tokens: int, output_tokens: int) -> float:
+## Section 1: Cost Tracking
+
+**Concept:** Every LLM call has a measurable cost determined by input tokens × input price + output tokens × output price. Without tracking this per-call, costs become invisible until the bill arrives. Publishing cost as a CloudWatch metric lets you set alarms before budgets blow.
+
+**Build:**
+
+```python
+def calculate_cost(model_id: str, input_tokens: int, output_tokens: int) -> Dict:
     """Calculate cost and publish to CloudWatch."""
     pricing = MODEL_PRICING[model_id]
-    total_cost = (input_tokens / 1000) * pricing["input"] + (output_tokens / 1000) * pricing["output"]
+    input_cost = (input_tokens / 1000) * pricing["input"]
+    output_cost = (output_tokens / 1000) * pricing["output"]
+    total_cost = input_cost + output_cost
 
     cloudwatch.put_metric_data(
-        Namespace='LLMOperationalMetrics',
+        Namespace="llm_custom_operational_metrics",
         MetricData=[{
-            'MetricName': 'InvocationCost',
-            'Value': total_cost,
-            'Dimensions': [{'Name': 'ModelId', 'Value': model_id}]
-        }]
+            "MetricName": "TotalCost",
+            "Value": total_cost,
+            "Dimensions": [{"Name": "Model", "Value": model_id}],
+        }],
     )
-    return total_cost
+
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_cost_usd": f"${total_cost:.8f}",
+    }
 ```
 
-Test it by invoking a model and publishing the result:
+Run it: `calculate_cost("us.anthropic.claude-3-7-sonnet-20250219-v1:0", 20000, 1500)` → expect ~$0.0825.
+
+## Section 2: Latency Measurement
+
+**Concept:** Latency (time from request to complete response) determines user experience for synchronous calls. The Bedrock Converse API returns `metrics.latencyMs` directly — no manual timing needed. Combining latency with token count gives you tokens-per-second, the key throughput indicator.
+
+**Build:**
 
 ```python
-response = bedrock_client.converse(
-    modelId="us.amazon.nova-pro-v1:0",
-    messages=[{"role": "user", "content": [{"text": "Summarize cloud computing in one sentence."}]}],
-    inferenceConfig={"maxTokens": 100, "temperature": 0.1}
-)
-cost = publish_cost_metric(
-    "us.amazon.nova-pro-v1:0",
-    response["usage"]["inputTokens"],
-    response["usage"]["outputTokens"]
-)
-print(f"Published cost: ${cost:.8f}")
+def measure_latency(model_id: str, prompt: str, max_tokens: int = 100) -> Dict:
+    """Measure end-to-end latency using Converse API built-in metrics."""
+    response = bedrock_client.converse(
+        modelId=model_id,
+        messages=[{"role": "user", "content": [{"text": prompt}]}],
+        inferenceConfig={"maxTokens": max_tokens, "temperature": 0.1},
+    )
+
+    latency_ms = response["metrics"]["latencyMs"]
+    usage = response["usage"]
+
+    return {
+        "model_id": model_id,
+        "server_latency_ms": latency_ms,
+        "input_tokens": usage["inputTokens"],
+        "output_tokens": usage["outputTokens"],
+        "tokens_per_second": round(usage["outputTokens"] / (latency_ms / 1000), 1),
+    }
 ```
 
----
+Compare: call with `"us.amazon.nova-pro-v1:0"` vs `"us.anthropic.claude-3-7-sonnet-20250219-v1:0"` on the same prompt. Notice the latency/cost tradeoff.
 
-### Measuring Streaming Latency (TTFT and TTLT)
+## Section 3: Streaming — TTFT vs TTLT
 
-End-to-end latency tells you how long the user waits for a complete answer, but it hides an important detail: how quickly the first token arrives. Time to First Token (TTFT) drives perceived responsiveness — a user who sees text appearing in 300ms feels the system is fast even if the full response takes 4 seconds. Time to Last Token (TTLT) determines throughput capacity.
+**Concept:** Time to First Token (TTFT) measures perceived responsiveness — how fast the user sees *something*. Time to Last Token (TTLT) measures total generation time. For interactive UIs, low TTFT matters most. For batch pipelines, TTLT determines throughput. The `converse_stream` API exposes both.
 
-You measure these by using the `converse_stream` API and recording timestamps as tokens arrive. The difference between the two metrics also reveals generation speed (tokens per second), which varies dramatically across models.
-
-**Build: Stream a response and publish TTFT/TTLT metrics**
+**Build:**
 
 ```python
-def measure_and_publish_streaming_metrics(model_id: str, prompt: str, max_tokens: int = 200) -> Dict:
-    """Measure TTFT and TTLT via streaming, publish to CloudWatch."""
+def measure_streaming_metrics(model_id: str, prompt: str, max_tokens: int = 200) -> Dict:
+    """Measure TTFT and TTLT from streaming response."""
     start_time = time.time()
 
     response_stream = bedrock_client.converse_stream(
         modelId=model_id,
         messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": max_tokens, "temperature": 0.1}
+        inferenceConfig={"maxTokens": max_tokens, "temperature": 0.1},
     )
 
     first_token_time = None
@@ -126,353 +128,137 @@ def measure_and_publish_streaming_metrics(model_id: str, prompt: str, max_tokens
 
     for event in response_stream["stream"]:
         current_time = time.time()
-        if 'contentBlockDelta' in event:
+        if "contentBlockDelta" in event:
             if first_token_time is None:
                 first_token_time = current_time
             last_token_time = current_time
-        elif 'metadata' in event:
-            output_tokens = event['metadata'].get('usage', {}).get('outputTokens', 0)
+        elif "metadata" in event:
+            output_tokens = event["metadata"].get("usage", {}).get("outputTokens", 0)
 
-    ttft_ms = round((first_token_time - start_time) * 1000, 2) if first_token_time else 0
-    ttlt_ms = round((last_token_time - start_time) * 1000, 2) if last_token_time else 0
+    ttft_ms = round((first_token_time - start_time) * 1000, 2)
+    ttlt_ms = round((last_token_time - start_time) * 1000, 2)
 
+    return {
+        "model_id": model_id,
+        "ttft_ms": ttft_ms,
+        "ttlt_ms": ttlt_ms,
+        "generation_time_ms": round(ttlt_ms - ttft_ms, 2),
+        "tokens_per_second": round(output_tokens / (ttlt_ms / 1000), 1),
+    }
+```
+
+## Section 4: Publishing Custom Metrics to CloudWatch
+
+**Concept:** Individual measurements are useful for debugging; aggregated metrics in CloudWatch are useful for operations. By publishing TTFT, TTLT, and cost with a `Model` dimension, you can build dashboards that compare models over time and set alarms on degradation.
+
+**Build:**
+
+```python
+def put_custom_operational_cw_metrics(model_id: str, ttft_ms, ttlt_ms, total_cost_usd):
+    """Publish TTFT, TTLT, and cost to CloudWatch with model dimension."""
     cloudwatch.put_metric_data(
-        Namespace='LLMOperationalMetrics',
+        Namespace="llm_custom_operational_metrics",
         MetricData=[
-            {'MetricName': 'TimeToFirstToken', 'Value': ttft_ms, 'Unit': 'Milliseconds',
-             'Dimensions': [{'Name': 'ModelId', 'Value': model_id}]},
-            {'MetricName': 'TimeToLastToken', 'Value': ttlt_ms, 'Unit': 'Milliseconds',
-             'Dimensions': [{'Name': 'ModelId', 'Value': model_id}]},
-        ]
+            {
+                "MetricName": "TimeToFirstToken",
+                "Value": ttft_ms,
+                "Unit": "Milliseconds",
+                "Dimensions": [{"Name": "Model", "Value": model_id}],
+            },
+            {
+                "MetricName": "TimeToLastToken",
+                "Value": ttlt_ms,
+                "Unit": "Milliseconds",
+                "Dimensions": [{"Name": "Model", "Value": model_id}],
+            },
+            {
+                "MetricName": "TotalCost",
+                "Value": Decimal(total_cost_usd.replace("$", "")),
+                "Dimensions": [{"Name": "Model", "Value": model_id}],
+            },
+        ],
     )
-    return {"model_id": model_id, "ttft_ms": ttft_ms, "ttlt_ms": ttlt_ms, "output_tokens": output_tokens}
 ```
 
-Run it against two models and compare:
+After running the email summarization comparison across models, these metrics appear in CloudWatch under the `llm_custom_operational_metrics` namespace, filterable by model.
+
+## Section 5: Multi-Model Comparison on a Real Workload
+
+**Concept:** Metrics only matter in context. Comparing models on your actual workload (not synthetic prompts) reveals the real cost/speed/quality tradeoffs. An email summarization task shows how model choice impacts every metric simultaneously.
+
+**Build:**
 
 ```python
-for model in ["us.amazon.nova-pro-v1:0", "us.amazon.nova-lite-v1:0"]:
-    result = measure_and_publish_streaming_metrics(model, "Write a haiku about monitoring.", 50)
-    print(f"{model}: TTFT={result['ttft_ms']}ms, TTLT={result['ttlt_ms']}ms")
+def run_model_comparison(emails: list, models: list, prompt_template: str):
+    """Compare models on a real workload, publishing metrics for each call."""
+    results = []
+    for email in emails:
+        prompt = prompt_template.format(email_content=email["content"])
+        for model_id in models:
+            result = measure_streaming_metrics(model_id, prompt, max_tokens=400)
+            if not result.get("error"):
+                cost = calculate_cost(model_id, result.get("input_tokens", 0), result.get("output_tokens", 0))
+                put_custom_operational_cw_metrics(
+                    model_id, result["ttft_ms"], result["ttlt_ms"], cost["total_cost_usd"]
+                )
+                results.append({**result, **cost, "email_subject": email.get("subject")})
+            time.sleep(0.5)  # Avoid throttling
+    return results
 ```
 
----
-
-### Building a CloudWatch Dashboard
-
-Metrics are only useful if you can see them at a glance. A CloudWatch dashboard assembles widgets — time-series graphs, numbers, text — into a single view. For LLM operations you want to see latency trends, cost accumulation, and error spikes side by side so you can correlate issues (e.g., latency spikes that coincide with throttling).
-
-Dashboards are defined as JSON and created via `PutDashboard`. Each widget specifies which metrics to plot, the stat (Average, Sum, Maximum), and the period.
-
-**Build: Create a dashboard with latency and cost widgets**
-
-```python
-dashboard_body = {
-    "widgets": [
-        {
-            "type": "metric",
-            "x": 0, "y": 0, "width": 12, "height": 6,
-            "properties": {
-                "title": "Time to First Token (ms)",
-                "metrics": [
-                    ["LLMOperationalMetrics", "TimeToFirstToken", "ModelId", "us.amazon.nova-pro-v1:0"],
-                    ["LLMOperationalMetrics", "TimeToFirstToken", "ModelId", "us.amazon.nova-lite-v1:0"]
-                ],
-                "stat": "Average",
-                "period": 60,
-                "region": "us-east-1"
-            }
-        },
-        {
-            "type": "metric",
-            "x": 12, "y": 0, "width": 12, "height": 6,
-            "properties": {
-                "title": "Time to Last Token (ms)",
-                "metrics": [
-                    ["LLMOperationalMetrics", "TimeToLastToken", "ModelId", "us.amazon.nova-pro-v1:0"],
-                    ["LLMOperationalMetrics", "TimeToLastToken", "ModelId", "us.amazon.nova-lite-v1:0"]
-                ],
-                "stat": "Average",
-                "period": 60,
-                "region": "us-east-1"
-            }
-        },
-        {
-            "type": "metric",
-            "x": 0, "y": 6, "width": 12, "height": 6,
-            "properties": {
-                "title": "Invocation Cost (USD)",
-                "metrics": [
-                    ["LLMOperationalMetrics", "InvocationCost", "ModelId", "us.amazon.nova-pro-v1:0"],
-                    ["LLMOperationalMetrics", "InvocationCost", "ModelId", "us.amazon.nova-lite-v1:0"]
-                ],
-                "stat": "Sum",
-                "period": 300,
-                "region": "us-east-1"
-            }
-        },
-        {
-            "type": "metric",
-            "x": 12, "y": 6, "width": 12, "height": 6,
-            "properties": {
-                "title": "Invocation Errors",
-                "metrics": [
-                    ["LLMOperationalMetrics", "InvocationError", "ModelId", "us.amazon.nova-pro-v1:0"],
-                    ["LLMOperationalMetrics", "InvocationError", "ModelId", "us.amazon.nova-lite-v1:0"]
-                ],
-                "stat": "Sum",
-                "period": 60,
-                "region": "us-east-1"
-            }
-        }
-    ]
-}
-
-cloudwatch.put_dashboard(
-    DashboardName='LLM-Operational-Metrics',
-    DashboardBody=json.dumps(dashboard_body)
-)
-print("Dashboard 'LLM-Operational-Metrics' created.")
-```
-
-Open the CloudWatch console → Dashboards → **LLM-Operational-Metrics** to verify it appears.
-
----
-
-### Configuring Alarms for Throttling and Errors
-
-A dashboard shows you what happened; an alarm tells you when something is wrong *right now*. For LLM workloads the most critical alarm conditions are: (1) latency exceeding your SLA, (2) throttling from Bedrock rate limits, and (3) elevated error rates. Each alarm evaluates a metric over a window and transitions to ALARM state when the threshold is breached.
-
-The `TreatMissingData` setting matters: if your application has bursty traffic, periods with no data points should not trigger or suppress alarms incorrectly. Use `notBreaching` for latency alarms (no data = no problem) and `breaching` for error-count alarms where silence might mean the system is down.
-
-**Build: Create latency and error alarms**
-
-```python
-# Alarm: TTLT exceeds 5000ms on average over 3 consecutive periods
-cloudwatch.put_metric_alarm(
-    AlarmName='LLM-HighLatency-TTLT',
-    Namespace='LLMOperationalMetrics',
-    MetricName='TimeToLastToken',
-    Dimensions=[{'Name': 'ModelId', 'Value': 'us.amazon.nova-pro-v1:0'}],
-    Statistic='Average',
-    Period=60,
-    EvaluationPeriods=3,
-    Threshold=5000,
-    ComparisonOperator='GreaterThanThreshold',
-    TreatMissingData='notBreaching',
-    ActionsEnabled=False
-)
-
-# Alarm: More than 5 errors in a 1-minute window
-cloudwatch.put_metric_alarm(
-    AlarmName='LLM-InvocationErrors',
-    Namespace='LLMOperationalMetrics',
-    MetricName='InvocationError',
-    Dimensions=[{'Name': 'ModelId', 'Value': 'us.amazon.nova-pro-v1:0'}],
-    Statistic='Sum',
-    Period=60,
-    EvaluationPeriods=1,
-    Threshold=5,
-    ComparisonOperator='GreaterThanThreshold',
-    TreatMissingData='notBreaching',
-    ActionsEnabled=False
-)
-
-# Alarm: Throttling — any throttle event in a 1-minute window
-cloudwatch.put_metric_alarm(
-    AlarmName='LLM-Throttling',
-    Namespace='LLMOperationalMetrics',
-    MetricName='ThrottleCount',
-    Dimensions=[{'Name': 'ModelId', 'Value': 'us.amazon.nova-pro-v1:0'}],
-    Statistic='Sum',
-    Period=60,
-    EvaluationPeriods=1,
-    Threshold=0,
-    ComparisonOperator='GreaterThanThreshold',
-    TreatMissingData='notBreaching',
-    ActionsEnabled=False
-)
-
-print("Alarms created: LLM-HighLatency-TTLT, LLM-InvocationErrors, LLM-Throttling")
-```
-
----
-
-### Synthetic Load and Alarm Verification
-
-Alarms are only trustworthy if you have verified they fire under the conditions you expect. A synthetic load script sends a burst of requests that intentionally exceeds normal thresholds — triggering throttling, pushing latency up, or generating errors — so you can confirm the alarm transitions to ALARM state.
-
-This is also how you validate your `TreatMissingData` and `EvaluationPeriods` settings before going to production. If an alarm does not fire during synthetic load, your thresholds or periods are too lenient.
-
-**Build: Run synthetic load and publish error/throttle metrics**
-
-```python
-def run_synthetic_load(model_id: str, num_requests: int = 20, delay: float = 0.1):
-    """Send rapid requests to trigger throttling and publish metrics."""
-    errors = 0
-    throttles = 0
-
-    for i in range(num_requests):
-        try:
-            response = bedrock_client.converse(
-                modelId=model_id,
-                messages=[{"role": "user", "content": [{"text": f"Request {i}: Summarize AI safety."}]}],
-                inferenceConfig={"maxTokens": 50, "temperature": 0.1}
-            )
-            # Publish latency
-            cloudwatch.put_metric_data(
-                Namespace='LLMOperationalMetrics',
-                MetricData=[{
-                    'MetricName': 'TimeToLastToken',
-                    'Value': response['metrics']['latencyMs'],
-                    'Unit': 'Milliseconds',
-                    'Dimensions': [{'Name': 'ModelId', 'Value': model_id}]
-                }]
-            )
-        except bedrock_client.exceptions.ThrottlingException:
-            throttles += 1
-            cloudwatch.put_metric_data(
-                Namespace='LLMOperationalMetrics',
-                MetricData=[{
-                    'MetricName': 'ThrottleCount',
-                    'Value': 1,
-                    'Dimensions': [{'Name': 'ModelId', 'Value': model_id}]
-                }]
-            )
-        except Exception as e:
-            errors += 1
-            cloudwatch.put_metric_data(
-                Namespace='LLMOperationalMetrics',
-                MetricData=[{
-                    'MetricName': 'InvocationError',
-                    'Value': 1,
-                    'Dimensions': [{'Name': 'ModelId', 'Value': model_id}]
-                }]
-            )
-        time.sleep(delay)
-
-    print(f"Load complete: {num_requests} requests, {throttles} throttled, {errors} errors")
-    return {"total": num_requests, "throttles": throttles, "errors": errors}
-
-# Run the load test
-results = run_synthetic_load("us.amazon.nova-pro-v1:0", num_requests=20, delay=0.2)
-```
-
-After the load completes, check alarm state:
-
-```python
-for alarm_name in ['LLM-HighLatency-TTLT', 'LLM-InvocationErrors', 'LLM-Throttling']:
-    resp = cloudwatch.describe_alarms(AlarmNames=[alarm_name])
-    state = resp['MetricAlarms'][0]['StateValue']
-    print(f"{alarm_name}: {state}")
-```
-
----
+Run this against 2–3 sample emails with all three models. Observe: Nova Lite is fastest/cheapest, Claude is slowest/most expensive but may produce higher quality summaries. The next module evaluates that quality dimension.
 
 ## Challenges
 
-### Challenge 1: Full Observability Stack
+### Challenge 1: Build a CloudWatch Dashboard with Alarms
 
-Build a complete CloudWatch observability setup for a Bedrock-powered email summarization workload:
+Set up a complete CloudWatch dashboard displaying TTFT, TTLT, cost, and error rate for your models. Then configure alarms for:
+- Latency exceeding a threshold you choose
+- Throttling errors (5xx responses)
+- Cost per hour exceeding a budget
 
-1. Create a CloudWatch dashboard named `Email-Summarizer-Ops` with widgets for: TTFT, TTLT, invocation cost, and error count — each broken down by model dimension.
-2. Configure three alarms:
-   - Latency alarm: average TTLT > 4000ms over 2 evaluation periods
-   - Error alarm: sum of errors > 3 in a single period
-   - Throttle alarm: any throttle event in a 60-second window
-3. Write a synthetic load script that sends 15 email-summarization requests with minimal delay to trigger at least one alarm.
-4. Verify alarm states transition from OK to ALARM.
-
-Use the email summarization prompt from the lesson:
-
-```
-You are an AI assistant that summarizes business emails for busy executives.
-Analyze the following email and provide: Key Points, Action Items, Deadlines, People Involved, Impact.
-```
+Generate synthetic load by running the email summarization comparison in a loop (10+ iterations) to populate the dashboard and trigger at least one alarm.
 
 **Assessment criteria:**
-
-1. All code runs without errors
-2. Dashboard uses correct metric dimensions (`ModelId`) and appropriate stats (Average for latency, Sum for cost/errors)
-3. Alarms use `TreatMissingData='notBreaching'` and appropriate evaluation periods
-4. Synthetic load script publishes metrics on both success and failure paths
-5. Learner can explain why they chose their threshold values and evaluation periods
+1. Runs without errors
+2. Correct metric dimensions (Model dimension on all custom metrics)
+3. Handles missing data (alarm treats missing data as "not breaching")
+4. Learner explains threshold choices (why those values?)
+5. *Stretch:* Identifies all 3 misconfigurations (see below)
 
 ### Challenge 2 (Stretch): Find the Misconfigurations
 
-This challenge reuses the dashboard you built in Challenge 1. Three intentional misconfigurations have been introduced to your working dashboard configuration below. Identify and fix all three.
+Using the dashboard you just built in Challenge 1, three intentional misconfigurations have been introduced:
 
-```python
-broken_dashboard = {
-    "widgets": [
-        {
-            "type": "metric",
-            "x": 0, "y": 0, "width": 12, "height": 6,
-            "properties": {
-                "title": "Time to First Token",
-                "metrics": [
-                    # Misconfig 1: Wrong namespace
-                    ["AWS/Bedrock", "TimeToFirstToken", "ModelId", "us.amazon.nova-pro-v1:0"]
-                ],
-                "stat": "Average",
-                "period": 60,
-                "region": "us-east-1"
-            }
-        },
-        {
-            "type": "metric",
-            "x": 12, "y": 0, "width": 12, "height": 6,
-            "properties": {
-                "title": "Invocation Cost",
-                "metrics": [
-                    ["LLMOperationalMetrics", "InvocationCost", "ModelId", "us.amazon.nova-pro-v1:0"]
-                ],
-                # Misconfig 2: Using Average for cost (should be Sum)
-                "stat": "Average",
-                "period": 300,
-                "region": "us-east-1"
-            }
-        },
-        {
-            "type": "metric",
-            "x": 0, "y": 6, "width": 12, "height": 6,
-            "properties": {
-                "title": "Error Count",
-                "metrics": [
-                    # Misconfig 3: Missing dimension — no ModelId filter
-                    ["LLMOperationalMetrics", "InvocationError"]
-                ],
-                "stat": "Sum",
-                "period": 60,
-                "region": "us-east-1"
-            }
-        }
-    ]
-}
-```
+1. One metric uses the wrong `Unit` (e.g., "Seconds" instead of "Milliseconds")
+2. One alarm's comparison operator is inverted (triggers when metric is *below* threshold instead of above)
+3. One dimension value has a typo causing metrics to split into two unrelated time series
+
+Identify all three, explain why each is problematic, and fix them.
 
 **Assessment criteria:**
-
-1. Correctly identifies the wrong namespace (`AWS/Bedrock` should be `LLMOperationalMetrics`)
-2. Correctly identifies the wrong stat for cost (`Average` should be `Sum`)
-3. Correctly identifies the missing dimension on the error metric
-4. Learner can explain the operational impact of each misconfiguration
-
-### Tips
-
-- Use the `MODEL_PRICING` dict from the lesson as your pricing reference.
-- The `response['metrics']['latencyMs']` field from `converse` gives end-to-end latency without streaming.
-- For streaming, `time.time()` around the stream iteration loop is more reliable than response metadata.
-- Set `ActionsEnabled=False` on alarms to avoid triggering SNS notifications during the workshop.
-
----
+1. Runs without errors after fixes
+2. Correct metric dimensions
+3. Handles missing data
+4. Learner explains thresholds
+5. Identifies all 3 misconfigurations with explanations
 
 ## Wrap-Up
 
-You built a full CloudWatch observability stack for Bedrock LLM workloads: custom metrics with model dimensions, a multi-widget dashboard, threshold-based alarms, and a synthetic load harness to validate everything works. This pattern transfers directly to any Bedrock application — swap in your namespace and model IDs and you have production-grade monitoring from day one.
+**Key Takeaways:**
+- Every LLM call has measurable cost, latency, and throughput — track all three
+- TTFT drives user experience; TTLT drives system throughput — optimize for your use case
+- CloudWatch custom metrics with dimensions enable per-model comparison over time
+- Model choice is a tradeoff: cheaper/faster models may sacrifice quality (evaluated in Module 02)
 
-**Feedback:** How did this module go? Was the pacing between concepts comfortable? Let your facilitator know or drop a note in the workshop feedback form.
+**This module does NOT cover:**
+- Quality/accuracy evaluation of LLM outputs (→ Module 02: Quality Metrics)
+- Agentic workflow metrics like tool-use success rate (→ Module 03)
+- Guardrails and safety metrics (→ Module 04)
+- Automated evaluation frameworks like PromptFoo (→ Module 05)
+- Bedrock batch inference pricing and invocation patterns
+- Advanced CloudWatch features (anomaly detection, Contributor Insights)
 
-**Profile update:** You can now add "CloudWatch custom metrics and dashboards for LLM observability" to your builder profile.
-
-**Next module:** Module 02 takes the operational data you are now collecting and layers on *quality* evaluation — measuring whether the LLM outputs are actually good, not just fast and cheap.
+**Next Steps:**
+- Module 02 evaluates whether the cheapest/fastest model actually produces *good enough* summaries
+- Set up the automatic Bedrock dashboard alongside your custom metrics for full visibility

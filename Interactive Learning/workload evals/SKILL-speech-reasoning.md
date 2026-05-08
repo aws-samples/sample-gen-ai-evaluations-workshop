@@ -1,265 +1,255 @@
 ---
-name: Speech & Automated Reasoning Evaluations
-description: Build evaluation pipelines for speech-to-speech applications and automated reasoning policies using CloudWatch traces, LLM-as-Judge, and SMT solver verification
+name: Speech and Automated Reasoning Evaluation
+description: Help me evaluate speech-to-speech applications with LLM-as-Judge and verify LLM outputs against formal policy rules using Automated Reasoning checks
 ---
 
-In this skill you build two distinct evaluation pipelines that address specialized AI workloads. First, you construct an end-to-end speech-to-speech evaluation system that extracts telemetry from CloudWatch, maps sessions to validation data, and runs LLM-as-Judge scoring. Second, you implement automated reasoning (AR) evaluations that verify LLM outputs against formal policy rules using Bedrock Guardrails. By the end, you will understand how to measure quality for both conversational speech systems and logic-verified compliance systems.
+# Evaluating Speech-to-Speech and Automated Reasoning
+
+Two distinct evaluation domains that share a common theme: verifying AI system outputs against ground truth. Speech evaluation uses LLM-as-Judge to assess conversation quality from telemetry traces. Automated Reasoning uses formal verification (SMT solvers) to check claims against policy rules. Together they cover the spectrum from subjective quality assessment to mathematically provable correctness.
+
+This module does NOT cover: building speech applications, training speech models, writing AR policy documents from scratch, or production guardrail deployment patterns.
 
 ## Prerequisites
 
-- Completion of Module 01 (evaluation fundamentals) and Module 02 (LLM-as-Judge patterns)
-- Familiarity with Amazon Bedrock, CloudWatch Logs, and boto3
-- Python environment with `boto3`, `pandas`, `numpy`, `matplotlib`, `seaborn` installed
-- AWS credentials with access to Bedrock and CloudWatch
+- AWS account with Bedrock access (us-east-1 for AR, us-west-2 for speech)
+- Python 3.10+
+- Familiarity with boto3, CloudWatch Logs, and the Bedrock Guardrails API
+- A deployed speech-to-speech application with OpenTelemetry tracing (for Section 1–2)
+- Completed Module 04 Guardrails section or equivalent understanding of Bedrock Guardrails
 
 ## Learning Objectives
 
-- Extract and process speech-to-speech telemetry traces from CloudWatch into structured evaluation datasets
-- Design and execute LLM-as-Judge evaluations that compare session transcripts against validation categories
-- Implement automated reasoning policy evaluations that measure translation fidelity, consistency accuracy, and false valid rate
-- Interpret confusion matrices and per-type precision/recall/F1 metrics to diagnose AR policy quality
+By the end of this module, you will be able to:
+
+1. Extract and structure speech-to-speech conversation traces from CloudWatch into evaluation datasets
+2. Implement an LLM-as-Judge pipeline that scores multi-turn voice interactions against validation criteria
+3. Configure Automated Reasoning policies and run claims through the policy test API
+4. Compute AR evaluation metrics (false valid rate, consistency accuracy, macro F1) and interpret validation results
+5. Diagnose AR mismatches by analyzing how question context affects translation behavior
 
 ## Setup
 
-Ensure your Python environment has the required dependencies:
-
 ```bash
-pip install boto3 pandas numpy matplotlib seaborn python-dotenv
+uv venv .venv
+source .venv/bin/activate
+uv pip install boto3 pandas numpy matplotlib seaborn python-dotenv
 ```
 
-Configure AWS credentials. The notebooks expect a `.env` file or environment variables:
-
 ```python
-import os
 import boto3
-from dotenv import load_dotenv
+import json
+import time
+import pandas as pd
+import numpy as np
+from pathlib import Path
 
-load_dotenv(".env")
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-session = boto3.Session(region_name=AWS_REGION)
-bedrock_client = session.client("bedrock")
-bedrock_runtime_client = session.client("bedrock-runtime")
-cloudwatch_logs_client = session.client("logs")
+session = boto3.Session(region_name='us-east-1')
+bedrock_client = session.client('bedrock')
+bedrock_runtime = session.client('bedrock-runtime')
+
+# Verify access
+bedrock_client.list_guardrails(maxResults=1)
+print("Bedrock access verified")
 ```
 
-Verify Bedrock access:
+## Section 1: Speech Evaluation Concepts
 
-```python
-try:
-    bedrock_client.list_guardrails(maxResults=1)
-    print("Bedrock access verified")
-except Exception as e:
-    print(f"ERROR: Cannot access Bedrock. Check credentials.\n{e}")
-```
+> **Note:** The `S2SEvaluator` class is provided as a utility in the workshop repository. If you don't have a deployed speech application, use the sample trace data in `data/s2s_eval_data.jsonl` to complete these sections.
 
----
+**Concept:** Speech-to-speech applications produce conversations captured as telemetry spans in CloudWatch. Evaluating them requires three steps: (1) extract traces and reconstruct turn-by-turn conversations, (2) map sessions to validation categories so you know what "correct" looks like, and (3) run an LLM judge that scores each turn against category-specific criteria.
 
-### Section 1: Speech Evaluation Concepts
+The key insight is that speech interactions have temporal structure — turn order, response latency, and tool call sequences all matter. A text-only evaluation misses these signals. The S2SEvaluator class handles this by preserving span metadata (timestamps, tool calls, session state transitions) alongside the text content.
 
-Speech-to-speech (S2S) systems present unique evaluation challenges because they operate across multiple modalities — audio input, language understanding, response generation, and speech synthesis. Traditional text-based metrics cannot capture the full quality picture. You need an evaluation pipeline that captures the entire conversation flow, maps it to expected behaviors, and scores it holistically.
-
-The pipeline follows five stages: (1) run the S2S application to generate conversations, (2) capture telemetry traces in CloudWatch, (3) extract and structure those traces into an evaluation dataset, (4) annotate sessions by mapping them to validation categories, and (5) run LLM-as-Judge scoring against the validation data. Each stage produces artifacts that feed the next, creating a reproducible evaluation workflow.
-
-CloudWatch serves as the telemetry backbone. The S2S application emits OpenTelemetry spans that record each turn of the conversation — user audio transcriptions, assistant responses, timing data, and session identifiers. By querying CloudWatch log groups, you retrieve all spans for a time window and group them by session ID.
-
-**Build: Extract traces from CloudWatch and build an evaluation dataset**
+**Build:**
 
 ```python
 from s2s_evaluator import S2SEvaluator
 
-EVAL_DATASET_PATH = "data/s2s_eval_data.jsonl"
 evaluator = S2SEvaluator(boto3_session=session)
 
-# Extract all traces from the last 24 hours
-traces = evaluator.extract_traces_from_cloudwatch(hours_back=24)
-
-# Process into structured evaluation dataset
-eval_data = evaluator.process_and_store_eval_dataset(
-    [traces], EVAL_DATASET_PATH
+# Step 1: Extract traces from CloudWatch
+traces = evaluator.extract_traces_from_cloudwatch(
+    hours_back=24,
+    log_group_name='aws/spans'
 )
-print(f"Saved {len(eval_data)} sessions to {EVAL_DATASET_PATH}")
+
+# Step 2: Process spans into structured eval dataset
+eval_data = evaluator.process_and_store_eval_dataset(
+    raw_traces=[traces],
+    output_path="data/s2s_eval_data.jsonl"
+)
+
+print(f"Extracted {len(eval_data)} sessions")
+for session_data in eval_data[:2]:
+    print(f"  Session: {len(session_data.get('turns', []))} turns")
 ```
 
----
+## Section 2: Speech Quality Metrics with LLM-as-Judge
 
-### Section 2: Speech Metrics Implementation
+**Concept:** The LLM judge evaluates each session against a validation dataset — predefined "golden" conversations that define expected behavior per category (e.g., TechnicalInterview, OrderAssistant). The judge scores on multiple dimensions: response relevance, tool call accuracy, conversation flow, and task completion. Running multiple iterations and merging results reduces variance from LLM non-determinism.
 
-Once traces are extracted, you must map each session to a validation category (e.g., "TechnicalInterview", "OrderAssistant") so the LLM judge can compare actual behavior against expected behavior. This mapping can be manual (via an annotation UI) or automated. The evaluation then scores each session turn-by-turn using configurable criteria from a JSON config file.
-
-The LLM-as-Judge approach uses a model (e.g., Claude Haiku) to assess whether the assistant's responses match the expected conversation flow for that category. Results are aggregated across multiple runs to reduce variance, and a markdown report is generated with per-category scores.
-
-Key metrics include: overall pass rate, per-category accuracy, and individual turn scores. Multiple evaluation runs can be merged to produce confidence intervals and identify flaky test cases.
-
-**Build: Run LLM-as-Judge evaluation on mapped sessions**
+**Build:**
 
 ```python
-import json
-from pathlib import Path
-
-VALIDATION_DATASET_PATH = "data/s2s_validation_dataset.jsonl"
-MAPPINGS_FILE = Path("config/manual_mappings.json")
-
-eval_data = evaluator.load_eval_dataset(EVAL_DATASET_PATH)
-manual_mappings = evaluator.load_manual_mappings(str(MAPPINGS_FILE))
-validation_data = evaluator.load_validation_dataset(VALIDATION_DATASET_PATH)
+# Load config and validation data
 config = evaluator.load_config("config/llm_judge_s2s_config.json")
-judge = evaluator.initialize_judge(config)
-
-# Run evaluation
-results = evaluator.run_evaluation_iteration(
-    category_filter=None,
-    eval_data=eval_data,
-    validation_data=validation_data,
-    manual_mappings=manual_mappings
+validation_data = evaluator.load_validation_dataset(
+    "data/s2s_validation_dataset.jsonl"
 )
+
+# Initialize judge and run evaluation
+judge = evaluator.initialize_judge(config)
+results = evaluator.run_evaluation_iteration(
+    category_filter=None  # Evaluate all categories
+)
+
+# Run multiple iterations for statistical confidence
+all_runs = [evaluator.run_evaluation_iteration() for _ in range(3)]
+merged = evaluator.merge_results(all_runs)
 
 # Generate report
-merged = evaluator.merge_results([results])
 report = evaluator.generate_evaluation_report(merged)
-print(f"Total evaluations: {merged.get('total_evaluations', 0)}")
+print(report[:500])
 ```
 
----
+## Section 3: Automated Reasoning Concepts
 
-### Section 3: Automated Reasoning Concepts
+**Concept:** Automated Reasoning (AR) Checks verify LLM outputs against formal policy rules using a two-step pipeline: (1) an LLM translates natural language claims into logical formulas, (2) an SMT solver checks those formulas against compiled policy rules. This produces 7 validation result types:
 
-Automated Reasoning (AR) Checks in Amazon Bedrock Guardrails verify LLM outputs against formal policy rules using a two-step pipeline: (1) translation of natural language into logical formulas, and (2) verification of those formulas against policy rules via an SMT solver. This produces one of seven validation result types:
+| Result | Meaning | Action |
+|--------|---------|--------|
+| `VALID` | Claim satisfies all rules | Serve response |
+| `INVALID` | Claim violates a rule | Block/rewrite |
+| `SATISFIABLE` | Claim is consistent with rules | Serve with caveat |
+| `IMPOSSIBLE` | Contradictory premises | Review input |
+| `noTranslations` | Couldn't parse the claim | Out of scope |
+| `partiallyTranslated` | Partial parse | Lower confidence |
+| `unknown` | Solver timeout | Retry or flag |
 
-| Result | Meaning |
-|--------|---------|
-| `VALID` | Claim satisfies all policy rules |
-| `INVALID` | Claim violates at least one rule |
-| `SATISFIABLE` | Some interpretations valid, some not |
-| `IMPOSSIBLE` | Contradictory premises detected |
-| `TRANSLATION_AMBIGUOUS` | Multiple interpretations possible |
-| `NO_TRANSLATIONS` | No policy variables matched |
-| `TOO_COMPLEX` | SMT solver timed out |
+The critical insight: **questions act as premises**. The AR translator uses both the user's question and the LLM's answer. The question establishes facts (premises), the answer makes claims. Changing the question can flip the validation result — this is a feature, not a bug.
 
-The evaluation framework measures five key metrics: **False Valid Rate** (safety — target 0%), **Consistency Accuracy** (predictability — target >80%), **Macro F1** (balance across types — target >0.8), **Ideal Accuracy** (quality with perfect translation), and **Fidelity Gap** (room for improvement via variable descriptions).
-
-Each test case has two expectation fields: `expected_finding_type` (what the policy actually produces) and `ideal_finding_type` (what it should produce with perfect translation). The gap between these measures translation fidelity.
-
-**Build: Create AR policies and verify guardrail access**
+**Build:**
 
 ```python
-from botocore.config import Config
-
-config = Config(retries={"max_attempts": 3})
-bedrock_client = boto3.client("bedrock", config=config)
-bedrock_runtime_client = boto3.client("bedrock-runtime", config=config)
-
-# Verify guardrail access
-GUARDRAIL_ID = "your-guardrail-id"
-GUARDRAIL_VERSION = "DRAFT"
-
-resp = bedrock_runtime_client.apply_guardrail(
-    guardrailIdentifier=GUARDRAIL_ID,
-    guardrailVersion=GUARDRAIL_VERSION,
-    source="OUTPUT",
-    content=[{"text": {"text": "test"}}]
-)
-print(f"Guardrail verified: {GUARDRAIL_ID}")
-```
-
----
-
-### Section 4: Reasoning Verification Implementation
-
-The evaluation loop runs test cases through the AR policy test API, collects validation results, and computes metrics. For each test, you create a temporary test case, run the test workflow, poll for results, normalize the validation result type, and extract translation quality metrics (confidence, untranslated claims, rules triggered).
-
-The metrics computation uses a confusion matrix approach: for each validation result type, compute precision (of all predictions of this type, how many correct?), recall (of all tests that should be this type, how many caught?), and F1 (harmonic mean). The aggregate Macro F1 weights all types equally to catch imbalances.
-
-The most critical metric is False Valid Rate — when the policy certifies a non-compliant claim as valid. This is the AR equivalent of a safety system saying "all clear" when there's a real problem.
-
-**Build: Run AR evaluation and compute core metrics**
-
-```python
-import numpy as np
-
+# AR finding type constants
 FINDING_TYPES = [
-    "translationAmbiguous", "impossible", "invalid",
-    "satisfiable", "valid", "tooComplex", "noTranslations"
+    'valid', 'invalid', 'satisfiable', 'impossible',
+    'noTranslations', 'partiallyTranslated', 'unknown'
 ]
-FINDING_PRIORITY = {ft: i for i, ft in enumerate(FINDING_TYPES)}
 
-def compute_core_metrics(df, expected_col="expected_finding_type"):
-    valid_df = df[df["api_error"].isna()]
-    accuracy = valid_df["finding_correct"].mean()
+def get_finding_type(finding):
+    """Extract validation result from a union-typed AR finding."""
+    for ft in FINDING_TYPES:
+        if ft in finding:
+            return ft, finding[ft]
+    return "unknown", {}
 
-    labels = [ft for ft in FINDING_TYPES
-              if ft in valid_df[expected_col].values
-              or ft in valid_df["actual_finding_type"].values]
+def has_untranslated_parts(finding_detail):
+    """Check if a finding has untranslated premises or claims."""
+    translation = finding_detail.get('translation', {})
+    return (len(translation.get('untranslatedClaims', [])) > 0 or
+            len(translation.get('untranslatedPremises', [])) > 0)
+```
 
-    import pandas as pd
-    cm = pd.crosstab(
-        valid_df[expected_col], valid_df["actual_finding_type"],
-        dropna=False
-    ).reindex(index=labels, columns=labels, fill_value=0)
+## Section 4: Reasoning Verification Implementation
 
-    per_type = {}
-    for ft in labels:
-        tp = cm.loc[ft, ft] if ft in cm.index and ft in cm.columns else 0
-        fp = cm[ft].sum() - tp if ft in cm.columns else 0
-        fn = cm.loc[ft].sum() - tp if ft in cm.index else 0
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-        per_type[ft] = {"precision": precision, "recall": recall, "f1": f1}
+**Concept:** Evaluating an AR policy means running a test suite of claims with known expected outcomes and measuring how often the policy agrees. The key metrics are: false valid rate (safety — did it certify a bad claim?), consistency accuracy (predictability), and macro F1 (balance across all result types). You use the policy test API rather than `apply_guardrail` for evaluation because it produces more accurate translations.
 
-    types_with_data = [ft for ft in labels if ft in cm.index and cm.loc[ft].sum() > 0]
-    macro_f1 = np.mean([per_type[ft]["f1"] for ft in types_with_data]) if types_with_data else 0
+**Build:**
 
-    # False valid rate
-    expected_non_valid = valid_df[valid_df[expected_col] != "valid"]
-    false_valid = expected_non_valid[expected_non_valid["actual_finding_type"] == "valid"]
-    false_valid_rate = len(false_valid) / len(expected_non_valid) if len(expected_non_valid) > 0 else 0
+```python
+def run_ar_test(policy_arn, build_workflow_id, test_case):
+    """Run a single claim through the AR policy test API."""
+    # Create test case
+    resp = bedrock_client.start_automated_reasoning_policy_test_workflow(
+        policyArn=policy_arn,
+        buildWorkflowId=build_workflow_id,
+        testCases=[{
+            'query': test_case['query'],
+            'guardContent': [{'text': {'text': test_case['text']}}]
+        }]
+    )
+    workflow_id = resp['testWorkflowId']
+
+    # Poll for completion
+    while True:
+        status = bedrock_client.get_automated_reasoning_policy_test_workflow(
+            policyArn=policy_arn, testWorkflowId=workflow_id
+        )
+        if status['status'] in ('COMPLETED', 'FAILED'):
+            break
+        time.sleep(2)
+
+    return status.get('results', [{}])[0]
+
+
+def compute_core_metrics(df, expected_col='expected_finding_type'):
+    """Compute AR evaluation metrics from results DataFrame."""
+    valid_df = df[df['api_error'].isna()]
+    accuracy = (valid_df['actual_finding_type'] == valid_df[expected_col]).mean()
+
+    # False valid rate — the safety-critical metric
+    expected_invalid = valid_df[valid_df[expected_col] == 'invalid']
+    false_valid = (expected_invalid['actual_finding_type'] == 'valid').sum()
+    false_valid_rate = false_valid / len(expected_invalid) if len(expected_invalid) > 0 else 0
+
+    # Macro F1 across all result types
+    labels = list(set(valid_df[expected_col]) | set(valid_df['actual_finding_type']))
+    cm = pd.crosstab(valid_df[expected_col], valid_df['actual_finding_type'])
 
     return {
-        "accuracy": accuracy,
-        "macro_f1": macro_f1,
-        "false_valid_rate": false_valid_rate,
-        "per_type": per_type,
+        'accuracy': accuracy,
+        'false_valid_rate': false_valid_rate,
+        'confusion_matrix': cm,
+        'n_tests': len(valid_df),
     }
-
-# After running evaluation and collecting results into a DataFrame `df`:
-# metrics = compute_core_metrics(df)
-# print(f"Accuracy: {metrics['accuracy']:.1%}")
-# print(f"Macro F1: {metrics['macro_f1']:.3f}")
-# print(f"False Valid Rate: {metrics['false_valid_rate']:.1%}")
 ```
-
----
 
 ## Challenges
 
-Design and implement a combined evaluation dashboard that reports on both a speech-to-speech system and an automated reasoning policy. Your dashboard should:
-
-1. Extract S2S traces from CloudWatch and run at least one LLM-as-Judge evaluation pass
-2. Run at least 10 AR test cases through the policy test API
-3. Compute and display: S2S pass rate, AR consistency accuracy, AR macro F1, and AR false valid rate
-4. Visualize results with at least one confusion matrix and one summary chart
-5. Produce a markdown report summarizing findings from both evaluation domains
+1. **Speech Pipeline Extension:** Add a custom scoring dimension to the LLM judge config (e.g., "empathy" or "technical accuracy") and run a comparative evaluation showing how scores change across categories.
 
 **Assessment criteria:**
+- Runs without errors
+- Adds a meaningful scoring dimension with a clear 0/1 or scaled rubric definition
+- Runs evaluation with and without the new dimension and shows score distribution differences
+- Demonstrates that the new dimension captures signal not already covered by existing criteria
+- Learner can explain their approach
 
-1. Pipeline runs without errors end-to-end
-2. Correctly extracts and processes CloudWatch traces into evaluation datasets
-3. Implements LLM-as-Judge scoring with configurable validation categories
-4. Computes AR metrics including false valid rate, accuracy, and per-type F1
-5. Generates visualizations (confusion matrix, summary chart) from evaluation results
-6. Produces a coherent markdown report covering both speech and reasoning evaluations
-7. Learner can explain their approach and interpret the metrics
+2. **AR Boundary Testing:** Create 5 test cases that probe exact numeric boundaries in your AR policy (e.g., "exactly 70 square feet" vs "69.9 square feet"). Predict the expected validation result for each, run them, and explain any mismatches.
+
+**Assessment criteria:**
+- Runs without errors
+- Creates at least 5 test cases targeting numeric boundary conditions in the policy
+- Predicts expected results before running (documented predictions vs actuals)
+- Explains mismatches using the premise/claim translation model rather than dismissing as "bugs"
+- Learner can explain their approach
+
+3. **Context Sensitivity Investigation:** Take one AR test case and run it with three different question phrasings while keeping the answer identical. Document how the validation result changes and explain why based on the premise/claim distinction.
+
+**Assessment criteria:**
+- Runs without errors
+- Uses at least 3 distinct question phrasings with the same answer text
+- Documents the validation result for each and identifies which changed
+- Explains the result differences in terms of how questions establish premises that affect claim validation
+- Learner can explain their approach
+
+4. **Capstone:** See CHALLENGE-capstone.md for the Module 04 capstone that integrates guardrails, structured data, RAG, speech, and reasoning evaluation into a unified assessment pipeline.
+
+**Assessment criteria:**
+- Runs without errors
+- Integrates at least 3 of the 4 evaluation domains from Module 04
+- Produces a unified report or dashboard showing cross-domain metrics
+- Identifies at least one insight that only emerges from combining evaluation approaches
+- Learner can explain their approach
 
 ## Wrap-Up
 
-You have now built evaluation pipelines for two specialized AI workloads: speech-to-speech systems (using CloudWatch telemetry and LLM-as-Judge) and automated reasoning policies (using SMT solver verification and classification metrics). These techniques extend the foundational evaluation patterns from earlier modules into production-grade quality measurement.
+You built two complementary evaluation pipelines:
 
-Key takeaways:
-- Speech evaluations require end-to-end trace capture and category-based validation
-- AR evaluations produce formal verification results that can be measured with classification metrics
-- False Valid Rate is the most critical safety metric for reasoning systems
-- The Fidelity Gap between consistency and ideal accuracy reveals optimization opportunities
+- **Speech evaluation** uses LLM-as-Judge over telemetry traces — subjective but scalable quality assessment for voice interactions
+- **Automated Reasoning** uses formal verification — mathematically provable correctness checks against policy rules
 
-For the Module 04 capstone challenge, see `CHALLENGE-capstone.md` — it integrates techniques from all workload-specific evaluations in this module into a comprehensive evaluation system.
+The key difference: speech evaluation tells you "this conversation was good/bad" (probabilistic). AR evaluation tells you "this claim is valid/invalid" (deterministic). Production systems need both — AR for compliance-critical outputs, LLM-as-Judge for everything else.
 
-To continue building your evaluation expertise, explore Module 05 for production monitoring and continuous evaluation patterns.
+Next: Complete the Module 04 capstone (CHALLENGE-capstone.md) to integrate all workload-specific evaluation techniques into a unified pipeline.

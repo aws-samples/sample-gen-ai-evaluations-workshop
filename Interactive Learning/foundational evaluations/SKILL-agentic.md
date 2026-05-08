@@ -1,283 +1,263 @@
 ---
-name: "Agentic Metrics"
-description: "Evaluate multi-step AI agents by designing reusable metrics for tool use, latency, and accuracy across agent execution traces"
+name: agentic-metrics
+description: Build evaluation metrics for multi-step agents. Activate when asked to "evaluate agent performance", "measure tool selection accuracy", "build agent metrics", "assess multi-step traces", or "create an evaluation framework for agents".
 ---
 
-In this module you build an evaluation framework for AI agents that use tools across multiple steps. You will implement a custom evaluation function that scores agent outputs against ground truth, stand up a Strands SDK agent with web-search tools, and measure tool-routing accuracy across a structured dataset. By the end, you can design metrics that apply at different steps of an agent workflow and articulate what your framework does not yet cover.
+# Evaluating Multi-Step Agents
+
+Build metrics that measure agent performance across accuracy, tool selection, and resource efficiency — then demonstrate how those metrics reuse across different evaluation scenarios.
 
 ## Prerequisites
-
-- Completed Module 01 (Evaluation Fundamentals) and Module 02 (LLM-as-Judge)
-- Python 3.10+ with `strands-agents` and `strands-agents-builder` installed
-- AWS credentials configured with Bedrock model access (Claude Sonnet)
-- Familiarity with JSON trace formats and basic statistics (percent error)
+- Completion of quality-metrics module (concepts: ground truth comparison, structured output parsing, error rate calculation)
+- Source notebook: `../../Foundational Evaluations/04-agentic-metrics/01-Agentic-Metrics.ipynb`
+- Data files: `data/raw_traces.json`, `data/labeled_traces.json`, `city_pop.csv`, `test_cases.json`
+- AWS services: Amazon Bedrock (Nova Micro/Lite/Pro, Claude Haiku/Sonnet)
 
 ## Learning Objectives
-
-- Implement an evaluation function that extracts structured outputs and computes quantitative error against ground truth
-- Configure and invoke a Strands SDK agent with tool-decorated functions to generate execution traces
-- Measure tool selection accuracy across a multi-case dataset using direct tool call recording
-- Design reusable metrics that apply at multiple agent steps with step-appropriate thresholds
-- Identify evaluation gaps in an agent framework and specify the data needed to close them
+By the end of this module, you will:
+- Implement a ground-truth evaluation function that extracts structured outputs and computes percent error
+- Build a tool selection accuracy metric using expected-vs-actual comparison
+- Design a multi-city consistency metric that aggregates per-case results into summary statistics
+- Reuse evaluation functions across single-model, multi-model, and multi-city scenarios
+- Identify gaps in an evaluation framework and propose extensions
 
 ## Setup
 
-1. Navigate to the module directory:
+```python
+from strands import Agent, tool
+from strands.models import BedrockModel
+from botocore.config import Config
+import pandas as pd, re, json, statistics, random
 
-```bash
-cd "Foundational Evaluations/04-agentic-metrics/"
+# Timeout configs for evaluation scenarios
+quick_config = Config(connect_timeout=5, read_timeout=20, retries={"max_attempts": 0})
+longer_config = Config(connect_timeout=10, read_timeout=60, retries={"max_attempts": 1})
+
+# Ground truth dataset
+gold_standard = pd.read_csv('city_pop.csv')
+gold_standard['population'] = gold_standard['population'].astype(str).str.replace(',', '').astype(float)
+gold_standard['land_area_mi2'] = gold_standard['land_area_mi2'].astype(str).str.replace(',', '').astype(float)
 ```
 
-2. Verify data files are present:
+## Section 1: Ground-Truth Accuracy Metric
 
-```bash
-ls data/raw_traces.json data/labeled_traces.json
-ls city_pop.csv test_cases.json
-```
+**Concept:** Agent evaluation starts with a measurable baseline. By requiring structured output (XML tags) from the agent, you enable automated comparison against known-correct values. This pattern — structured extraction → numeric comparison → percent error — is the foundation of every accuracy metric in this module.
 
-3. Confirm Strands SDK is available:
+**Build:**
 
 ```python
-from strands import Agent
-from strands.models.bedrock import BedrockModel
-print("Strands SDK ready")
-```
+def evaluate_city_guess(city, state, chatbot_response, dataset):
+    """Compare agent's structured output against ground truth dataset.
+    
+    Extracts <pop> and <area> XML tags from response, matches against
+    dataset, returns percent errors + performance metrics.
+    """
+    final_msg = chatbot_response.message['content'][0]['text']
+    guessed_pop = int(re.search(r'<pop>(.*?)</pop>', final_msg).group(1))
+    guessed_area = float(re.search(r'<area>(.*?)</area>', final_msg).group(1))
 
-4. Set your model configuration:
+    # Extract agent loop metrics from built-in observability
+    total_tokens = chatbot_response.metrics.accumulated_usage['totalTokens']
+    total_time = sum(chatbot_response.metrics.cycle_durations)
+    tool_calls = sum(
+        chatbot_response.metrics.tool_metrics[t].call_count
+        for t in chatbot_response.metrics.tool_metrics
+    )
 
-```python
-model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-20250514",
-    region_name="us-west-2"
-)
-```
+    # Match against ground truth (handles Wikipedia annotations like [c])
+    mask = (dataset['city'].str.replace(r'\[.*\]', '', regex=True)
+            .str.strip().str.lower() == city.strip().lower()) & \
+           (dataset['state'].str.upper() == state.upper())
+    row = dataset[mask].iloc[0]
 
-### Section 1: Building a Custom Evaluation Function
-
-**Concept**
-
-Before you can evaluate an agent, you need a function that takes raw agent output and produces a score. Agents rarely return clean numbers — they embed answers in natural language, XML tags, or JSON. Your evaluation function must parse that output, compare it to ground truth, and capture operational metadata like token count and latency.
-
-The `evaluate_city_guess` function (Cell 8 of the source notebook) demonstrates this pattern. It extracts a population estimate from XML-tagged agent output, computes percent error against a known value from `city_pop.csv`, and records how many tokens the agent consumed and how long it took. This three-part structure — parse, score, annotate — is the foundation for every agentic metric you will build.
-
-Why does this matter? Without structured extraction, you cannot compare agent runs. Without ground truth, you cannot quantify drift. Without operational metadata, you cannot distinguish a correct-but-slow agent from a correct-and-fast one.
-
-**Build**
-
-Extract and run the evaluation function from Cell 8. This function expects the agent to return population guesses wrapped in `<answer>` tags:
-
-```python
-import re
-import time
-import csv
-
-# Load ground truth from city_pop.csv
-ground_truth = {}
-with open("city_pop.csv", "r") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        ground_truth[row["city"].lower()] = int(row["population"])
-
-def evaluate_city_guess(agent_output: str, city: str, token_count: int, latency: float) -> dict:
-    """Extract XML-tagged population guess, compute % error vs ground truth."""
-    # Extract answer from XML tags
-    match = re.search(r"<answer>([\d,]+)</answer>", agent_output)
-    if not match:
-        return {"city": city, "parsed": False, "error_pct": None,
-                "token_count": token_count, "latency_s": latency}
-
-    guess = int(match.group(1).replace(",", ""))
-    actual = ground_truth[city.lower()]
-    error_pct = abs(guess - actual) / actual * 100
+    pop_error = abs(row['population'] - guessed_pop) / row['population'] * 100
+    area_error = abs(row['land_area_mi2'] - guessed_area) / row['land_area_mi2'] * 100
 
     return {
-        "city": city,
-        "parsed": True,
-        "guess": guess,
-        "actual": actual,
-        "error_pct": round(error_pct, 2),
-        "token_count": token_count,
-        "latency_s": round(latency, 3)
+        'population_error_percent': round(pop_error, 2),
+        'area_error_percent': round(area_error, 2),
+        'total_tokens': total_tokens,
+        'total_time': total_time,
+        'tool_calls': tool_calls
     }
-
-# Test with a synthetic output
-result = evaluate_city_guess("<answer>750,000</answer>", "seattle", token_count=340, latency=2.1)
-print(result)
 ```
 
-Verify that `error_pct` is computed correctly and that all metadata fields are populated.
+Source: Cell 8 of `03-Agentic-Metrics.ipynb` — full version includes city/state validation and warning handling.
 
-### Section 2: Strands Agent Scaffold with Tool-Decorated Functions
+## Section 2: Agent-as-Evaluator Pattern
 
-**Concept**
+**Concept:** Wrapping an evaluation function as a `@tool` lets a meta-agent orchestrate comparisons across models. The evaluator agent calls `eval_model` for each model, handles failures with retries, and compiles results. This pattern separates "what to measure" (the tool) from "how to orchestrate" (the agent).
 
-An evaluation function is only useful if you have agent outputs to evaluate. The Strands SDK provides a minimal agent framework: you configure a `BedrockModel`, define Python functions decorated with `@tool`, and pass them to an `Agent` instance. When the agent runs, it decides which tools to call, in what order, and how to synthesize results.
-
-Cells 10–16 of the source notebook build a city-population-lookup agent with two tools: `web_search` (retrieves search results) and `get_page` (fetches page content). The agent receives a query like "What is the population of Denver?" and must return an `<answer>`-tagged response. Each invocation produces a trace: the sequence of tool calls, intermediate outputs, total tokens, and wall-clock time.
-
-This scaffold matters because it gives you control over trace generation. Pre-built traces are useful for offline evaluation, but generating fresh traces lets you test new queries, measure variance across runs, and capture metadata that pre-built data may lack.
-
-**Build**
-
-Stand up the agent from Cells 10–16:
+**Build:**
 
 ```python
-from strands import Agent
-from strands.models.bedrock import BedrockModel
-from strands import tool
-
-model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-20250514",
-    region_name="us-west-2"
-)
-
 @tool
-def web_search(query: str) -> str:
-    """Search the web for information."""
-    # Simplified stub — replace with real search in production
-    return f"Search results for: {query}"
-
-@tool
-def get_page(url: str) -> str:
-    """Fetch the content of a web page."""
-    return f"Page content from: {url}"
-
-agent = Agent(
-    model=model,
-    tools=[web_search, get_page],
-    system_prompt=(
-        "You are a research assistant. When asked about city populations, "
-        "use your tools to find the answer, then respond with the population "
-        "wrapped in <answer></answer> XML tags. Example: <answer>500,000</answer>"
-    )
-)
-
-# Generate a trace
-start = time.time()
-response = agent("What is the population of Seattle, Washington?")
-latency = time.time() - start
-
-print(f"Response: {response}")
-print(f"Latency: {latency:.2f}s")
+def eval_model(model_name: str) -> str:
+    """Evaluate a single model on a standard city query.
+    Returns formatted accuracy + performance metrics."""
+    chatbot_model = BedrockModel(model_id=model_name, boto_client_config=quick_config)
+    chatbot = Agent(tools=[web_search, get_page], model=chatbot_model, callback_handler=None)
+    
+    prompt = """How many people live in Phoenix, AZ, and what's the area in square miles?
+    Include your answer in 'pop' and 'area' XML tags (numbers only)."""
+    
+    response = chatbot(prompt)
+    result = evaluate_city_guess("Phoenix", "AZ", response, gold_standard)
+    return (f"Population error: {result['population_error_percent']}%\n"
+            f"Area error: {result['area_error_percent']}%\n"
+            f"Tokens: {result['total_tokens']} | Time: {result['total_time']:.2f}s | "
+            f"Tool calls: {result['tool_calls']}")
 ```
 
-Run the agent against at least 2 cities from `city_pop.csv` and feed each response through `evaluate_city_guess` from Section 1.
+Source: Cells 10-16 — the multi-model evaluator agent uses this tool to compare Nova Micro/Lite/Pro and Claude Haiku/Sonnet.
 
-### Section 3: Tool Selection Accuracy Framework
+## Section 3: Multi-Case Consistency Metric
 
-**Concept**
+**Concept:** A single test case can't reveal consistency issues. By evaluating the same model across multiple cities (randomly sampled), you measure variance — not just accuracy. High variance signals that the model is unreliable even when its average looks good.
 
-Beyond output correctness, you need to evaluate whether an agent picks the right tool for a given task. A calculator question routed to a code interpreter may still produce a correct answer, but it reveals a routing inefficiency that compounds in production — wrong tools cost more tokens, add latency, and increase failure probability.
-
-Cells 33–34 of the source notebook introduce a tool selection framework: a 20-case dataset spanning five tools (`calculator`, `file_read`, `current_time`, `file_write`, `code_interpreter`) and an agent configured with `record_direct_tool_call=True`. This flag captures which tool the agent selects first, before execution, letting you compare the agent's routing decision against the expected tool for each case.
-
-This framework matters because tool routing is the first decision point in any multi-tool agent. If routing is wrong, downstream evaluation is meaningless — you are measuring the wrong tool's output quality.
-
-**Build**
-
-Load the test cases and configure the tool-selection agent from Cells 33–34:
+**Build:**
 
 ```python
-import json
+def evaluate_multiple_cities(model_name, num_cities=3):
+    """Run evaluation across N random cities, return aggregate stats."""
+    MAJOR_CITIES = [
+        ("New York", "NY"), ("Los Angeles", "CA"), ("Chicago", "IL"),
+        ("Houston", "TX"), ("Phoenix", "AZ"), ("Philadelphia", "PA")
+    ]
+    test_cities = random.sample(MAJOR_CITIES, num_cities)
+    results = []
 
-# Load the 20-case tool selection dataset
-with open("test_cases.json", "r") as f:
-    test_cases = json.load(f)
+    for city, state in test_cities:
+        chatbot = Agent(
+            tools=[web_search, get_page, calculate],
+            model=BedrockModel(model_id=model_name, boto_client_config=quick_config),
+            callback_handler=None
+        )
+        prompt = f"How many people live in {city}, {state}...? Include <pop> and <area> tags."
+        try:
+            response = chatbot(prompt)
+            results.append(evaluate_city_guess(city, state, response, gold_standard))
+        except Exception as e:
+            print(f"✗ Failed {city}, {state}: {e}")
 
-# Preview structure
-print(f"Total cases: {len(test_cases)}")
-print(f"Sample: {json.dumps(test_cases[0], indent=2)}")
-
-# Configure agent with direct tool call recording
-tool_eval_agent = Agent(
-    model=model,
-    tools=[web_search, get_page],  # Extend with calculator, file tools as needed
-    record_direct_tool_call=True
-)
-
-# Evaluate tool routing accuracy
-correct = 0
-results = []
-for case in test_cases:
-    response = tool_eval_agent(case["query"])
-    selected_tool = response.tool_calls[0]["name"] if response.tool_calls else None
-    is_correct = selected_tool == case["expected_tool"]
-    correct += int(is_correct)
-    results.append({
-        "query": case["query"],
-        "expected": case["expected_tool"],
-        "selected": selected_tool,
-        "correct": is_correct
-    })
-
-accuracy = correct / len(test_cases) * 100
-print(f"Tool routing accuracy: {accuracy:.1f}%")
+    if results:
+        return {
+            'avg_population_error': round(statistics.mean(
+                [r['population_error_percent'] for r in results]), 2),
+            'avg_area_error': round(statistics.mean(
+                [r['area_error_percent'] for r in results]), 2),
+            'total_tokens': sum(r['total_tokens'] for r in results),
+            'total_tool_calls': sum(r['tool_calls'] for r in results)
+        }
 ```
 
-Examine which tool categories have the lowest routing accuracy and hypothesize why.
+## Section 4: Tool Selection Accuracy
+
+**Concept:** Beyond answer quality, agents must select the RIGHT tool for each task. A tool selection metric compares expected tool usage (from a labeled dataset) against actual invocations. This catches models that "know the answer" but bypass tools, or that call irrelevant tools.
+
+**Build:**
+
+```python
+# Labeled test dataset — each case specifies expected tool
+# Source: test_cases.json + inline dataset from Cell 33
+dataset = [
+    {"id": 1, "input": "What is 234 + 876?", "expected_tool": "calculator"},
+    {"id": 4, "input": "Read the contents of notes.txt", "expected_tool": "file_read"},
+    {"id": 10, "input": "Run Python code: print(2+3)", "expected_tool": "code_interpreter"},
+    {"id": 13, "input": "What is the capital of France?", "expected_tool": "none"},
+    # ... 20 cases total across calculator, file_read, file_write, code_interpreter, none
+]
+
+def measure_tool_selection(agent, dataset):
+    """Evaluate tool selection accuracy across labeled test cases."""
+    results = []
+    for case in dataset:
+        response = agent(case["input"])
+        used_tools = [
+            name for name, metric in response.metrics.tool_metrics.items()
+            if metric.call_count > 0
+        ]
+        results.append({
+            "expected": case["expected_tool"],
+            "actual": used_tools,
+            "correct": case["expected_tool"] in used_tools or 
+                      (case["expected_tool"] == "none" and not used_tools)
+        })
+    accuracy = sum(1 for r in results if r["correct"]) / len(results)
+    return accuracy, results
+```
+
+Source: Cells 33-34 of `03-Agentic-Metrics.ipynb` — full version includes 20 test cases and detailed per-case reporting.
+
+## Section 5: Metric Reuse Across Evaluation Scenarios
+
+**Concept:** The power of well-designed metrics is reuse. `evaluate_city_guess` appears in three contexts: single-model baseline (Section 1), multi-model comparison via agent orchestration (Section 2), and multi-city consistency (Section 3). The same function, different orchestration patterns. This is the key insight: separate measurement from orchestration.
+
+**Build:**
+
+```python
+# Reuse pattern: same metric, three orchestration modes
+
+# Mode 1: Direct call (single baseline)
+result = evaluate_city_guess("New York", "NY", response, gold_standard)
+
+# Mode 2: Wrapped as @tool for agent orchestration
+@tool
+def eval_model(model_name: str) -> str:
+    # ... calls evaluate_city_guess internally
+    
+# Mode 3: Loop for consistency measurement  
+def evaluate_multiple_cities(model_name, num_cities=3):
+    # ... calls evaluate_city_guess per city
+
+# The metric function never changes — only the caller does.
+# This enables: add new orchestration patterns without touching measurement logic.
+```
 
 ## Challenges
 
-**Challenge: Evaluate a Multi-Step Agent**
+### Challenge: Evaluate a Multi-Step Agent
 
-The notebook provides three reusable assets for this challenge:
+Choose **Path A** (existing traces) or **Path B** (generate fresh). Define 3 metrics, implement, demonstrate reuse, identify 2 gaps.
 
-1. **Pre-built trace data** — `data/raw_traces.json` contains 100 synthetic restaurant-booking agent conversations with TOOL_CALL entries. `data/labeled_traces.json` adds success/failure state labels to the same traces.
-2. **Agent scaffold** — The notebook's Strands SDK agent pattern (BedrockModel config → `Agent` with `@tool`-decorated functions like `web_search` and `get_page` → `evaluate_city_guess` evaluation function) can be extracted and run to generate fresh traces.
-3. **Tool selection framework** — A 20-case dataset testing agent tool routing across `calculator`, `file_read`, `current_time`, `file_write`, and `code_interpreter` with `record_direct_tool_call=True`.
+**Path A — Existing Traces:** Use `data/raw_traces.json` and `data/labeled_traces.json` to define metrics that evaluate the multi-turn agent conversations. Traces contain tool calls, errors, and recovery patterns.
 
-**Choose one path:**
-
-**Path A — Use existing traces:** Work with the 100 pre-built restaurant-booking traces in `data/raw_traces.json`. These have multi-step TOOL_CALL sequences you can evaluate immediately without running an agent.
-
-**Path B — Generate fresh traces:** Extract the notebook's Strands agent scaffold (city population lookup agent with `web_search` + `get_page` tools), run it against 5+ queries from `city_pop.csv`, and capture execution traces including tool calls, latency, and token counts.
-
-**Then, for either path:**
-
-1. **Define 3 evaluation metrics** applicable to the agent workflow. At least one metric must be reusable across 2+ steps (e.g., latency, confidence threshold, format compliance).
-2. **Implement all 3 metrics** and score your traces.
-3. **Demonstrate metric reuse** — show the same metric applied at different steps with step-appropriate thresholds or interpretations.
-4. **Identify what was left out** — name 2 metrics or evaluation dimensions your framework does *not* cover, explain *why* they matter, and describe what data you'd need to implement them.
-
-**Source assets table:**
-
-| Asset | Location | What it provides |
-|---|---|---|
-| `data/raw_traces.json` | `Foundational Evaluations/04-agentic-metrics/data/` | 100 restaurant-booking agent traces with TOOL_CALL entries |
-| `data/labeled_traces.json` | `Foundational Evaluations/04-agentic-metrics/data/` | Same 100 traces + `last_success_state` and `first_failure_state` labels |
-| `city_pop.csv` | `Foundational Evaluations/04-agentic-metrics/` | Ground truth dataset (city, state, population, land_area) for agent evaluation |
-| `test_cases.json` | `Foundational Evaluations/04-agentic-metrics/` | 2 test cases with query, expected output, category for tool selection eval |
-| Agent scaffold (Cells 10-16) | Notebook | Strands `Agent` with `web_search` + `get_page` tools, `BedrockModel` config |
-| `evaluate_city_guess` (Cell 8) | Notebook | Eval function: extracts XML-tagged values, computes % error vs ground truth, captures token count + latency |
-| Tool selection framework (Cells 33-34) | Notebook | 20-case dataset + agent with `record_direct_tool_call=True` for tool routing accuracy |
+**Path B — Generate Fresh:** Build a Strands agent (using the scaffold from Cells 10-16), run it against `test_cases.json`, capture traces, then evaluate.
 
 **Assessment criteria (weighted):**
 
-| Criterion | Weight | Excellent | Adequate |
-|---|---|---|---|
-| Trace source | 10% | Path B: generates clean traces with all steps, timing, outputs. Path A: correctly parses and structures pre-built traces | Traces loaded/generated but missing metadata |
-| Metric design & justification | 25% | Metrics clearly motivated, mapped to agent failure modes | Metrics defined but weakly justified |
-| Implementation quality | 25% | Runs, produces scores, handles edge cases | Runs but brittle or hardcoded |
-| Metric reuse across steps | 20% | Same metric at 2+ steps with adapted thresholds and interpretation | Reuse attempted but superficial |
-| "What was left out" analysis | 15% | Identifies meaningful gaps with data requirements and priority | Lists gaps without depth |
-| Use of notebook assets | 5% | Leverages multiple provided assets (traces + ground truth + eval functions) | Uses only one asset |
+| Criterion | Weight |
+|---|---|
+| Trace source | 10% |
+| Metric design & justification | 25% |
+| Implementation quality | 25% |
+| Metric reuse across steps | 20% |
+| "What was left out" analysis | 15% |
+| Use of notebook assets | 5% |
 
-**Tips:**
-
-- The SKILL doc's `evaluate_city_guess` function is the reference implementation for Section 1
-- For Section 2, stub tools are fine — the evaluation targets the agent's output format and routing, not tool correctness
-- `record_direct_tool_call=True` captures the agent's first tool choice before execution — this is what you compare against ground truth
-- Pre-built traces in `data/raw_traces.json` contain restaurant-booking agent conversations with TOOL_CALL entries if you prefer offline evaluation for Section 3
+**Available assets:**
+- `data/raw_traces.json` — multi-turn agent conversations with tool calls and errors
+- `data/labeled_traces.json` — same traces with quality labels
+- `city_pop.csv` — ground truth for accuracy comparison
+- `test_cases.json` — labeled queries with expected tools/outputs
+- Cell 8: `evaluate_city_guess` — reference implementation for structured evaluation
+- Cells 10-16: Agent scaffold with multi-model orchestration
+- Cells 33-34: Tool selection framework with labeled dataset
 
 ## Wrap-Up
 
-In this module you built three components of an agent evaluation framework: a structured evaluation function that parses and scores agent output, a Strands SDK agent scaffold that generates traceable multi-step executions, and a tool selection accuracy framework that measures routing decisions independently of output quality.
+**Key takeaways:**
+- Structured output (XML tags) enables automated accuracy measurement against ground truth
+- Wrapping metrics as `@tool` lets agents orchestrate complex evaluation workflows
+- The same metric function reuses across single, multi-model, and multi-city scenarios — separate measurement from orchestration
 
-Key takeaways:
-- Agent evaluation requires metrics at multiple levels — output correctness, operational cost, and routing accuracy are complementary, not interchangeable
-- Reusable metrics (latency, format compliance) applied with step-appropriate thresholds give you coverage without metric proliferation
-- Knowing what your framework does *not* measure is as important as what it does
+**What this does NOT cover:**
+- LLM-as-a-Judge qualitative evaluation (shown in notebook §12 but not taught here)
+- Semantic similarity scoring for free-text outputs
+- Continuous evaluation pipelines or A/B testing frameworks
+- Cost optimization strategies beyond token counting
+- Real-time monitoring or alerting on metric degradation
 
-**Feedback:** What metric was hardest to implement? Which evaluation gap surprised you most? Share your findings with your workshop cohort.
-
-**Next module:** Module 04 builds on these metrics to construct automated evaluation pipelines that run on every agent deployment.
+**Next steps:**
+- Module 04 (Guardrails): Apply evaluation patterns to safety and compliance constraints
+- Module 05 (PromptFoo): Integrate metrics into automated testing frameworks
