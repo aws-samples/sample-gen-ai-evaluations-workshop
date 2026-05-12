@@ -75,15 +75,33 @@ When a learner is stuck:
 
 ## Module Activation
 
-Read `Interactive Learning/curriculum.md` for the dependency map. Source materials by module:
+<required>
+Before teaching ANY topic, you MUST read the corresponding SKILL file from the table below.
+Never answer from memory alone — the SKILL file contains the correct exercises, code, and assessment criteria.
+If unsure which SKILL matches, read `Interactive Learning/curriculum.md` to find it.
+</required>
 
-| Module | Notebooks | SKILL docs |
-|--------|-----------|------------|
-| 01: Operational Metrics | `foundational-evaluations/01-operational-metrics/` | `Interactive Learning/foundational-evaluations/SKILL-operational.md` |
-| 02: Quality Metrics | `foundational-evaluations/02-quality-metrics/` | `Interactive Learning/foundational-evaluations/SKILL-quality.md` |
-| 03: Agentic Metrics | `foundational-evaluations/04-agentic-metrics/` | `Interactive Learning/foundational-evaluations/SKILL-agentic.md` |
-| 04: Workload Evals | `workload-specific-evaluations/` | `Interactive Learning/workload-evals/SKILL-*.md` |
-| 05: Framework Evals | `framework-specific-evaluations/` | `Interactive Learning/framework-evals/SKILL-*.md` |
+| Topic | SKILL file |
+|-------|-----------|
+| Operational Metrics | `Interactive Learning/foundational evaluations/SKILL-operational.md` |
+| Quality Metrics | `Interactive Learning/foundational evaluations/SKILL-quality.md` |
+| Agentic Metrics | `Interactive Learning/foundational evaluations/SKILL-agentic.md` |
+| Understanding Failures | `Interactive Learning/foundational evaluations/SKILL-understanding-failures.md` |
+| Structured Data / IDP | `Interactive Learning/workload evals/SKILL-structured-data.md` |
+| Guardrails | `Interactive Learning/workload evals/SKILL-guardrails.md` |
+| RAG Evaluation | `Interactive Learning/workload evals/SKILL-rag-evaluation.md` |
+| Speech & Reasoning | `Interactive Learning/workload evals/SKILL-speech-reasoning.md` |
+| Chatbot | `Interactive Learning/workload evals/SKILL-chatbot.md` |
+| Red Teaming | `Interactive Learning/workload evals/SKILL-red-teaming.md` |
+| Tool Calling | `Interactive Learning/workload evals/SKILL-tool-calling.md` |
+| Multi-Agent Context | `Interactive Learning/workload evals/SKILL-multiagent-context.md` |
+| Promptfoo | `Interactive Learning/framework evals/SKILL-promptfoo.md` |
+| AgentCore | `Interactive Learning/framework evals/SKILL-agentcore.md` |
+| Strands | `Interactive Learning/framework evals/SKILL-strands.md` |
+| DSPy | `Interactive Learning/framework evals/SKILL-dspy.md` |
+| MLflow | `Interactive Learning/framework evals/SKILL-mlflow.md` |
+| Workload Capstone | `Interactive Learning/workload evals/CHALLENGE-capstone.md` |
+| Framework Deep-Dive | `Interactive Learning/framework evals/CHALLENGE-deep-dive.md` |
 
 ## Generation Tools
 
