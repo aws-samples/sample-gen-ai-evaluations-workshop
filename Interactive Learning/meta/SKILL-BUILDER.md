@@ -35,6 +35,7 @@ Pick the closest match to your target:
 
 ## Generation Rules
 
+<required>
 Every SKILL file MUST have:
 
 - **YAML frontmatter** with `name`, `description`, and activation phrases
@@ -51,15 +52,15 @@ Every SKILL file MUST have:
 - **At least one** `python` or `bash` fenced code block
 - **≤500 lines** preferred (quality > brevity — exceeding is acceptable if content demands it)
 - **Challenges must require novel application** — not just repeating the taught workflow on different data. Include at least one decision the learner wasn't explicitly taught (e.g., handling ambiguity, resolving conflicts, adapting when the approach doesn't fit cleanly)
-- **The source notebook is the ground truth for framework and API usage** — use the same framework the notebook uses
+- <system-reminder>The source notebook is the ground truth for framework and API usage — use the same framework the notebook uses</system-reminder>
 - **Code blocks must work in a plain terminal or script** — no Jupyter magic commands (%%writefile, %pip, !command). Use standard Python file I/O or bash code blocks instead
 - **If source notebooks import from helper .py files, include that code inline** — either in Setup or in the section that uses it. Never reference an external .py file the learner doesn't have
 - **Two-tier challenges:** Each SKILL has an embedded `## Challenges` section testing that module's concepts. Standalone CHALLENGE files (CHALLENGE-capstone.md, CHALLENGE-deep-dive.md) are separate cross-module integrative exercises — don't duplicate their content in your SKILL's challenge
+</required>
 
 ## Three Warnings
 
-These are the failure modes we discovered through testing. Skip them and the output breaks.
-
+<system-reminder>
 ### 1. Override Rule
 
 The structured input is **advisory, not binding**. If the source material reveals that two notebooks teach genuinely different concepts (even though the structured input groups them), split them into separate sections and document why.
@@ -77,6 +78,7 @@ When multiple notebooks map to one SKILL, group sections by **concept taught** �
 Every code block must be **copy-paste runnable**. No `...`, no `# your code here`, no missing imports. If setup code is long, put it in the Setup section and reference it.
 
 **What breaks without this:** Learners hit immediate errors on the first code block. Trust in the SKILL collapses.
+</system-reminder>
 
 ## Structured Input Template
 
