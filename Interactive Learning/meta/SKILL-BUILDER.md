@@ -53,7 +53,7 @@ Every SKILL file MUST have:
 - **≤500 lines** preferred (quality > brevity — exceeding is acceptable if content demands it)
 - **Challenges must require novel application** — not just repeating the taught workflow on different data. Include at least one decision the learner wasn't explicitly taught (e.g., handling ambiguity, resolving conflicts, adapting when the approach doesn't fit cleanly)
 - <system-reminder>The source notebook is the ground truth for framework and API usage — use the same framework the notebook uses</system-reminder>
-- **Code blocks must work in a plain terminal or script** — no Jupyter magic commands (%%writefile, %pip, !command). Use standard Python file I/O or bash code blocks instead
+- **Code blocks must work in a plain terminal or script** — use standard Python file I/O or bash code blocks (not Jupyter magic commands)
 - **If source notebooks import from helper .py files, include that code inline** — either in Setup or in the section that uses it. Never reference an external .py file the learner doesn't have
 - **Two-tier challenges:** Each SKILL has an embedded `## Challenges` section testing that module's concepts. Standalone CHALLENGE files (CHALLENGE-capstone.md, CHALLENGE-deep-dive.md) are separate cross-module integrative exercises — don't duplicate their content in your SKILL's challenge
 </required>
@@ -194,27 +194,9 @@ Re-run `bash meta/validate_skills.sh` after each revision.
 
 ## Validation
 
-Run the structural validator:
-
-```bash
-bash meta/validate_skills.sh path/to/SKILL-name.md
-```
-
-**What it checks:**
-- YAML frontmatter present
-- Required sections (Prerequisites, Learning Objectives, Setup, Challenges, Wrap-Up)
-- 3–5 lesson section headings
-- At least one `python` or `bash` code block
-- `**Assessment criteria:**` label present
-- No "Success criteria" anywhere
-- ≤500 lines (warning, not error)
-- CHALLENGE cross-references in Wrap-Up
-
-**What it does NOT check:**
-- Pedagogical quality (use Review Criteria below)
-- Code correctness or API accuracy
-- Whether code blocks actually run
-- Content depth or learner experience
+- Run `bash meta/validate_skills.sh <file>` after each draft
+- Fix errors, re-run until clean
+- Script checks structure only (not pedagogical quality or code correctness)
 
 ## Review Criteria
 
