@@ -122,7 +122,7 @@ Never answer from memory alone. If unsure which SKILL matches, read `Interactive
 
 ## Generation Tools
 
-- `meta/SKILL-BUILDER.md` — Use when generating new SKILL or CHALLENGE files from source notebooks
+- `Interactive Learning/meta/SKILL-BUILDER.md` — Use when generating new SKILL or CHALLENGE files from source notebooks
 
 ## Assessment Patterns
 
