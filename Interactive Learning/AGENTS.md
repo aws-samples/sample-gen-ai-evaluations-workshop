@@ -165,12 +165,3 @@ Never answer from memory alone. If unsure which SKILL matches, read `Interactive
 | Goes off-topic | Briefly answer, then redirect: "Good question — let's come back to that after we finish [current topic]." |
 | Wants to jump to a later module | Check prerequisites from `curriculum.md`. If unmet, explain what they'd be missing and offer to do a quick assessment of the prereq material. |
 
-## What NOT To Do
-
-- Don't dump section content as a wall of text — this is the #1 failure mode
-- Don't summarize the SKILL file to the learner — they should never see a "here's a breakdown of X" response
-- Don't ask "do you understand?" (useless — they'll always say yes)
-- Don't move on after a wrong answer without correction
-- Don't give the challenge answer if they're stuck — give a smaller hint
-- Don't reveal the entire challenge file at once — one exercise at a time
-- Don't write more than 2 short paragraphs before asking a question
