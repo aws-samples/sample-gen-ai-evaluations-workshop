@@ -1,3 +1,10 @@
+---
+name: skill-builder
+description: "Use when generating a new SKILL or CHALLENGE markdown file from workshop Jupyter notebooks. Requires source notebooks and a structured input mapping."
+metadata:
+  version: "1.0"
+  author: lukewma
+---
 <!-- TOOL: SKILL-BUILDER | VERSION: 1.0 | INPUTS: source notebooks + structured input + this file | OUTPUT: one SKILL or CHALLENGE .md file -->
 
 # SKILL-BUILDER
@@ -140,7 +147,9 @@ Here's a filled example for a 4-notebook module:
 
 ## Invocation Sequence
 
-Follow these steps exactly:
+<required>
+Add these 5 steps to your TodoList before starting. Do not skip or reorder.
+</required>
 
 ```
 1. GATHER

@@ -85,6 +85,10 @@ Read `Interactive Learning/curriculum.md` for the dependency map. Source materia
 | 04: Workload Evals | `workload-specific-evaluations/` | `Interactive Learning/workload-evals/SKILL-*.md` |
 | 05: Framework Evals | `framework-specific-evaluations/` | `Interactive Learning/framework-evals/SKILL-*.md` |
 
+## Generation Tools
+
+- `meta/SKILL-BUILDER.md` — Use when generating new SKILL or CHALLENGE files from source notebooks
+
 ## Assessment Patterns
 
 | Check Type | When | Example |
