@@ -15,7 +15,7 @@ We strongly recommend going in order through the [Foundational Evaluations](Foun
 
 As an alternative to working through the notebooks directly, you can use an AI coding assistant as an interactive tutor.
 
-1. Open this repo in **Kiro**, **Claude Code**, **Codex**, or a similar coding agent
+1. Clone this repo and open it in **Kiro**, **Claude Code**, **Codex**, or a similar coding agent
 2. Tell the agent: "Read AGENTS.md and teach me about [topic]" — e.g., "Teach me about guardrails evaluation"
 
 The agent reads the workshop's notebooks and skill docs, then guides you through hands-on challenges — asking you to write code, explain concepts, and debug configurations rather than passively reading. It checks your understanding before advancing and adapts to your pace.
