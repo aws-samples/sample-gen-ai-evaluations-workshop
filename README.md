@@ -13,7 +13,14 @@ We strongly recommend going in order through the [Foundational Evaluations](Foun
 
 ### Interactive Learning
 
-As an alternative to working through the Jupyter notebooks directly, you can use the [Interactive Learning](Interactive%20Learning/README.md) module as a skill file in your AI coding assistant (Kiro, Claude, or similar). The assistant reads the workshop's notebooks and skill docs, then guides you through hands-on challenges — asking you to write code, explain concepts, and debug configurations rather than passively reading. Tell the agent which module you want to work on and it will present exercises one at a time, check your understanding, provide hints when you're stuck, and adapt to your pace.
+As an alternative to working through the notebooks directly, you can use an AI coding assistant as an interactive tutor.
+
+1. Open this repo in **Kiro**, **Claude Code**, **Codex**, or a similar coding agent
+2. Tell the agent: "Read AGENTS.md and teach me about [topic]" — e.g., "Teach me about guardrails evaluation"
+
+The agent reads the workshop's notebooks and skill docs, then guides you through hands-on challenges — asking you to write code, explain concepts, and debug configurations rather than passively reading. It checks your understanding before advancing and adapts to your pace.
+
+See [Interactive Learning/README.md](Interactive Learning/README.md) for the full skill map.
 
 ## What You'll Learn
 
