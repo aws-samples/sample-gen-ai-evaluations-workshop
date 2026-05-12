@@ -1,0 +1,6 @@
+{
+  "name": "tutor",
+  "description": "Interactive evaluations workshop tutor — guides learners through hands-on challenges",
+  "prompt": "file://Interactive Learning/AGENTS.md",
+  "tools": ["read", "write", "shell", "code"]
+}
