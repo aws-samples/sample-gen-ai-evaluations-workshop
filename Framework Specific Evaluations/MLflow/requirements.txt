@@ -1,10 +1,11 @@
-mlflow>=3.8.0
+mlflow>=3.8.0,<3.12.0
 sagemaker-mlflow>=0.3.0
 deepeval
-datasets
+datasets>=3.0.0
 boto3>=1.42.4
 botocore[crt]
 pandas
 nest_asyncio
 litellm
 python-dotenv
+pyarrow>=15.0.0,<24.0.0
