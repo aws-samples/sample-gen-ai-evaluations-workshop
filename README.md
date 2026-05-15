@@ -44,7 +44,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - AgentCore Runtime Evals: run native AgentCore Evaluations API with built-in evaluators for helpfulness and tool selection accuracy.
   - DSPy: optimize prompts automatically with BootstrapFewShot and measure improvement with custom metrics.
   - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
-  - DeepEval: coming soon.
+  - DeepEval: evaluate LLM applications with pytest-style metrics for RAG, agents, multi-turn, and safety, plus custom G-Eval for any criteria.
 
 - [Interactive Learning Mode](Interactive%20Learning/README.md): guided challenges, exercises, and real-time feedback with an interactive tutor.
 

@@ -1,0 +1,142 @@
+[
+  {
+    "id": "aws_01",
+    "question": "What is Amazon S3?",
+    "context": "Amazon Simple Storage Service (Amazon S3) is an object storage service that provides scalable, secure, and high-performance storage for any amount of data. It is used for use cases such as data lakes, backups, analytics, and web applications. S3 stores data as objects within containers called buckets, and offers multiple storage classes (including S3 Standard, S3 Intelligent-Tiering, and S3 Glacier) to let users balance cost against access frequency and latency. Additional features include lifecycle policies, object lock, and server-side encryption to help organize and protect data.",
+    "expected_answer": "Amazon S3 is an object storage service that stores data as objects in buckets. It is designed for scalable, secure, and high-performance storage across use cases such as data lakes, backups, analytics, and web applications. S3 offers multiple storage classes so users can balance cost against access frequency.",
+    "source_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+  },
+  {
+    "id": "aws_02",
+    "question": "What is AWS Lambda?",
+    "context": "AWS Lambda is a serverless compute service that runs your code without requiring you to manage servers. It scales automatically in response to demand and charges only for the compute time consumed. Lambda operates on an event-driven model: you write a function, configure its permissions, and connect it to an event source (such as an API Gateway request, an S3 object upload, or a scheduled CloudWatch event). When the event fires, Lambda runs the function. AWS handles the underlying infrastructure, scaling, and maintenance. Lambda supports code uploaded either as a zip archive or as a container image.",
+    "expected_answer": "AWS Lambda is a serverless compute service that runs your code in response to events without requiring you to manage servers. It scales automatically, charges only for compute time used, and supports code uploaded as zip archives or container images. Common event sources include API Gateway, S3, and scheduled CloudWatch events.",
+    "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/welcome.html"
+  },
+  {
+    "id": "aws_03",
+    "question": "What is Amazon VPC?",
+    "context": "Amazon Virtual Private Cloud (Amazon VPC) lets you launch AWS resources within a logically isolated virtual network that you define. A VPC resembles a traditional on-premises data center network but runs on AWS's scalable infrastructure. You control networking fundamentals including IP address ranges, subnets, route tables, gateways, and security groups. A VPC can be connected to the internet, to a corporate data center, or privately to other AWS services. Each AWS account comes with a default VPC in every Region so users can launch resources immediately, and additional custom VPCs can be created as needed.",
+    "expected_answer": "Amazon VPC is a service that lets you launch AWS resources within a logically isolated virtual network that you define. You control IP ranges, subnets, route tables, gateways, and security groups. A VPC resembles a traditional data center network but runs on AWS infrastructure. Every AWS account gets a default VPC in every Region.",
+    "source_url": "https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html"
+  },
+  {
+    "id": "aws_04",
+    "question": "What is the AWS Shared Responsibility Model?",
+    "context": "The AWS Shared Responsibility Model divides security duties between AWS and the customer. AWS is responsible for \"security of the cloud\": protecting the underlying infrastructure including hardware, software, networking, and the physical facilities that run AWS services. Customers are responsible for \"security in the cloud\": managing their data, configuring operating systems and applications, setting up firewall rules, managing encryption keys, and controlling access through IAM. The exact split depends on the service: IaaS offerings like EC2 require more customer management, while abstracted services like S3 and DynamoDB shift more operational burden onto AWS.",
+    "expected_answer": "The AWS Shared Responsibility Model splits security duties between AWS and the customer. AWS handles security of the cloud (infrastructure, hardware, networking, facilities) while customers handle security in the cloud (data, configurations, access controls, encryption). The split varies by service: IaaS like EC2 requires more customer management than abstracted services like S3.",
+    "source_url": "https://aws.amazon.com/compliance/shared-responsibility-model/"
+  },
+  {
+    "id": "aws_05",
+    "question": "What does Amazon CloudFront do?",
+    "context": "Amazon CloudFront is a content delivery network (CDN) web service that accelerates distribution of static and dynamic web content to end users. Requests are routed through a global network of edge locations, with each request served from the edge location that offers the lowest latency to the user. If the requested content is already cached at the nearest edge location, it is served immediately; otherwise CloudFront retrieves it from a defined origin server such as an Amazon S3 bucket or an HTTP server. Setting up CloudFront involves specifying origin servers and creating a distribution.",
+    "expected_answer": "Amazon CloudFront is a content delivery network (CDN) service that distributes static and dynamic web content through a global network of edge locations. Each user request is served from the edge location with lowest latency; if the content is cached there it is served immediately, otherwise CloudFront fetches it from a configured origin such as an S3 bucket or HTTP server.",
+    "source_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+  },
+  {
+    "id": "aws_06",
+    "question": "What is AWS CloudFormation?",
+    "context": "AWS CloudFormation lets you define and provision AWS infrastructure in a predictable, repeatable way using templates written in JSON or YAML. A template describes the resources you want and their relationships; CloudFormation deploys them together as a single managed unit called a stack. Stacks can be created, updated, and deleted through the AWS Management Console, CLI, or APIs. CloudFormation supports features like change sets for previewing modifications before applying them, automatic rollback on errors, and dependency handling so resources are created and deleted in the correct order.",
+    "expected_answer": "AWS CloudFormation is an infrastructure-as-code service that lets you define AWS resources in JSON or YAML templates and deploy them together as a stack. It supports change sets to preview modifications, automatic rollback on errors, and dependency handling. Stacks can be managed through the console, CLI, or APIs.",
+    "source_url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html"
+  },
+  {
+    "id": "aws_07",
+    "question": "What is an AWS Availability Zone?",
+    "context": "An AWS Availability Zone (AZ) is one or more discrete data centers inside an AWS Region, each with independent power, networking, and connectivity. Zones within the same Region are spaced far enough apart to prevent correlated failures from events like natural disasters or utility disruptions, yet close enough that they can be linked by high-bandwidth, low-latency fiber for synchronous replication. Every AWS Region has at least three Availability Zones. Each zone has a consistent AZ ID (for example, use2-az1) that maps to the same physical location across all AWS accounts.",
+    "expected_answer": "An AWS Availability Zone is one or more discrete data centers within an AWS Region, each with independent power, networking, and connectivity. Zones are physically separated to avoid correlated failures but connected by low-latency fiber for synchronous replication. Every Region has at least three Availability Zones.",
+    "source_url": "https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/availability-zones.html"
+  },
+  {
+    "id": "aws_08",
+    "question": "What's the difference between Amazon SQS and Amazon SNS?",
+    "context": "Amazon Simple Queue Service (SQS) is a managed message queue service used for asynchronous service-to-service communication. Producers send messages to a queue; consumers poll the queue to retrieve and process messages, then delete them. SQS offers two queue types: standard queues with unlimited throughput and at-least-once delivery, and FIFO queues with ordered delivery and exactly-once processing. SQS helps decouple application components so each can scale independently. Messages are stored durably in the queue until a consumer processes them.",
+    "expected_answer": "The provided context describes Amazon SQS as a managed message queue service where producers send messages to a queue and consumers poll to retrieve and process them, with two queue types (standard and FIFO). The context does not describe Amazon SNS, so a complete comparison cannot be made from this context alone.",
+    "source_url": "https://aws.amazon.com/sqs/"
+  },
+  {
+    "id": "aws_09",
+    "question": "How do IAM users differ from IAM roles?",
+    "context": "An IAM role is an AWS identity with specific permissions that trusted identities can assume to obtain temporary security credentials. Unlike an identity with long-term credentials, a role does not belong to a single person; instead, users, applications, or AWS services assume the role and receive temporary access keys for the duration of the session. Common use cases for IAM roles include granting permissions to AWS services (for example, an EC2 instance role), enabling cross-account access, and federating external identity providers into AWS. Using roles is considered a security best practice because they provide temporary, scoped credentials.",
+    "expected_answer": "The provided context describes IAM roles as identities with permissions that trusted entities assume to obtain temporary credentials, commonly used for AWS services, cross-account access, and federation. It does not describe IAM users or their long-term credentials, so a full comparison cannot be made from this context alone.",
+    "source_url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html"
+  },
+  {
+    "id": "aws_10",
+    "question": "How does AWS Lambda handle cold starts, and how can you reduce them?",
+    "context": "In AWS Lambda, a cold start refers to the initialization latency that occurs when a new execution environment must be provisioned because no existing warm environment is available. Cold starts happen after periods of inactivity or during sudden traffic bursts. The initialization involves several steps, including provisioning a container, initializing the runtime, loading the function code, and resolving dependencies. Cold starts typically affect less than 1% of requests but can be noticeable in latency-sensitive applications. They are a natural consequence of Lambda's on-demand, pay-per-use scaling model.",
+    "expected_answer": "The context explains what cold starts are: initialization latency that occurs when Lambda provisions a new execution environment because no warm one is available. It covers the initialization steps (container provisioning, runtime init, code loading, dependency resolution) but does not cover techniques for reducing cold starts, so the second half of the question cannot be answered from this context alone.",
+    "source_url": "https://aws.amazon.com/blogs/compute/understanding-and-remediating-cold-starts-an-aws-lambda-perspective/"
+  },
+  {
+    "id": "aws_11",
+    "question": "What's the difference between AWS Fargate and AWS Lambda?",
+    "context": "AWS Fargate is a serverless compute engine for containers that works with Amazon ECS and Amazon EKS. It lets you run containerized applications without provisioning or managing servers. Each workload runs in an isolated, single-tenant compute instance. Fargate supports web applications, APIs, microservices, data processing, and AI/ML workloads, and users pay only for the vCPU and memory resources their tasks consume. Fargate is recommended for users who want simplified container infrastructure management without the overhead of running and scaling EC2 instances themselves.",
+    "expected_answer": "The context describes AWS Fargate as a serverless compute engine for containers that works with ECS and EKS, running each workload in an isolated instance and billing for vCPU and memory consumed. It does not describe AWS Lambda's compute model, so a direct comparison cannot be made from this context alone.",
+    "source_url": "https://aws.amazon.com/fargate/"
+  },
+  {
+    "id": "aws_12",
+    "question": "What's the difference between Amazon EBS and Amazon EFS?",
+    "context": "Amazon Elastic Block Store (Amazon EBS) is a block storage service that provides persistent block-level storage volumes for use with Amazon EC2 instances. EBS volumes are attached to a single EC2 instance at a time and are replicated within a single Availability Zone. EBS offers multiple volume types, including SSD-backed volumes (gp3, io2) optimized for transactional workloads and HDD-backed volumes (st1, sc1) for throughput-intensive or infrequently accessed data. Features include Elastic Volumes for dynamic resizing without downtime, snapshot-based backups, and EBS-Optimized EC2 instances that provide dedicated throughput between EC2 and EBS.",
+    "expected_answer": "The context describes Amazon EBS as a block storage service offering persistent volumes attached to individual EC2 instances, with SSD and HDD volume types and features like snapshots and Elastic Volumes. The context does not describe Amazon EFS, so a complete comparison cannot be made from this context alone.",
+    "source_url": "https://docs.aws.amazon.com/ebs/latest/userguide/what-is-ebs.html"
+  },
+  {
+    "id": "aws_13",
+    "question": "What's the difference between provisioned concurrency and reserved concurrency in AWS Lambda?",
+    "context": "Reserved concurrency sets the maximum number of concurrent instances a Lambda function can use. It is useful for guaranteeing capacity for critical functions and for throttling functions to protect downstream resources. When a function has reserved concurrency, that capacity is set aside exclusively for it, and it cannot scale beyond that number. At least 100 units of unreserved concurrency must remain in the account so other functions can still execute. Reserved concurrency itself has no additional cost beyond normal Lambda charges.",
+    "expected_answer": "The context describes reserved concurrency as a setting that caps and reserves capacity for a Lambda function, used to guarantee capacity or throttle for downstream protection, with no extra cost beyond standard Lambda charges. It does not describe provisioned concurrency, so a direct comparison cannot be made from this context alone.",
+    "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html"
+  },
+  {
+    "id": "aws_14",
+    "question": "What's the difference between S3 Standard and S3 Standard-Infrequent Access (Standard-IA) storage classes?",
+    "context": "S3 Standard is the default Amazon S3 storage class, designed for frequently accessed data. It offers high durability (eleven nines) and high availability, with low latency and high throughput suitable for a wide range of use cases including cloud applications, dynamic websites, content distribution, and big data analytics. S3 Standard stores data redundantly across multiple Availability Zones within a Region. There is no retrieval fee and no minimum storage duration, making it suitable for workloads with unpredictable or frequent access patterns.",
+    "expected_answer": "The context describes S3 Standard as the default storage class for frequently accessed data, offering high durability and availability, low latency, multi-AZ replication, and no retrieval fees or minimum storage duration. It does not describe S3 Standard-IA, so a direct comparison cannot be made from this context alone.",
+    "source_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html"
+  },
+  {
+    "id": "aws_15",
+    "question": "How does Amazon Route 53 differ from Amazon CloudFront?",
+    "context": "Amazon Route 53 is a highly available and scalable DNS web service that translates domain names into IP addresses so users can reach applications hosted on AWS or external infrastructure. Route 53 performs three main functions: domain name registration, DNS routing of internet traffic, and health checking of resources. It offers traffic management features including latency-based routing, geo DNS, failover, and weighted routing, and supports private DNS inside VPCs.",
+    "expected_answer": "The context describes Amazon Route 53 as a DNS web service that registers domains, routes internet traffic via DNS, and performs health checks, with traffic-management features like latency-based routing, geo DNS, failover, and weighted routing. It does not describe Amazon CloudFront, so a direct comparison cannot be made from this context alone.",
+    "source_url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html"
+  },
+  {
+    "id": "aws_16",
+    "question": "What's the maximum size of a single S3 object?",
+    "context": "Amazon S3 is an object storage service designed for durability and availability. Objects are stored redundantly across multiple devices in multiple facilities within an AWS Region, providing eleven nines of data durability. S3 supports server-side encryption at rest with keys managed by AWS, by the customer through AWS KMS, or by the customer directly. Versioning can be enabled on a bucket to preserve, retrieve, and restore every version of every object. S3 also supports Cross-Region Replication and features such as Object Lock for write-once-read-many protection.",
+    "expected_answer": "The provided context describes S3's durability, availability, encryption options, versioning, and replication, but does not discuss object size limits. The maximum size of a single S3 object cannot be determined from the information in this context.",
+    "source_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+  },
+  {
+    "id": "aws_17",
+    "question": "What's the default execution timeout for an AWS Lambda function?",
+    "context": "AWS Lambda operates on an event-driven model. You upload your code, configure permissions, and connect an event source that will invoke the function. When an event occurs, Lambda runs the function, handling scaling, patching, and availability automatically. Lambda supports many event sources including Amazon S3 object events, API Gateway HTTP requests, Amazon SQS and Kinesis streams, and scheduled events from Amazon EventBridge. Functions can be deployed as zip archives or as container images, and you can configure memory allocation, environment variables, and VPC connectivity.",
+    "expected_answer": "The provided context describes Lambda's event-driven model, supported event sources, and deployment options, but does not mention execution timeout limits or defaults. The default execution timeout cannot be determined from the information in this context.",
+    "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/welcome.html"
+  },
+  {
+    "id": "aws_18",
+    "question": "How many Availability Zones does AWS operate globally?",
+    "context": "AWS Availability Zones are designed for fault isolation. Each zone has independent power, networking, and connectivity, and is physically separated from other zones in the same Region so that a localized failure in one zone is unlikely to affect others. Zones within a Region are connected by high-bandwidth, low-latency fiber links, which enables applications to replicate data synchronously across zones for high availability. This design is referred to as Availability Zone Independence (AZI).",
+    "expected_answer": "The provided context describes the design principles behind Availability Zones (independent power, fault isolation, low-latency inter-zone links) but does not include the total number of Availability Zones in AWS. The global count cannot be determined from the information in this context.",
+    "source_url": "https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/availability-zones.html"
+  },
+  {
+    "id": "aws_19",
+    "question": "What port does an Application Load Balancer listen on by default?",
+    "context": "An Application Load Balancer (ALB) distributes incoming application traffic across multiple registered targets, such as EC2 instances, containers, Lambda functions, or IP addresses, in one or more Availability Zones. A listener on the load balancer checks for connection requests using a protocol and port that you configure. Listener rules then route requests to target groups based on factors such as the URL path, the host header, or HTTP headers. Application Load Balancers operate at the application layer and support HTTP and HTTPS protocols.",
+    "expected_answer": "The provided context describes how an Application Load Balancer distributes traffic using configurable listeners and routing rules, but does not specify a default listener port. The default port cannot be determined from the information in this context.",
+    "source_url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html"
+  },
+  {
+    "id": "aws_20",
+    "question": "What's the minimum memory you can allocate to an AWS Lambda function?",
+    "context": "AWS Lambda charges for compute based on the amount of memory allocated to a function and the time the function runs, measured in milliseconds. Allocating more memory to a function also allocates proportionally more CPU, so memory allocation often affects performance as well as cost. Users can tune memory allocation to balance latency and cost for their workload. Tools like AWS Lambda Power Tuning help find a cost-performance sweet spot by testing a function at different memory settings.",
+    "expected_answer": "The provided context explains that Lambda's pricing depends on allocated memory and duration, and that memory allocation affects both CPU and cost, but does not state the minimum memory allocation value. The minimum memory cannot be determined from the information in this context.",
+    "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html"
+  }
+]

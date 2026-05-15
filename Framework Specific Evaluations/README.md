@@ -70,7 +70,11 @@ Key topics: `mlflow.genai.evaluate()`, 18 evaluation scorers, RAG faithfulness/h
 
 ### [DeepEval](DeepEval/)
 
-Coming soon.
+**Pytest-native LLM evaluation with 50+ metrics**
+
+DeepEval is an open-source evaluation framework with 50+ built-in metrics spanning RAG, agents, multi-turn conversations, safety, and multimodal applications, plus custom metrics defined in natural language for any criteria. This module evaluates a RAG pipeline by scoring retrieval quality and generation quality separately, then cross-referencing the results to diagnose whether failures originate in the retriever or the generator. Compares two candidate models on a 20-example AWS Q&A dataset with mixed retrieval difficulty.
+
+Key topics: retrieval evaluation, generation evaluation, custom LLM-as-a-judge metrics, failure diagnosis across RAG stages.
 
 ---
 
