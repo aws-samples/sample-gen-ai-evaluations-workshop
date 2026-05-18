@@ -1,0 +1,4 @@
+deepeval>=4.0,<5
+boto3[crt]>=1.34
+aiobotocore>=3.0,<4
+ipywidgets>=8.0

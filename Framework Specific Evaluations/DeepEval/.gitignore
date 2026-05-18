@@ -1,0 +1,18 @@
+# DeepEval local artifacts
+.deepeval/
+.deepeval-cache/
+.temp_test_run_data.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
