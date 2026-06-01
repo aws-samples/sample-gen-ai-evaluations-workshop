@@ -2,5 +2,10 @@
   "name": "tutor",
   "description": "Interactive evaluations workshop tutor — guides learners through hands-on challenges",
   "prompt": "file://Interactive Learning/AGENTS.md",
-  "tools": ["read", "write", "shell", "code"]
+  "tools": ["fs_read", "fs_write", "execute_bash", "grep", "glob"],
+  "allowedTools": ["fs_read", "grep", "glob"],
+  "resources": [
+    "file://Interactive Learning/curriculum.md"
+  ],
+  "welcomeMessage": "Welcome to the GenAI Evaluations Workshop! What evaluation topic would you like to explore today? (Type 'curriculum' if you'd like to see the full learning path.)"
 }
