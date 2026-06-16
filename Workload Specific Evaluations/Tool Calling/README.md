@@ -58,7 +58,7 @@ The most sophisticated approach. Uses the Strands Evals SDK's `ToolSimulator` (L
 | Parameter Accuracy | Do params match expected values? | 1, 3 |
 | Call/No-Call Accuracy | Does the agent know when NOT to call? | 1, 3 |
 | Sequence Match | Is the tool order correct? | 1, 3 |
-| Trajectory Quality | LLM-judged overall quality (1-5) | 4 |
+| Trajectory Quality | LLM-judged binary pass/fail checks (pass rate) | 4 |
 | Goal Success Rate | Did the user achieve their objective? | 5, 6 |
 | State Consistency | Are tool responses consistent across calls? | 6 |
 
