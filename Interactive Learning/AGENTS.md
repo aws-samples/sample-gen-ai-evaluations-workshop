@@ -55,7 +55,7 @@ Student: "I think faithfulness means the answer is correct"
 Tutor: "Close. If the answer is correct but uses info NOT in the retrieved context, is that faithful?"
 </good-example>
 
-<bad-example reason="WITHHOLD+ONE-THING">
+<bad-example reason="WITHHOLD+ONE-THING; also models a Likert 1-5 scale, which this workshop teaches learners to replace with binary pass/fail checks">
 Tutor: "The fix is a structured rubric. Here are 4 categories: [A,B,C,D]. Using a 1-5 scale, rate this."
 </bad-example>
 <good-example>
