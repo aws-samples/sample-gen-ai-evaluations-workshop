@@ -1,0 +1,72 @@
+{
+  "workload": "docs-rag-assistant",
+  "eval_type": "rag-faithfulness",
+  "checks": ["context_relevance", "answer_faithfulness", "answer_completeness"],
+  "cases": [
+    {
+      "id": "rag-001",
+      "verdicts": {
+        "context_relevance": true,
+        "answer_faithfulness": true,
+        "answer_completeness": true
+      },
+      "overall_pass": true,
+      "reason": {}
+    },
+    {
+      "id": "rag-002",
+      "verdicts": {
+        "context_relevance": true,
+        "answer_faithfulness": false,
+        "answer_completeness": true
+      },
+      "overall_pass": false,
+      "reason": {
+        "answer_faithfulness": "answer claimed a 30-day refund window not present in retrieved context"
+      }
+    },
+    {
+      "id": "rag-003",
+      "verdicts": {
+        "context_relevance": true,
+        "answer_faithfulness": true,
+        "answer_completeness": true
+      },
+      "overall_pass": true,
+      "reason": {}
+    },
+    {
+      "id": "rag-004",
+      "verdicts": {
+        "context_relevance": false,
+        "answer_faithfulness": true,
+        "answer_completeness": false
+      },
+      "overall_pass": false,
+      "reason": {
+        "context_relevance": "retriever returned billing docs for a shipping question",
+        "answer_completeness": "answer omitted international shipping timelines"
+      }
+    },
+    {
+      "id": "rag-005",
+      "verdicts": {
+        "context_relevance": true,
+        "answer_faithfulness": true,
+        "answer_completeness": true
+      },
+      "overall_pass": true,
+      "reason": {}
+    }
+  ],
+  "summary": {
+    "per_check_pass_rate": {
+      "context_relevance": 0.8,
+      "answer_faithfulness": 0.8,
+      "answer_completeness": 0.8
+    },
+    "all_checks_pass_rate": 0.6,
+    "n": 5
+  },
+  "error": null
+}

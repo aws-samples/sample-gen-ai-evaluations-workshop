@@ -1,0 +1,12 @@
+{
+  "workload": "sql-generation-agent",
+  "eval_type": "text-to-sql",
+  "checks": ["schema_grounding", "query_correctness", "safety"],
+  "cases": [],
+  "summary": {
+    "per_check_pass_rate": {},
+    "all_checks_pass_rate": null,
+    "n": 0
+  },
+  "error": "Bedrock InvokeModel failed: ThrottlingException (Too many requests). Retried 5x with exponential backoff and still exceeded the account's on-demand TPM quota for anthropic.claude-3-5-sonnet. No cases were evaluated for this workload."
+}
