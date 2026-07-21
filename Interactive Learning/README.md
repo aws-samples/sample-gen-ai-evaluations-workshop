@@ -8,6 +8,31 @@ This directory contains AI-tutored interactive lessons for the AWS Evaluations W
 2. Pick a skill from the map below
 3. Tell your AI assistant: "Teach me about [topic]" — it will match your request to the right SKILL
 
+## Two modes: Learn vs. Build
+
+- **Learn mode (tutor)** — the SKILLs below teach evaluation techniques through hands-on, Socratic challenges. Say _"Teach me about [topic]."_
+- **Build mode (`eval-builder`)** — a separate skill that helps you **build real evals for your own workload** rather than learn concepts. It discovers your app, proposes a plan you approve, scaffolds binary pass/fail evals into an `evals/` folder, runs them, and produces an interactive HTML report.
+
+## Build mode: `eval-builder`
+
+[`eval-builder/`](eval-builder/) is a portable skill for Claude Code and Kiro. You run it in **your own** workload repo (not this one), so install it into your **global** skills directory once and use it anywhere.
+
+**Install (agent-driven — no manual file moving, no script):**
+
+1. Clone this workshop repo and open it with your AI assistant (Kiro or Claude Code).
+2. Say: **"install the eval-builder skill."**
+3. The assistant copies `Interactive Learning/eval-builder/` into your global skills directory:
+   - Kiro → `~/.kiro/skills/eval-builder/`
+   - Claude Code → `~/.claude/skills/eval-builder/`
+
+The agent performs the copy itself (cross-platform — nothing to run).
+
+**Use it:**
+
+1. `cd` into the repository containing the workload you want to evaluate.
+2. Invoke it (e.g. `/eval-builder`, or _"build evals for my app"_).
+3. It confirms you're in the right repo, discovers your workload, proposes a plan (**you approve**), scaffolds the evals, and — **after you confirm** — runs them and writes `evals/report.html`.
+
 ## Skill Map
 
 ### Foundational Evaluations

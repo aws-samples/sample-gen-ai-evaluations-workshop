@@ -1,0 +1,81 @@
+{
+  "workload": "customer-support-agent",
+  "eval_type": "tool-calling",
+  "checks": [
+    "tool_selection",
+    "parameter_quality",
+    "sequence_logic",
+    "efficiency",
+    "response_quality"
+  ],
+  "cases": [
+    {
+      "id": "tc-001",
+      "verdicts": {
+        "tool_selection": true,
+        "parameter_quality": true,
+        "sequence_logic": true,
+        "efficiency": false,
+        "response_quality": true
+      },
+      "overall_pass": false,
+      "reason": {
+        "efficiency": "made a duplicate order-lookup call for the same order id"
+      }
+    },
+    {
+      "id": "tc-002",
+      "verdicts": {
+        "tool_selection": true,
+        "parameter_quality": true,
+        "sequence_logic": true,
+        "efficiency": true,
+        "response_quality": true
+      },
+      "overall_pass": true,
+      "reason": {}
+    },
+    {
+      "id": "tc-003",
+      "verdicts": {
+        "tool_selection": false,
+        "parameter_quality": true,
+        "sequence_logic": false,
+        "efficiency": true,
+        "response_quality": false
+      },
+      "overall_pass": false,
+      "reason": {
+        "tool_selection": "called issue_refund when the user only asked for order status",
+        "sequence_logic": "attempted refund before verifying the order exists",
+        "response_quality": "final message did not answer the status question"
+      }
+    },
+    {
+      "id": "tc-004",
+      "verdicts": {
+        "tool_selection": true,
+        "parameter_quality": false,
+        "sequence_logic": true,
+        "efficiency": true,
+        "response_quality": true
+      },
+      "overall_pass": false,
+      "reason": {
+        "parameter_quality": "passed customer name instead of customer_id to lookup_customer"
+      }
+    }
+  ],
+  "summary": {
+    "per_check_pass_rate": {
+      "tool_selection": 0.75,
+      "parameter_quality": 0.75,
+      "sequence_logic": 0.75,
+      "efficiency": 0.75,
+      "response_quality": 0.75
+    },
+    "all_checks_pass_rate": 0.25,
+    "n": 4
+  },
+  "error": null
+}
