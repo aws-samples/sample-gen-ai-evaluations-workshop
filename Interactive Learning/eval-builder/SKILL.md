@@ -7,8 +7,8 @@ description: >
   eval harness, or asks for "/eval-builder". Triggers on requests like "build evals for my app",
   "evaluate my agent", "scaffold tests for my RAG pipeline", or "create pass/fail judges for my
   chatbot". NOT for learning eval concepts, tutorials, or Socratic practice — that is the tutor
-  (learn-mode). This skill takes action: it discovers your workload, proposes a plan, and (after
-  you approve) scaffolds and runs binary pass/fail evals.
+  (learn-mode). This skill takes action: it discovers your workload, maps it to workshop modules,
+  proposes a plan, and (after you approve) scaffolds and runs binary pass/fail evals.
 category: workflow
 ---
 
@@ -29,11 +29,17 @@ The skill is fully self-contained. It carries distilled, build-ready copies of t
 evaluation patterns under `references/`. It never reads the workshop repo at runtime — everything
 it needs travels with it.
 
-The flow has four phases and two hard stops:
+The flow has **four phases, each ending in a STOP** where you wait for the user:
 
 ```
-Phase 1 Discover ─► Phase 2 Map & Report ─[APPROVAL GATE]─► Phase 3 Build ─► Phase 4 Run ─[RUN GATE]─► evals/report.html
+Phase 1 Discover ─[confirm scope]─► Phase 2 Map & Scope ─[answer questions]─►
+Phase 3 Plan & Build ─[approval gate]─► Phase 4 Run ─[run gate]─► evals/report.html
 ```
+
+> **⚠️ ONE PHASE PER TURN — the most important rule.** Do exactly one phase, then STOP and wait
+> for the user's reply before starting the next phase. Never chain phases in a single response
+> (e.g. never discover *and* ask scoping questions, never map *and* present a build plan). Each
+> STOP below is a hard stop: end your turn there.
 
 ---
 
@@ -66,10 +72,10 @@ have them `cd` into it and re-invoke.
 
 ---
 
-## Phase 1 — Discover
+## Phase 1 — Discover (discovery ONLY)
 
-Goal: understand the workload(s) and what "good" means to the user. **No file writes, no execution
-in this phase.**
+Goal: understand what workload(s) live in this repo. **Read-only: no file writes, no execution, no
+questions, no module mapping yet.** This phase does one thing — discover — and then stops.
 
 1. **Investigate the repository.** Read (do not modify):
    - dependency manifests (`requirements.txt`, `pyproject.toml`, `package.json`) for eval-relevant
@@ -80,43 +86,65 @@ in this phase.**
    - any existing `evals/`, tests, datasets, or ground-truth fixtures.
 2. **Detect workload type(s)** using `references/module-index.md` (detection signals → workload
    type → modules). More than one type can match a single repo.
-3. **Ask targeted questions to fill gaps:**
-   - What does "good" look like for this workload? What are the known failure modes?
-   - Which Bedrock **model IDs** and **provider** are in use (agent model, judge model)?
-   - Which **AWS region**?
-   - Where are inputs/ground truth, if any exist?
-4. **If the workload type cannot be confidently determined, ask the user to confirm or choose** —
-   never assume.
+3. **Present a Discovery findings report.** Lead with a line like _"Discovery complete. Here's what
+   I found — no files were written."_ Then give a compact **signal → evidence table**, e.g.:
+
+   | Signal | Evidence |
+   |---|---|
+   | Workload | e.g. single tool-calling agent (`agent.py`) |
+   | Agent framework | e.g. `strands-agents`; `from strands import Agent, tool` |
+   | Tool schemas | e.g. 10 `@tool` functions (list them) |
+   | Model / region | e.g. `MODEL_ID`, `REGION` from the source |
+   | Ground truth | e.g. `sample_queries.json` — N cases with `expected_tools` |
+   | Guardrails | e.g. refund limit, ID pattern, policy/KB grounding |
+
+   Briefly note what was **not** detected too (it shapes mapping later).
+
+4. **STOP — confirm scope.** Ask the user to confirm this is the workload/scope they want
+   evaluated (and to correct anything). **Do not ask scoping questions, do not map modules, do not
+   propose evals yet.** End your turn and wait for confirmation.
 
 ---
 
-## Phase 2 — Map & Report ⟶ **STOP: await approval**
+## Phase 2 — Map & Scope (module mapping + build-scoping questions)
 
-Goal: present a plan the user approves before anything is built.
+Only after the user confirms scope. Goal: map to the right workshop modules (this is the core
+value) and gather what's needed to build. **Still no file writes, no build plan yet.**
 
-1. **Map** each detected workload to workshop module(s) via `references/module-index.md`.
-   `operational` and `quality` are near-universal baselines; workload-specific modules
-   (tool-calling, agentcore, multiagent-context, rag, chatbot, structured-data) layer on top.
-   Multiple matches → multiple report tabs later.
-2. **Produce a report** containing:
-   - (a) **Workloads found** (with the detection signals that identified each);
-   - (b) **Relevant modules** and a one-line summary of what each recommends (drawn from the
-     matching `references/<module>.md`);
-   - (c) **Specific evals proposed** — for each workload, the exact binary checks (one failure mode
-     per judge), the test-case structure, and the model IDs/region to use.
-3. **Present the report and STOP.** Explicitly ask for approval. Do **not** create or modify any
-   file until the user approves.
-4. **If the user requests changes**, revise and re-present the report; only proceed on explicit
-   approval.
+1. **Map** each confirmed workload to workshop module(s) via `references/module-index.md`, and
+   **state what is N/A and why** (e.g. "no `bedrock-agentcore`/`@app.entrypoint` → AgentCore N/A;
+   single agent → multi-agent N/A; keyword search, not embeddings → RAG N/A"). Call out modules
+   that are deferred / unavailable in this skill version. `operational` and `quality` are
+   near-universal baselines; workload-specific modules layer on top.
+2. **Ask the build-scoping questions** needed to build the evals (do not silently default):
+   - **Judge model + region** — which Bedrock model should the LLM-as-judge use, and where?
+   - **Operational thresholds** — per-call targets (max latency ms, max cost USD, max TTFT ms,
+     throughput floor, error-rate ceiling). If the user has no SLAs, offer to **propose
+     demo-reasonable numbers for them to approve** rather than baking in silent defaults.
+   - **"Good" / known failure modes** — anything specific to catch beyond the obvious.
+   - **Ground truth** — where inputs/expected values live, if any.
+3. **STOP — wait for answers.** End your turn. Do not present a build plan or write files until the
+   user has answered.
 
 ---
 
-## Phase 3 — Build
+## Phase 3 — Plan & Build (approval gate, then scaffold)
 
-Goal: scaffold the approved evals, adapted to the user's workload. **All writes are confined to a
-single `evals/` directory in the workload repo. Write nowhere else.**
+Only after the user answers the scoping questions. Goal: present a concrete plan, get approval,
+then build. **No writes until the user approves.**
 
-Scaffold this layout:
+1. **Present the build plan** using the answers:
+   - one workload → one report tab; how trajectories are generated (mirror the matching
+     `references/<module>.md`);
+   - the exact **binary checks** per workload (one failure mode per judge; deterministic $0 checks
+     first, then LLM-as-judge), plus operational threshold checks with the agreed numbers;
+   - the **dataset** (e.g. cases from ground truth, enriched with expected values);
+   - aggregation: per-check pass rate + all-checks-pass rate (never averaged into one score);
+   - the exact `evals/` layout to be written (below).
+2. **STOP — approval gate.** Do **not** create or modify any file until the user approves. If they
+   request changes, revise and re-present; only proceed on explicit approval.
+3. **On approval, scaffold.** **All writes are confined to a single `evals/` directory in the
+   workload repo. Write nowhere else.**
 
 ```
 evals/
@@ -136,9 +164,9 @@ Rules for what you generate:
 - **Mirror the patterns in `references/<module>.md` exactly.** Use the binary judge templates,
   aggregation, and code patterns from those files. Never invent Bedrock APIs — if it isn't in a
   reference, don't fabricate it.
-- Substitute the user's **model IDs and region** (from discovery) into the templates.
-- Write `eval_config.yaml` immediately after approval so subsequent runs can skip re-discovery;
-  offer to re-discover if the repo has changed materially.
+- Substitute the user's **model IDs and region** (from Phase 2) into the templates.
+- Write `eval_config.yaml` first so subsequent runs can skip re-discovery; offer to re-discover if
+  the repo has changed materially.
 
 Each `run_<workload>.py` runs every case through each binary judge, then aggregates:
 **per-check pass rate** and an **all-checks-pass rate** (a case passes overall only if every
@@ -175,12 +203,12 @@ surface it without aborting the other workloads.
 
 ---
 
-## Phase 4 — Run & Summarize ⟶ **STOP: confirm before run**
+## Phase 4 — Run & Summarize (run gate)
 
-Goal: run the evals and emit one shareable HTML summary.
+Only after the build is complete. Goal: run the evals and emit one shareable HTML summary.
 
-1. **STOP and confirm before executing anything.** Running the evals calls the user's AWS/Bedrock
-   account and **incurs cost**. Do not run until the user explicitly confirms.
+1. **STOP — confirm before running.** Running the evals calls the user's AWS/Bedrock account and
+   **incurs cost**. Do not run until the user explicitly confirms.
 2. On confirmation, run each `run_<workload>.py` to produce `results/<workload>.json`. If one
    workload errors, record the error in its result object and continue with the others.
 3. **Generate the summary via the bundled script** (deterministic; do not hand-roll HTML per run):
@@ -198,13 +226,14 @@ Goal: run the evals and emit one shareable HTML summary.
 
 ## Rules (hard constraints)
 
+- **One phase per turn.** Do a single phase, hit its STOP, and wait for the user. The four stops
+  are: Phase 1 → confirm scope; Phase 2 → wait for scoping answers; Phase 3 → approval gate before
+  any write; Phase 4 → run gate before any execution. Never chain phases in one response.
 - **Binary pass/fail only.** Every generated judge returns `{"passed": bool, "reason": str}` with
   **one failure mode per judge**. Never 1–5 rating scales; never averaged scores. Decompose quality
   into specific binary checks and report **pass rates**.
-- **Writes only under `evals/`.** Never create or modify any file outside the workload repo's
-  `evals/` directory. During discovery (Phases 1–2), write nothing at all.
-- **Confirm before executing.** Phase 2 has an approval gate (no build without approval); Phase 4
-  has a run gate (no execution without confirmation, because it costs money).
+- **Writes only under `evals/`, and only in Phase 3+.** Never create or modify any file outside the
+  workload repo's `evals/` directory. During Phases 1–2, write nothing at all.
 - **Mirror `references/` patterns; never invent Bedrock APIs.** All judge prompts, metrics, and
   code patterns come from the distilled `references/<module>.md` files. If a pattern isn't there,
   don't fabricate it.
