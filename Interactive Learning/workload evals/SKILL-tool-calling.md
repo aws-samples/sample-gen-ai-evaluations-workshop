@@ -381,7 +381,7 @@ Mock tool evaluation tests the model's live decisions — not just recorded beha
 
 ## Section 4: LLM-as-Judge for Tool Calling (Cost: $$)
 
-**Concept:** Programmatic metrics catch clear-cut errors, but some quality aspects require judgment: Was tool selection *appropriate* even if technically valid? Was the sequence *efficient*? Was the final response *helpful* given the tool results? An LLM judge evaluates these subjective dimensions using a structured rubric, scoring on 5 dimensions (tool selection, parameter quality, sequence logic, efficiency, response quality) on a 1–5 scale.
+**Concept:** Programmatic metrics catch clear-cut errors, but some quality aspects require judgment: Was tool selection *appropriate* even if technically valid? Was the sequence *efficient*? Was the final response *helpful* given the tool results? An LLM judge evaluates these subjective dimensions. Ask the judge for a **binary pass/fail on each dimension**, not a 1–5 score — Likert scales feel more informative but drift between runs (the line between a 3 and a 4 is subjective), let judges park uncertain cases in the middle, are harder to act on ("avg 3.8/5" vs "failed the *efficiency* check"), and need larger samples to compare. Keep granularity by **decomposing quality into 5 specific binary checks** (tool selection, parameter quality, sequence logic, efficiency, response quality), each with an explicit pass criterion; track the **pass rate across checks** plus an **all-checks-pass gate** for an overall verdict. (Reasoning follows [Hamel Husain's evals FAQ](https://hamel.dev/blog/posts/evals-faq/#q-why-do-you-recommend-binary-passfail-evaluations-instead-of-1-5-ratings-likert-scales).)
 
 **Build the judge:**
 
@@ -434,20 +434,22 @@ def judge_trajectory(test_case, result):
 {result['final_output'][:500]}
 </final_response>
 
-Evaluate on 5 dimensions (score each 1-5):
-1. **Tool Selection**: Right tools for the task?
-2. **Parameter Quality**: Correct, complete, well-formed?
-3. **Sequence Logic**: Sensible, efficient order?
-4. **Efficiency**: Minimum tools needed, no waste?
-5. **Response Quality**: Final response addresses the user's request?
+Evaluate each of these 5 dimensions as a BINARY pass/fail. A dimension PASSES only if it
+fully meets the criterion below — when in doubt, fail it. Do not hedge; every dimension must
+be either true (pass) or false (fail).
+1. **Tool Selection** — PASS if the agent called the right tools with no wrong or unnecessary tools; FAIL otherwise.
+2. **Parameter Quality** — PASS if every parameter is correct, complete, and well-formed; FAIL if any is hallucinated, missing, or malformed.
+3. **Sequence Logic** — PASS if tools were called in a sensible, logical order; FAIL if the ordering is illogical or would break the task.
+4. **Efficiency** — PASS if the agent used the minimum tools needed with no redundant calls; FAIL if there were wasteful or duplicate calls.
+5. **Response Quality** — PASS if the final response appropriately and helpfully addresses the user's request; FAIL otherwise.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON (each "passed" must be a JSON boolean true/false):
 {{
-    "tool_selection": {{"score": <1-5>, "reason": "<brief>"}},
-    "parameter_quality": {{"score": <1-5>, "reason": "<brief>"}},
-    "sequence_logic": {{"score": <1-5>, "reason": "<brief>"}},
-    "efficiency": {{"score": <1-5>, "reason": "<brief>"}},
-    "response_quality": {{"score": <1-5>, "reason": "<brief>"}},
+    "tool_selection": {{"passed": <true|false>, "reason": "<brief>"}},
+    "parameter_quality": {{"passed": <true|false>, "reason": "<brief>"}},
+    "sequence_logic": {{"passed": <true|false>, "reason": "<brief>"}},
+    "efficiency": {{"passed": <true|false>, "reason": "<brief>"}},
+    "response_quality": {{"passed": <true|false>, "reason": "<brief>"}},
     "overall_assessment": "<one sentence>"
 }}"""
 
@@ -468,18 +470,22 @@ judge_test_ids = ["tc-001", "tc-002", "tc-004", "tc-005", "tc-008", "tc-009", "t
 for tc_id in judge_test_ids:
     tc = tc_lookup[tc_id]
     result = run_with_mock_tools(tc['input'])
-    scores = judge_trajectory(tc, result)
+    verdicts = judge_trajectory(tc, result)
 
-    if 'error' not in scores:
-        dims = ['tool_selection', 'parameter_quality', 'sequence_logic', 'efficiency', 'response_quality']
-        avg_score = sum(scores[d]['score'] for d in dims) / len(dims)
+    if 'error' not in verdicts:
+        checks = ['tool_selection', 'parameter_quality', 'sequence_logic', 'efficiency', 'response_quality']
+        passed_flags = {c: bool(verdicts[c]['passed']) for c in checks}
+        num_passed = sum(passed_flags.values())
+        pass_rate = num_passed / len(checks)
+        overall_pass = all(passed_flags.values())  # all-checks-pass gate
         print(f"\n  {tc_id} - {tc['name']}")
-        for dim in dims:
-            print(f"    {dim:20s}: {scores[dim]['score']}/5 - {scores[dim]['reason']}")
-        print(f"    Average: {avg_score:.1f}/5")
+        for c in checks:
+            print(f"    {c:20s}: {'PASS' if passed_flags[c] else 'FAIL'} - {verdicts[c]['reason']}")
+        print(f"    Checks passed: {num_passed}/{len(checks)} ({pass_rate:.0%})")
+        print(f"    Overall: {'PASS' if overall_pass else 'FAIL'} (all checks must pass)")
 ```
 
-The LLM judge catches issues programmatic metrics miss: an agent that calls `lookup_order` before `initiate_return` gets a higher sequence logic score (good practice) even though both orderings produce correct F1. It also flags when a technically-correct response is unhelpful or confusing to the user.
+The LLM judge catches issues programmatic metrics miss: an agent that calls `lookup_order` before `initiate_return` passes the sequence-logic check (good practice) even though both orderings produce correct F1. It also fails a technically-correct response that is unhelpful or confusing to the user. Report the per-check pass rate across cases plus the all-checks-pass rate — both are directly actionable ("efficiency fails 40% of the time") in a way an average score never is.
 
 ## Section 5: Multi-Turn and Synthetic Simulation (Cost: $$$ – $$$$)
 

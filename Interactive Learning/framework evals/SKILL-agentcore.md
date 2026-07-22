@@ -152,7 +152,7 @@ def tool_selection_score(expected: list, actual: list) -> dict:
 
 ### Section 3: LLM-as-Judge Quality Evaluation
 
-**Concept:** For dimensions that can't be computed deterministically (helpfulness, accuracy, clarity), you use a stronger model as an evaluator. The pattern: construct a rubric prompt, send the agent's response to the judge model, parse structured scores. This gives you multi-dimensional quality metrics per invocation.
+**Concept:** For dimensions that can't be computed deterministically (helpfulness, accuracy, clarity), you use a stronger model as an evaluator. Ask the judge for a **binary pass/fail on each dimension** rather than a 1–5 score: scales drift between runs, invite middle-value hedging, and are harder to act on than "failed the *accuracy* check." Keep granularity by evaluating several specific checks independently, then report the **pass rate per check** across invocations.
 
 **Build:**
 
@@ -162,12 +162,18 @@ import boto3, json
 bedrock = boto3.client('bedrock-runtime')
 
 def evaluate_quality(query: str, response: str, model_id: str) -> dict:
-    prompt = f"""Evaluate this agent response on a 1-5 scale for each metric.
+    prompt = f"""Evaluate this agent response as a BINARY pass/fail on each metric.
+A metric PASSES only if it fully meets the criterion — when in doubt, fail it.
 Query: {query}
 Response: {response}
 
-Metrics: HELPFULNESS, ACCURACY, CLARITY, COMPLETENESS
-Respond with ONLY a JSON object: {{"helpfulness": N, "accuracy": N, "clarity": N, "completeness": N}}"""
+- HELPFULNESS: PASS if the response actually addresses the user's request; FAIL otherwise.
+- ACCURACY: PASS if every factual claim is correct; FAIL if any is wrong or unsupported.
+- CLARITY: PASS if the response is clear and unambiguous; FAIL otherwise.
+- COMPLETENESS: PASS if it addresses all parts of the query; FAIL if any part is missing.
+
+Respond with ONLY a JSON object (each value a JSON boolean true/false):
+{{"helpfulness": <true|false>, "accuracy": <true|false>, "clarity": <true|false>, "completeness": <true|false>}}"""
 
     result = bedrock.invoke_model(
         modelId=model_id,
@@ -247,7 +253,7 @@ for tc in test_cases:
 # Aggregate
 import statistics
 print(f"Mean Tool F1: {statistics.mean(r['tool_f1'] for r in results):.2f}")
-print(f"Mean Accuracy: {statistics.mean(r['accuracy'] for r in results):.1f}/5")
+print(f"Accuracy pass rate: {statistics.mean(1 if r['accuracy'] else 0 for r in results):.0%}")
 ```
 
 ---

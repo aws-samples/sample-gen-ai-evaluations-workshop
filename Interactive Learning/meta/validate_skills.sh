@@ -47,6 +47,19 @@ while IFS= read -r -d '' f; do
     echo "  FAIL: Uses 'Success criteria' instead of 'Assessment criteria'"; ERRORS=$((ERRORS + 1))
   fi
 
+  # Likert-scale regression guard — the workshop teaches binary pass/fail, not 1-5 rating scales.
+  # Matches prescriptive scoring mechanics (rubric instructions, JSON score fields, X/5 output),
+  # NOT prose that mentions 1-5 as an anti-pattern (those use an en-dash "1–5").
+  # NOTE: SKILL-quality.md is a known pending exception (notebooks 02 vs 03 contradict; conversion
+  # awaiting a design decision) — it WARNs instead of failing until converted.
+  if grep -qiE 'score each.*1-[0-9]|"score":[[:space:]]*<?[0-9]-[0-9]|[[:space:]]X/[0-9]|scored 1-[0-9]|on a 1-[0-9] scale' "$f"; then
+    if [ "$(basename "$f")" = "SKILL-quality.md" ]; then
+      echo "  WARN: Likert 1-5 scoring present (SKILL-quality.md — conversion pending decision)"
+    else
+      echo "  FAIL: Likert 1-5 scoring detected — use binary pass/fail (see AGENTS.md)"; ERRORS=$((ERRORS + 1))
+    fi
+  fi
+
   # Non-standard section names
   if grep -q '^## What You Will Build\|^## What You Will Learn' "$f"; then
     echo "  FAIL: Non-standard section name (use '## Learning Objectives')"; ERRORS=$((ERRORS + 1))

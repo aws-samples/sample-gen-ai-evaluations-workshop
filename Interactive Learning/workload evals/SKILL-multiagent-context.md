@@ -642,7 +642,7 @@ The dynamic swarm reveals a new evaluation dimension: **path divergence**. Run t
 | Memory Write Accuracy | Is what the agent wrote to memory factually correct? |
 | Redundant Context | How much repeated/irrelevant context was transferred? |
 
-Each metric is scored 1-5 by a judge LLM that sees the agent's input, retrieved context, and output.
+Each metric is a **binary pass/fail** judged by an LLM that sees the agent's input, retrieved context, and output. Binary verdicts avoid the boundary drift and middle-value hedging of 1–5 scales and give you a clear pass rate per metric; granularity comes from the six specific checks below, not from a graded score.
 
 **Build:** The `LLMJudge` class wraps Bedrock Converse calls with structured JSON output:
 
@@ -673,14 +673,15 @@ class LLMJudge:
     def judge_context_freshness(self, latest_user_msg: str, retrieved_context: str,
                                 agent_name: str) -> dict:
         if not retrieved_context.strip():
-            return {"score": 5, "reasoning": "No prior context (first call)"}
+            return {"passed": True, "reasoning": "No prior context (first call)"}
         prompt = f"""Evaluate whether the {agent_name} agent's retrieved context reflects
-the latest user requirements. Score 1-5 (5 = fully current, 1 = completely stale).
+the latest user requirements. Return a BINARY pass/fail — PASS only if the context is
+fully current; when in doubt, fail it.
 
 Latest user message: \"\"\"{latest_user_msg}\"\"\"
 Retrieved context: \"\"\"{retrieved_context[:3000]}\"\"\"
 
-Respond JSON only: {{"score": <1-5>, "reasoning": "<one sentence>",
+Respond JSON only: {{"passed": <true|false>, "reasoning": "<one sentence>",
 "stale_fields": ["list outdated fields"]}}"""
         return self._call(prompt)
 
@@ -692,8 +693,9 @@ Do agents agree on key facts (numbers, dates, constraints)?
 
 {agent_texts}
 
-Score 1-5 (5 = all agree, 1 = major contradictions).
-Respond JSON only: {{"score": <1-5>, "reasoning": "<one sentence>",
+Return a BINARY pass/fail — PASS only if agents agree on all key facts; FAIL if there is
+any genuine contradiction.
+Respond JSON only: {{"passed": <true|false>, "reasoning": "<one sentence>",
 "contradictions": ["list genuine contradictions"]}}"""
         return self._call(prompt)
 ```
@@ -731,15 +733,15 @@ feedback_metrics.evaluate_all()
 for turn in feedback_metrics.turns:
     print(f"\nTurn {turn.turn_number}:")
     for rec in turn.agent_calls:
-        freshness = rec.judge_scores.get("context_freshness", {}).get("score", "?")
-        print(f"  {rec.agent_name}: freshness={freshness}/5")
-    sc = turn.state_consistency.get("score", "?")
-    print(f"  State Consistency: {sc}/5")
+        fresh = rec.judge_scores.get("context_freshness", {}).get("passed", "?")
+        print(f"  {rec.agent_name}: freshness={'PASS' if fresh is True else 'FAIL' if fresh is False else '?'}")
+    sc = turn.state_consistency.get("passed", "?")
+    print(f"  State Consistency: {'PASS' if sc is True else 'FAIL' if sc is False else '?'}")
     for c in turn.state_consistency.get("contradictions", []):
         print(f"    ⚠️ {c}")
 ```
 
-**Interpreting results:** Context Freshness drops when an agent reads memory that doesn't reflect the latest user message. State Consistency drops when agents disagree on key facts. In the feedback session, expect lower scores on turn 2 — that's where the scope change tests whether peers reconcile or inherit stale context.
+**Interpreting results:** Context Freshness fails when an agent reads memory that doesn't reflect the latest user message. State Consistency fails when agents disagree on key facts. In the feedback session, expect failures on turn 2 — that's where the scope change tests whether peers reconcile or inherit stale context. Track the **pass rate per metric across turns** rather than an average score; "State Consistency fails on 2 of 5 turns" points straight at the turns to debug.
 
 ## Section 5: Conflict Detection and Comparative Analysis
 
@@ -785,14 +787,14 @@ def comparison_report(a: MetricsCollector, b: MetricsCollector,
     header = f"| Metric | {label_a} | {label_b} | Delta |"
     lines.extend([header, "|--------|----------|----------|-------|"])
 
-    def avg_score(collector, key):
-        scores = []
+    def pass_rate(collector, key):
+        flags = []
         for t in collector.turns:
             for r in t.agent_calls:
-                s = r.judge_scores.get(key, {}).get("score")
-                if s is not None:
-                    scores.append(s)
-        return sum(scores) / len(scores) if scores else 0
+                v = r.judge_scores.get(key, {}).get("passed")
+                if v is not None:
+                    flags.append(1 if v else 0)
+        return sum(flags) / len(flags) if flags else 0
 
     for key, label in [
         ("context_freshness", "Context Freshness"),
@@ -801,9 +803,9 @@ def comparison_report(a: MetricsCollector, b: MetricsCollector,
         ("write_accuracy", "Write Accuracy"),
         ("redundant_context", "Context Efficiency"),
     ]:
-        sa, sb = avg_score(a, key), avg_score(b, key)
+        sa, sb = pass_rate(a, key), pass_rate(b, key)
         d = sb - sa
-        lines.append(f"| {label} | {sa:.1f}/5 | {sb:.1f}/5 | {'+' if d>=0 else ''}{d:.1f} |")
+        lines.append(f"| {label} | {sa:.0%} | {sb:.0%} | {'+' if d>=0 else ''}{d:.0%} |")
 
     return "\n".join(lines)
 
@@ -818,7 +820,7 @@ import numpy as np
 
 
 def plot_context_metrics_radar(collector, session_label: str):
-    """Radar chart of average LLM-judge scores."""
+    """Radar chart of per-metric LLM-judge pass rates."""
     metrics = ["context_freshness", "handoff_completeness", "context_utilization",
                "write_accuracy", "redundant_context"]
     labels = ["Freshness", "Handoff", "Ctx Util", "Write Acc", "Low Redund"]
@@ -828,9 +830,9 @@ def plot_context_metrics_radar(collector, session_label: str):
         vals = []
         for t in collector.turns:
             for r in t.agent_calls:
-                s = r.judge_scores.get(key, {}).get("score")
-                if s is not None:
-                    vals.append(s)
+                v = r.judge_scores.get(key, {}).get("passed")
+                if v is not None:
+                    vals.append(1 if v else 0)
         scores.append(sum(vals) / len(vals) if vals else 0)
 
     N = len(labels)
@@ -843,8 +845,8 @@ def plot_context_metrics_radar(collector, session_label: str):
     ax.plot(angles, scores_plot, "o-", linewidth=2, color="#2196F3")
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels)
-    ax.set_ylim(0, 5)
-    ax.set_title(f"Context Quality — {session_label}", pad=20)
+    ax.set_ylim(0, 1)
+    ax.set_title(f"Context Quality (pass rate) — {session_label}", pad=20)
     plt.tight_layout()
     return fig
 
@@ -855,9 +857,9 @@ plt.show()
 ```
 
 **Key takeaways from conflict detection:**
-- Context Freshness < 3 means agents are working with stale information
-- State Consistency < 3 means agents disagree on key facts
-- The delta between baseline and conflict sessions quantifies your system's resilience to mid-session changes
+- A low Context Freshness pass rate means agents are working with stale information
+- A low State Consistency pass rate means agents disagree on key facts
+- The delta in pass rates between baseline and conflict sessions quantifies your system's resilience to mid-session changes
 - Production fix: version memory entries and re-dispatch affected agents after constraint updates
 
 ## Challenges
@@ -871,7 +873,7 @@ Design and instrument a multi-agent evaluation for a **customer support escalati
 3. **Instrument with MetricsCollector** — record handoffs, memory reads/writes, latency, and tokens for every agent call.
 4. **Introduce a mid-session constraint change** — e.g., the customer escalates from billing to technical, or changes their account type mid-conversation. This must test whether agents propagate the update.
 5. **Run baseline vs conflict sessions** and produce a comparison report showing metric deltas.
-6. **Interpret the results** — identify ≥2 specific coordination failures from the metrics (e.g., "the resolution agent used the old account type because Context Freshness dropped to 2/5 on turn 3").
+6. **Interpret the results** — identify ≥2 specific coordination failures from the metrics (e.g., "the resolution agent used the old account type because Context Freshness failed on turn 3").
 
 **Assessment criteria:**
 - Implements ≥1 architecture with ≥3 agents that have distinct system prompts
