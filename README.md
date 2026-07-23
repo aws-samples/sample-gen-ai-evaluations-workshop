@@ -2,6 +2,8 @@
 
 This workshop teaches systematic approaches to evaluating Generative AI workloads for production use. You'll learn to build evaluation frameworks that go beyond basic metrics to ensure reliable model performance while optimizing cost and performance.
 
+[![evals workshop](evals%20workshop.png)](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/raw/main/GenAI-Evals-AWS.pptx)
+
 📥 [Download the slide deck (.pptx)](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/raw/main/GenAI-Evals-AWS.pptx) — covers the basics of evaluations and includes an overview of this workshop.
 
 ## How to use this repository
