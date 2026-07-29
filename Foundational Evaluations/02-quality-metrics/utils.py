@@ -4,6 +4,8 @@ Supports programmatic testing and LLM-as-a-Judge evaluation workflows
 """
 
 import boto3
+import os
+import sys
 import pandas as pd
 import json
 import re
@@ -14,13 +16,19 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Model IDs are centralised in ../model_config.py
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
+
 # Initialize Bedrock client
 bedrock = boto3.client("bedrock-runtime")
 
 # Judge prompt template for LLM-as-a-Judge evaluation
+# Binary pass/fail verdict only — rating scales (1-5, 1-10) introduce implicit
+# variation that hides actual failure modes. See 03_Evaluating_your_Judge.ipynb.
 JUDGE_PROMPT_TEMPLATE = """
 You will be given a question about US cities demographics and population data. 
-Your task is to evaluate a model's response for accuracy, completeness, and analytical quality.
+Your task is to evaluate a model's response and deliver a binary pass/fail verdict.
 
 Here is the question about US cities:
 <question>{QUESTION}</question>
@@ -46,6 +54,10 @@ First, analyze the question type and evaluate the model response based on:
 4. **Analytical Depth**: For complex queries, does the response provide meaningful insights beyond basic data retrieval?
 5. **Data Handling**: Does the response appropriately handle data formatting issues (commas in numbers, footnotes, etc.)?
 
+## Verdict Criteria (binary — do NOT use a rating scale)
+- PASS: The numerical data in the response matches the context. Approximate values (e.g., "about 2.4 million" for 2,390,125) are acceptable. Calculations are mathematically sound. Additional commentary that does not contradict the data is fine.
+- FAIL: The response contains a specific but wrong number, an incorrect calculation, reverses a comparison, claims data is unavailable when it is in the context, or does not answer the question asked.
+
 Then, classify the question type:
 1. **Factual Lookup**: Simple data retrieval (population of specific city)
 2. **Ranking/Comparison**: Ordering cities by metrics or comparing multiple cities
@@ -63,10 +75,10 @@ Provide your evaluation in the following format:
 
 <complexity>Basic/Intermediate/Advanced</complexity>
 
-<score>X/10</score>
+<verdict>pass/fail</verdict>
 
 <reasoning>
-[Explanation for the score based on accuracy, completeness, analytical quality, and appropriate handling of the dataset characteristics]
+[Explanation for the verdict based on accuracy, completeness, analytical quality, and appropriate handling of the dataset characteristics]
 </reasoning>
 
 <improvements>
@@ -109,7 +121,7 @@ def bedrock_call(prompt: str) -> Dict[str, Any]:
     """
     
     response = bedrock.converse(
-        modelId='us.anthropic.claude-sonnet-4-6',
+        modelId=DEFAULT_MODEL_ID,
         messages=[
             {
                 'role': 'user',
@@ -121,8 +133,7 @@ def bedrock_call(prompt: str) -> Dict[str, Any]:
             }
         ],
         inferenceConfig={
-            'maxTokens': 300,
-            'temperature': 0
+            'maxTokens': 300
         }
     )
     
@@ -155,7 +166,7 @@ def generate_model_response(question: str, context_data: str = "") -> str:
         
     try:
         response = bedrock.converse(
-            modelId='us.anthropic.claude-sonnet-4-6',
+            modelId=DEFAULT_MODEL_ID,
             messages=[
                 {
                     'role': 'user',
@@ -163,8 +174,7 @@ def generate_model_response(question: str, context_data: str = "") -> str:
                 }
             ],
             inferenceConfig={
-                'maxTokens': 500,
-                'temperature': 0.1
+                'maxTokens': 500
             }
         )
         
@@ -172,13 +182,13 @@ def generate_model_response(question: str, context_data: str = "") -> str:
     except Exception as e:
         return f"Error generating response: {str(e)}"
 
-def call_judge_model(prompt: str, model_id: str = "us.anthropic.claude-sonnet-4-6") -> str:
+def call_judge_model(prompt: str, model_id: str = JUDGE_MODEL_ID) -> str:
     """Call the judge model to evaluate a response using boto3 directly."""
     try:
         response = bedrock.converse(
             modelId=model_id,
             messages=[{"role": "user", "content": [{"text": prompt}]}],
-            inferenceConfig={"temperature": 0.1, "maxTokens": 1000}
+            inferenceConfig={"maxTokens": 1000}
         )
         
         return response["output"]["message"]["content"][0]["text"]
@@ -259,7 +269,7 @@ def extract_evaluation_components(evaluation_text: str) -> Dict:
         'analysis': r'<analysis>(.*?)</analysis>',
         'question_type': r'<question_type>(.*?)</question_type>',
         'complexity': r'<complexity>(.*?)</complexity>',
-        'score': r'<score>(.*?)</score>',
+        'verdict': r'<verdict>(.*?)</verdict>',
         'reasoning': r'<reasoning>(.*?)</reasoning>',
         'improvements': r'<improvements>(.*?)</improvements>'
     }
@@ -273,18 +283,13 @@ def extract_evaluation_components(evaluation_text: str) -> Dict:
         else:
             extracted[key] = None
     
-    # Extract numeric score
-    if extracted['score']:
-        score_match = re.search(r'(\d+(?:\.\d+)?)', extracted['score'])
-        if score_match:
-            try:
-                extracted['numeric_score'] = float(score_match.group(1))
-            except ValueError:
-                extracted['numeric_score'] = None
-        else:
-            extracted['numeric_score'] = None
-    else:
-        extracted['numeric_score'] = None
+    # Normalize verdict to lowercase pass/fail
+    if extracted['verdict']:
+        verdict = extracted['verdict'].strip().lower()
+        extracted['verdict'] = verdict if verdict in ('pass', 'fail') else None
+    
+    # Boolean convenience column for aggregation
+    extracted['passed'] = extracted['verdict'] == 'pass' if extracted['verdict'] else None
     
     return extracted
 
@@ -371,7 +376,7 @@ def save_evaluation_results(parsed_evaluations: List[Dict], output_prefix: str =
     # Save summary CSV
     if parsed_evaluations:
         df_evaluations = pd.DataFrame(parsed_evaluations)
-        summary_columns = ['question', 'numeric_score', 'question_type', 'complexity', 
+        summary_columns = ['question', 'verdict', 'question_type', 'complexity', 
                           'analysis', 'reasoning', 'improvements']
         
         available_columns = [col for col in summary_columns if col in df_evaluations.columns]
@@ -385,27 +390,31 @@ def save_evaluation_results(parsed_evaluations: List[Dict], output_prefix: str =
     return json_file, None
 
 def calculate_evaluation_metrics(df_evaluations: pd.DataFrame) -> Dict[str, Any]:
-    """Calculate summary metrics from evaluation results."""
+    """Calculate summary metrics from evaluation results (pass/fail verdicts)."""
     
-    if df_evaluations.empty or 'numeric_score' not in df_evaluations.columns:
+    if df_evaluations.empty or 'passed' not in df_evaluations.columns:
         return {}
     
+    n_pass = int(df_evaluations['passed'].sum())
+    total = len(df_evaluations)
+    
     metrics = {
-        'average_score': df_evaluations['numeric_score'].mean(),
-        'median_score': df_evaluations['numeric_score'].median(),
-        'min_score': df_evaluations['numeric_score'].min(),
-        'max_score': df_evaluations['numeric_score'].max(),
-        'total_evaluations': len(df_evaluations)
+        'pass_count': n_pass,
+        'fail_count': total - n_pass,
+        'pass_rate': n_pass / total if total > 0 else 0,
+        'total_evaluations': total
     }
     
     # Question type performance
     if 'question_type' in df_evaluations.columns:
-        type_stats = df_evaluations.groupby('question_type')['numeric_score'].agg(['mean', 'count'])
+        type_stats = df_evaluations.groupby('question_type')['passed'].agg(['mean', 'count'])
+        type_stats.columns = ['pass_rate', 'count']
         metrics['question_type_performance'] = type_stats.to_dict('index')
     
     # Complexity performance
     if 'complexity' in df_evaluations.columns:
-        complexity_stats = df_evaluations.groupby('complexity')['numeric_score'].agg(['mean', 'count'])
+        complexity_stats = df_evaluations.groupby('complexity')['passed'].agg(['mean', 'count'])
+        complexity_stats.columns = ['pass_rate', 'count']
         metrics['complexity_performance'] = complexity_stats.to_dict('index')
     
     return metrics
@@ -414,129 +423,100 @@ def calculate_evaluation_metrics(df_evaluations: pd.DataFrame) -> Dict[str, Any]
 
 def generate_realistic_performance_data(n_samples=1000, random_seed=42):
     """
-    Generate realistic performance data that models degradation from perfect lab conditions 
-    to production reality across different question types.
+    Generate realistic judge verdict data that models degradation from perfect lab
+    conditions to production reality across different question types.
+    
+    Verdicts are binary pass/fail — no rating scales.
     
     Args:
         n_samples (int): Number of evaluation samples to generate
         random_seed (int): Random seed for reproducibility
         
     Returns:
-        pd.DataFrame: DataFrame with 'numeric_score' and 'question_type' columns
+        pd.DataFrame: DataFrame with 'verdict', 'passed' and 'question_type' columns
     """
     np.random.seed(random_seed)
     
-    realistic_scores = []
     question_types = ['calculation_based', 'factual_lookup', 'ranking_comparison', 
                      'creative_writing', 'technical_explanation']
+    
+    # Realistic failure rates per question type in production
+    fail_rates = {
+        'ranking_comparison': 0.18,      # Most challenging - ambiguous criteria
+        'creative_writing': 0.12,        # Subjective evaluation variance
+        'factual_lookup': 0.05,          # Strong but some data quality issues
+        'calculation_based': 0.03,       # Reliable, deterministic
+        'technical_explanation': 0.03    # Reliable, well-structured
+    }
+    
     question_type_list = []
-
+    verdicts = []
+    
     for i in range(n_samples):
         q_type = np.random.choice(question_types)
         question_type_list.append(q_type)
-        
-        # Model realistic performance degradation from perfect lab conditions
-        if q_type == 'ranking_comparison':
-            # Most challenging - subjective evaluation, ambiguous criteria
-            rand = np.random.random()
-            if rand < 0.45:  # 45% excellent
-                score = np.random.uniform(9.0, 10.0)
-            elif rand < 0.80:  # 35% good
-                score = np.random.uniform(7.5, 9.0)
-            else:  # 20% needs work
-                score = np.random.uniform(5.0, 7.5)
-        elif q_type == 'creative_writing':
-            # Subjective evaluation variance
-            rand = np.random.random()
-            if rand < 0.60:  # 60% excellent
-                score = np.random.uniform(8.8, 10.0)
-            elif rand < 0.88:  # 28% good
-                score = np.random.uniform(7.0, 8.8)
-            else:  # 12% problematic
-                score = np.random.uniform(5.5, 7.0)
-        elif q_type == 'factual_lookup':
-            # Generally strong but some data quality issues
-            rand = np.random.random()
-            if rand < 0.75:  # 75% excellent
-                score = np.random.uniform(9.2, 10.0)
-            elif rand < 0.95:  # 20% good
-                score = np.random.uniform(8.0, 9.2)
-            else:  # 5% needs work
-                score = np.random.uniform(6.0, 8.0)
-        else:
-            # Technical tasks remain most reliable
-            rand = np.random.random()
-            if rand < 0.82:  # 82% excellent
-                score = np.random.uniform(9.3, 10.0)
-            elif rand < 0.97:  # 15% good
-                score = np.random.uniform(8.2, 9.3)
-            else:  # 3% needs work
-                score = np.random.uniform(6.5, 8.2)
-        
-        realistic_scores.append(round(score, 1))
+        verdicts.append('fail' if np.random.random() < fail_rates[q_type] else 'pass')
     
-    return pd.DataFrame({
-        'numeric_score': realistic_scores,
+    df = pd.DataFrame({
+        'verdict': verdicts,
         'question_type': question_type_list
     })
+    df['passed'] = df['verdict'] == 'pass'
+    return df
 
 def calculate_performance_stats(df):
     """
-    Calculate comprehensive performance statistics and identify outliers.
+    Calculate comprehensive pass/fail statistics and identify failure clusters.
     
     Args:
-        df (pd.DataFrame): DataFrame with 'numeric_score' and 'question_type' columns
+        df (pd.DataFrame): DataFrame with 'verdict', 'passed' and 'question_type' columns
         
     Returns:
         dict: Dictionary containing all calculated statistics
     """
-    mean_score = df['numeric_score'].mean()
-    std_score = df['numeric_score'].std()
-    outlier_threshold = mean_score - 2 * std_score
-    outliers = df[df['numeric_score'] < outlier_threshold]
+    total = len(df)
+    n_pass = int(df['passed'].sum())
+    pass_rate = n_pass / total if total > 0 else 0
+    failures = df[~df['passed']]
     
     # Question type statistics
-    question_stats = df.groupby('question_type').agg({
-        'numeric_score': ['mean', 'std', 'count', 'min']
-    }).round(2)
-    question_stats.columns = ['mean', 'std', 'count', 'min']
+    question_stats = df.groupby('question_type').agg(
+        pass_rate=('passed', 'mean'),
+        count=('passed', 'count'),
+        failures=('passed', lambda s: int((~s).sum()))
+    ).round(3)
     
-    # Outlier counts per question type
-    outlier_counts = outliers.groupby('question_type').size().reindex(question_stats.index, fill_value=0)
+    # Failure counts per question type
+    failure_counts = failures.groupby('question_type').size().reindex(question_stats.index, fill_value=0)
     
     # Detailed stats for each question type
     detailed_stats = []
     for q_type in question_stats.index:
         subset = df[df['question_type'] == q_type]
-        outlier_count = len(outliers[outliers['question_type'] == q_type])
-        outlier_pct = (outlier_count / len(subset)) * 100
+        fail_count = int((~subset['passed']).sum())
+        fail_pct = (fail_count / len(subset)) * 100
         
         detailed_stats.append({
             'type': q_type,
-            'mean': subset['numeric_score'].mean(),
-            'std': subset['numeric_score'].std(),
-            'outliers': outlier_count,
-            'outlier_pct': outlier_pct
+            'pass_rate': subset['passed'].mean(),
+            'failures': fail_count,
+            'fail_pct': fail_pct
         })
     
-    detailed_stats.sort(key=lambda x: x['outlier_pct'], reverse=True)
+    detailed_stats.sort(key=lambda x: x['fail_pct'], reverse=True)
     
-    # Quality distribution
-    quality_counts = [
-        len(df[df['numeric_score'] >= 9]),
-        len(df[(df['numeric_score'] >= 7) & (df['numeric_score'] < 9)]),
-        len(df[df['numeric_score'] < 7])
-    ]
+    # Verdict distribution [pass, fail]
+    verdict_counts = [n_pass, total - n_pass]
     
     return {
-        'mean_score': mean_score,
-        'std_score': std_score,
-        'outlier_threshold': outlier_threshold,
-        'outliers': outliers,
+        'pass_rate': pass_rate,
+        'n_pass': n_pass,
+        'n_fail': total - n_pass,
+        'failures': failures,
         'question_stats': question_stats,
-        'outlier_counts': outlier_counts,
+        'failure_counts': failure_counts,
         'detailed_stats': detailed_stats,
-        'quality_counts': quality_counts
+        'verdict_counts': verdict_counts
     }
 
 def create_performance_visualization(df, stats, figsize=(16, 10)):
@@ -552,23 +532,23 @@ def create_performance_visualization(df, stats, figsize=(16, 10)):
         matplotlib.figure.Figure: The created figure
     """
     fig, axes = plt.subplots(2, 3, figsize=figsize)
-    plt.suptitle('Large-Scale Performance Distribution Analysis (N={:,})'.format(len(df)), 
+    plt.suptitle('Large-Scale Pass/Fail Analysis (N={:,})'.format(len(df)), 
                  fontsize=16, fontweight='bold', y=0.98)
     
-    # 1. Score distribution
-    _plot_score_distribution(axes[0,0], df, stats)
+    # 1. Verdict distribution
+    _plot_verdict_distribution(axes[0,0], stats)
     
-    # 2. Performance by question type
-    _plot_performance_by_type(axes[0,1], stats)
+    # 2. Pass rate by question type
+    _plot_pass_rate_by_type(axes[0,1], stats)
     
-    # 3. Quality distribution pie chart
-    _plot_quality_distribution(axes[0,2], stats)
+    # 3. Failure counts by question type
+    _plot_failure_by_type(axes[0,2], stats)
     
-    # 4. Outlier scatter plot
-    _plot_outlier_analysis(axes[1,0], df, stats)
+    # 4. Rolling pass rate over evaluations
+    _plot_rolling_pass_rate(axes[1,0], df, stats)
     
-    # 5. Box plot variance analysis
-    _plot_variance_analysis(axes[1,1], df, stats)
+    # 5. Pass rate confidence intervals
+    _plot_confidence_analysis(axes[1,1], df, stats)
     
     # 6. Production readiness summary
     _plot_production_summary(axes[1,2], stats)
@@ -576,122 +556,124 @@ def create_performance_visualization(df, stats, figsize=(16, 10)):
     plt.tight_layout()
     return fig
 
-def _plot_score_distribution(ax, df, stats):
-    """Plot score distribution with outlier highlighting."""
-    ax.hist(df['numeric_score'], bins=25, alpha=0.7, color='steelblue', edgecolor='black')
-    ax.axvline(stats['mean_score'], color='red', linestyle='-', linewidth=2, 
-               label=f'Mean: {stats["mean_score"]:.2f}')
-    ax.axvline(stats['outlier_threshold'], color='orange', linestyle='--', linewidth=2, 
-               label=f'Outlier Threshold: {stats["outlier_threshold"]:.2f}')
+def _plot_verdict_distribution(ax, stats):
+    """Plot overall pass/fail verdict distribution."""
+    colors = ['green', 'red']
+    explode = (0, 0.1)
     
-    ax.axvspan(df['numeric_score'].min(), stats['outlier_threshold'], alpha=0.3, color='red', 
-               label=f'Outliers: {len(stats["outliers"])} cases')
-    
-    ax.set_title('Production Performance Distribution', fontweight='bold')
-    ax.set_xlabel('Score')
-    ax.set_ylabel('Frequency')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    
-    ax.text(0.02, 0.98, f'Realistic degradation from\nperfect lab conditions\n({len(stats["outliers"])/len(df)*100:.1f}% require review)', 
-            transform=ax.transAxes, verticalalignment='top',
-            bbox=dict(boxstyle='round', facecolor='lightcoral', alpha=0.3), fontsize=10)
+    ax.pie(stats['verdict_counts'], labels=['Pass', 'Fail'], 
+           autopct='%1.1f%%', colors=colors, startangle=90, explode=explode)
+    ax.set_title('Production Verdict Distribution', fontweight='bold')
 
-def _plot_performance_by_type(ax, stats):
-    """Plot performance by question type."""
+def _plot_pass_rate_by_type(ax, stats):
+    """Plot pass rate by question type."""
     x_pos = range(len(stats['question_stats']))
-    bars = ax.bar(x_pos, stats['question_stats']['mean'], 
-                  yerr=stats['question_stats']['std'], capsize=5, alpha=0.7,
-                  color=['lightcoral' if count > 2 else 'steelblue' for count in stats['outlier_counts']])
+    pass_rates = stats['question_stats']['pass_rate'] * 100
+    bars = ax.bar(x_pos, pass_rates, alpha=0.7,
+                  color=['lightcoral' if count > 20 else 'steelblue' for count in stats['failure_counts']])
     
-    ax.axhline(stats['mean_score'], color='red', linestyle='-', linewidth=2, alpha=0.8, label='Overall Mean')
-    ax.axhline(stats['outlier_threshold'], color='orange', linestyle='--', linewidth=2, alpha=0.8, label='Investigation Threshold')
+    ax.axhline(stats['pass_rate'] * 100, color='red', linestyle='-', linewidth=2, alpha=0.8, 
+               label=f'Overall Pass Rate: {stats["pass_rate"]*100:.1f}%')
+    ax.axhline(90, color='orange', linestyle='--', linewidth=2, alpha=0.8, label='Target: 90%')
     
-    ax.set_title('Performance by Complexity & Context', fontweight='bold')
+    ax.set_title('Pass Rate by Question Type', fontweight='bold')
     ax.set_xticks(x_pos)
     ax.set_xticklabels([qt.replace('_', '\n') for qt in stats['question_stats'].index], rotation=0, fontsize=9)
-    ax.set_ylabel('Score')
+    ax.set_ylabel('Pass Rate (%)')
+    ax.set_ylim(0, 105)
     ax.legend()
     ax.grid(True, alpha=0.3)
     
-    for i, (mean_val, outlier_count) in enumerate(zip(stats['question_stats']['mean'], stats['outlier_counts'])):
-        if outlier_count > 0:
-            ax.text(i, mean_val + 0.5, f'{outlier_count} outliers', 
+    for i, (rate, fail_count) in enumerate(zip(pass_rates, stats['failure_counts'])):
+        if fail_count > 0:
+            ax.text(i, rate + 1.5, f'{fail_count} fails', 
                    ha='center', va='bottom', fontsize=9, color='red', fontweight='bold')
 
-def _plot_quality_distribution(ax, stats):
-    """Plot quality distribution pie chart."""
-    colors = ['green', 'orange', 'red']
-    explode = (0, 0, 0.1)
+def _plot_failure_by_type(ax, stats):
+    """Plot failure counts per question type."""
+    x_pos = range(len(stats['failure_counts']))
+    counts = stats['failure_counts'].values
+    ax.bar(x_pos, counts, alpha=0.7,
+           color=['lightcoral' if c > 20 else 'steelblue' for c in counts])
     
-    ax.pie(stats['quality_counts'], labels=['Excellent (9-10)', 'Good (7-9)', 'Needs Investigation (<7)'], 
-           autopct='%1.1f%%', colors=colors, startangle=90, explode=explode)
-    ax.set_title('Statistical Significance Assessment', fontweight='bold')
+    ax.set_title('Failures by Question Type', fontweight='bold')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels([qt.replace('_', '\n') for qt in stats['failure_counts'].index], rotation=0, fontsize=9)
+    ax.set_ylabel('Failure Count')
+    ax.grid(True, alpha=0.3)
+    
+    for i, c in enumerate(counts):
+        ax.text(i, c + 0.5, str(int(c)), ha='center', va='bottom', fontsize=9, fontweight='bold')
 
-def _plot_outlier_analysis(ax, df, stats):
-    """Plot outlier analysis scatter plot."""
-    colors_map = {'calculation_based': 'steelblue', 'factual_lookup': 'green', 
-                  'ranking_comparison': 'red', 'creative_writing': 'orange', 
-                  'technical_explanation': 'purple'}
+def _plot_rolling_pass_rate(ax, df, stats, window=50):
+    """Plot rolling pass rate over evaluation sequence to check stability."""
+    rolling = df['passed'].rolling(window=window, min_periods=window).mean() * 100
+    ax.plot(df.index, rolling, color='steelblue', linewidth=2, 
+            label=f'Rolling pass rate (window={window})')
     
-    for q_type in df['question_type'].unique():
-        subset = df[df['question_type'] == q_type]
-        ax.scatter(subset.index, subset['numeric_score'], 
-                  label=q_type.replace('_', ' ').title(), alpha=0.6, s=30,
-                  color=colors_map.get(q_type, 'gray'))
+    # Mark failures along the sequence
+    failures = stats['failures']
+    ax.scatter(failures.index, [0] * len(failures), color='red', s=15, marker='x', 
+               alpha=0.5, label=f'Failures ({len(failures)})')
     
-    ax.scatter(stats['outliers'].index, stats['outliers']['numeric_score'], 
-              color='red', s=100, marker='x', linewidth=3, label='Outliers')
+    ax.axhline(stats['pass_rate'] * 100, color='red', linestyle='-', linewidth=2, alpha=0.8, 
+               label='Overall Pass Rate')
+    ax.axhline(90, color='orange', linestyle='--', linewidth=2, alpha=0.8, label='Target: 90%')
     
-    ax.axhline(stats['mean_score'], color='red', linestyle='-', linewidth=2, alpha=0.8, label='Mean')
-    ax.axhline(stats['outlier_threshold'], color='orange', linestyle='--', linewidth=2, alpha=0.8, label='Threshold')
-    
-    ax.set_title('Production Environment Factors', fontweight='bold')
+    ax.set_title('Pass Rate Stability Over Time', fontweight='bold')
     ax.set_xlabel('Evaluation ID')
-    ax.set_ylabel('Score')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+    ax.set_ylabel('Pass Rate (%)')
+    ax.set_ylim(-5, 105)
+    ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
-def _plot_variance_analysis(ax, df, stats):
-    """Plot variance analysis box plot."""
-    box_plot = ax.boxplot([df[df['question_type'] == qt]['numeric_score'].values 
-                          for qt in stats['question_stats'].index], 
-                         tick_labels=[qt.replace('_', '\n') for qt in stats['question_stats'].index],
-                         patch_artist=True)
+def _plot_confidence_analysis(ax, df, stats):
+    """Plot per-type pass rates with 95% binomial confidence intervals."""
+    types = list(stats['question_stats'].index)
+    rates = []
+    errors = []
     
-    for patch, outlier_count in zip(box_plot['boxes'], stats['outlier_counts']):
-        if outlier_count > 2:
-            patch.set_facecolor('lightcoral')
-            patch.set_alpha(0.7)
-        else:
-            patch.set_facecolor('steelblue')
-            patch.set_alpha(0.7)
+    for q_type in types:
+        subset = df[df['question_type'] == q_type]
+        n = len(subset)
+        p = subset['passed'].mean()
+        # Normal approximation 95% CI for a proportion
+        se = np.sqrt(p * (1 - p) / n) if n > 0 else 0
+        rates.append(p * 100)
+        errors.append(1.96 * se * 100)
     
-    ax.axhline(stats['mean_score'], color='red', linestyle='-', linewidth=2, alpha=0.8, label='Overall Mean')
-    ax.set_title('Judge Evaluation Variance Analysis', fontweight='bold')
-    ax.set_xlabel('Question Type')
-    ax.set_ylabel('Score')
+    x_pos = range(len(types))
+    ax.bar(x_pos, rates, yerr=errors, capsize=5, alpha=0.7,
+           color=['lightcoral' if count > 20 else 'steelblue' for count in stats['failure_counts']])
+    
+    ax.axhline(stats['pass_rate'] * 100, color='red', linestyle='-', linewidth=2, alpha=0.8, 
+               label='Overall Pass Rate')
+    ax.set_title('Pass Rate 95% Confidence Intervals', fontweight='bold')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels([qt.replace('_', '\n') for qt in types], rotation=0, fontsize=9)
+    ax.set_ylabel('Pass Rate (%)')
+    ax.set_ylim(0, 105)
+    ax.legend()
     ax.grid(True, alpha=0.3)
-    plt.setp(ax.get_xticklabels(), rotation=0, fontsize=9)
 
 def _plot_production_summary(ax, stats):
     """Plot production readiness summary."""
     ax.axis('off')
     
+    total = stats['n_pass'] + stats['n_fail']
     summary_text = f"""PRODUCTION READINESS ASSESSMENT:
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        Mean Performance: {stats['mean_score']:.2f}/10
-        Standard Deviation: {stats['std_score']:.2f}
-        Quality Threshold: {stats['outlier_threshold']:.2f}
-        Review Required: {len(stats['outliers'])} cases ({len(stats['outliers'])/(sum(stats['quality_counts']))*100:.1f}%)
+        Overall Pass Rate: {stats['pass_rate']*100:.1f}%
+        Passed: {stats['n_pass']} / {total}
+        Failed: {stats['n_fail']} cases ({stats['n_fail']/total*100:.1f}%)
 
-        ✓ SLA EXPECTATION: {(stats['quality_counts'][0]+stats['quality_counts'][1])/sum(stats['quality_counts'])*100:.1f}% satisfactory
-        ✓ CAPACITY PLANNING: {len(stats['outliers'])} cases need human review
-        ✓ MONITORING THRESHOLD: < {stats['outlier_threshold']:.1f} triggers alert
+        ✓ SLA EXPECTATION: {stats['pass_rate']*100:.1f}% passing
+        ✓ CAPACITY PLANNING: {stats['n_fail']} cases need human review
+        ✓ MONITORING: alert when pass rate < 90%
         ✓ IMPROVEMENT PRIORITY: {stats['detailed_stats'][0]['type'].replace('_', ' ').title()}
 
         STATISTICAL SIGNIFICANCE: Large sample 
-        enables detection of ±{stats['std_score']:.1f} point changes
+        narrows pass-rate confidence intervals
         """
     
     ax.text(0.5, 0.5, summary_text, ha='center', va='center', fontsize=11, 
@@ -700,15 +682,13 @@ def _plot_production_summary(ax, stats):
 
 def print_performance_summary(stats):
     """Print performance analysis summary."""
-    total_samples = sum(stats['quality_counts'])
-    satisfactory_pct = (stats['quality_counts'][0] + stats['quality_counts'][1]) / total_samples * 100
-    outlier_pct = len(stats['outliers']) / total_samples * 100
+    total_samples = stats['n_pass'] + stats['n_fail']
+    fail_pct = stats['n_fail'] / total_samples * 100
 
-    print("Large-scale analysis complete! Model shows realistic performance distribution")
-    print(f"Mean degradation from perfect (10.0) to production reality ({stats['mean_score']:.2f})")
-    print(f"{satisfactory_pct:.1f}% of cases meet quality thresholds - ready for production deployment")
-    print(f"{len(stats['outliers'])} cases ({outlier_pct:.1f}%) require human review - typical for scale")
-    print(f"Statistical significance achieved: can detect ±{stats['std_score']:.1f} point performance changes")
+    print("Large-scale analysis complete! Model shows realistic pass/fail distribution")
+    print(f"Degradation from perfect lab conditions (100%) to production reality ({stats['pass_rate']*100:.1f}% pass rate)")
+    print(f"{stats['n_fail']} cases ({fail_pct:.1f}%) failed and require human review - typical for scale")
+    print(f"Worst-performing question type: {stats['detailed_stats'][0]['type'].replace('_', ' ')} ({stats['detailed_stats'][0]['fail_pct']:.1f}% failure rate)")
 
 def load_and_explore_dataset(filepath="./city_pop.csv"):
     """
@@ -863,9 +843,10 @@ def process_evaluation_results(cities_responses, evaluation_results):
 
     # Display summary statistics for cities evaluation
     if not df_evaluations.empty:
+        n_pass = int(df_evaluations['passed'].sum())
+        total = len(df_evaluations)
         print(f"\nEvaluation Summary:")
-        print(f"Average Score: {df_evaluations['numeric_score'].mean():.2f}")
-        print(f"Score Range: {df_evaluations['numeric_score'].min():.1f} - {df_evaluations['numeric_score'].max():.1f}")
+        print(f"Pass Rate: {n_pass/total*100:.1f}% ({n_pass}/{total} passed)")
 
         print(f"\nQuestion Type Distribution:")
         print(df_evaluations['question_type'].value_counts())
@@ -905,27 +886,27 @@ def display_evaluation_metrics(csv_file="cities_evaluation_summary.csv"):
         print(metrics_df.to_string())
 
         # Display additional cities-specific analysis
-        if not metrics_df.empty and 'numeric_score' in metrics_df.columns:
+        if not metrics_df.empty and 'verdict' in metrics_df.columns:
             print(f"\n" + "=" * 80)
             print("CITIES EVALUATION ANALYSIS")
             print("=" * 80)
 
-            print(f"\nSCORE STATISTICS:")
-            print(f"  Average Score: {metrics_df['numeric_score'].mean():.2f}/10")
-            print(f"  Median Score: {metrics_df['numeric_score'].median():.2f}/10")
-            print(f"  Score Range: {metrics_df['numeric_score'].min():.1f} - {metrics_df['numeric_score'].max():.1f}")
+            passed = metrics_df['verdict'].str.lower() == 'pass'
+            print(f"\nVERDICT STATISTICS:")
+            print(f"  Pass Rate: {passed.mean()*100:.1f}%")
+            print(f"  Passed: {int(passed.sum())} | Failed: {int((~passed).sum())}")
 
             if 'question_type' in metrics_df.columns:
                 print(f"\nQUESTION TYPE PERFORMANCE:")
-                type_stats = metrics_df.groupby('question_type')['numeric_score'].agg(['mean', 'count'])
+                type_stats = passed.groupby(metrics_df['question_type']).agg(['mean', 'count'])
                 for question_type, stats in type_stats.iterrows():
-                    print(f"  {question_type.replace('_', ' ').title()}: {stats['mean']:.2f} avg ({int(stats['count'])} questions)")
+                    print(f"  {question_type.replace('_', ' ').title()}: {stats['mean']*100:.1f}% pass rate ({int(stats['count'])} questions)")
 
             if 'complexity' in metrics_df.columns:
                 print(f"\nCOMPLEXITY PERFORMANCE:")
-                complexity_stats = metrics_df.groupby('complexity')['numeric_score'].agg(['mean', 'count'])
+                complexity_stats = passed.groupby(metrics_df['complexity']).agg(['mean', 'count'])
                 for complexity, stats in complexity_stats.iterrows():
-                    print(f"  {complexity}: {stats['mean']:.2f} avg ({int(stats['count'])} questions)")
+                    print(f"  {complexity}: {stats['mean']*100:.1f}% pass rate ({int(stats['count'])} questions)")
 
         return metrics_df
     else:
@@ -957,10 +938,10 @@ def analyze_model_performance(n_samples=1000, random_seed=42, show_plots=False):
     stats = calculate_performance_stats(df)
 
     # Print basic stats
-    print(f"Overall Performance: {stats['mean_score']:.2f} ± {stats['std_score']:.2f}")
-    print(f"Outliers (< {stats['outlier_threshold']:.2f}): {len(stats['outliers'])} cases")
-    print("Outlier breakdown by question type:")
-    print(stats['outliers'].groupby('question_type').size().sort_values(ascending=False))
+    print(f"Overall Pass Rate: {stats['pass_rate']*100:.1f}% ({stats['n_pass']}/{stats['n_pass'] + stats['n_fail']})")
+    print(f"Failures: {stats['n_fail']} cases")
+    print("Failure breakdown by question type:")
+    print(stats['failures'].groupby('question_type').size().sort_values(ascending=False))
 
     # Only create visualization if requested
     fig = None
@@ -997,20 +978,20 @@ def create_evaluation_summary(test_results, df_evaluations=None):
             'success_rate': (passed/total)*100 if total > 0 else 0
         }
 
-    # Judge evaluation summary
+    # Judge evaluation summary (binary pass/fail verdicts)
     if df_evaluations is not None and not df_evaluations.empty:
+        n_pass = int(df_evaluations['passed'].sum())
+        total = len(df_evaluations)
         summary['judge'] = {
-            'mean_score': df_evaluations['numeric_score'].mean(),
-            'median_score': df_evaluations['numeric_score'].median(),
-            'min_score': df_evaluations['numeric_score'].min(),
-            'max_score': df_evaluations['numeric_score'].max(),
-            'std_dev': df_evaluations['numeric_score'].std(),
-            'total_evaluated': len(df_evaluations)
+            'passed': n_pass,
+            'failed': total - n_pass,
+            'pass_rate': (n_pass / total) * 100 if total > 0 else 0,
+            'total_evaluated': total
         }
 
         # Question type breakdown
         if 'question_type' in df_evaluations.columns:
-            type_performance = df_evaluations.groupby('question_type')['numeric_score'].agg(['mean', 'count'])
+            type_performance = df_evaluations.groupby('question_type')['passed'].agg(['mean', 'count'])
             summary['by_type'] = type_performance.to_dict('index')
 
     return summary
@@ -1047,15 +1028,14 @@ def print_evaluation_dashboard(summary):
         print("\nLLM JUDGE EVALUATION")
         print("-" * 40)
 
-        # Score visualization
-        mean_score = judge['mean_score']
-        score_bar_length = 20
-        score_filled = int(score_bar_length * mean_score / 10)
-        score_bar = "🟩" * score_filled + "⬜" * (score_bar_length - score_filled)
+        # Pass rate visualization
+        pass_rate = judge['pass_rate']
+        bar_length = 20
+        filled = int(bar_length * pass_rate / 100)
+        pass_bar = "🟩" * filled + "⬜" * (bar_length - filled)
 
-        print(f"Average Score: {score_bar} {mean_score:.2f}/10")
-        print(f"Score Range: {judge['min_score']:.1f} - {judge['max_score']:.1f}")
-        print(f"Median: {judge['median_score']:.1f} | Std Dev: {judge['std_dev']:.2f}")
+        print(f"Pass Rate: {pass_bar} {pass_rate:.1f}%")
+        print(f"Results: ✅ {judge['passed']} passed | ❌ {judge['failed']} failed")
         print(f"Total Evaluated: {judge['total_evaluated']}")
 
     # Question Type Performance
@@ -1063,12 +1043,12 @@ def print_evaluation_dashboard(summary):
         print("\nPERFORMANCE BY QUESTION TYPE")
         print("-" * 40)
         for q_type, stats in summary['by_type'].items():
-            # Mini bar for each type
+            # Mini bar for each type (pass rate)
             mini_bar_length = 10
-            mini_filled = int(mini_bar_length * stats['mean'] / 10)
+            mini_filled = int(mini_bar_length * stats['mean'])
             mini_bar = "▰" * mini_filled + "▱" * (mini_bar_length - mini_filled)
 
-            print(f"{q_type.replace('_', ' ').title():25} {mini_bar} {stats['mean']:.1f}/10 ({int(stats['count'])} samples)")
+            print(f"{q_type.replace('_', ' ').title():25} {mini_bar} {stats['mean']*100:.0f}% pass ({int(stats['count'])} samples)")
 
     print("\n" + "="*80)
 
@@ -1157,16 +1137,16 @@ def create_single_plot(plot_type, df, stats, figsize=(8, 6)):
     """Create and display a single plot type."""
     plt.figure(figsize=figsize)
     
-    if plot_type == "score_distribution":
-        _plot_score_distribution(plt.gca(), df, stats)
-    elif plot_type == "performance_by_type":
-        _plot_performance_by_type(plt.gca(), stats)
-    elif plot_type == "quality_distribution":
-        _plot_quality_distribution(plt.gca(), stats)
-    elif plot_type == "outlier_analysis":
-        _plot_outlier_analysis(plt.gca(), df, stats)
-    elif plot_type == "variance_analysis":
-        _plot_variance_analysis(plt.gca(), df, stats)
+    if plot_type == "verdict_distribution":
+        _plot_verdict_distribution(plt.gca(), stats)
+    elif plot_type == "pass_rate_by_type":
+        _plot_pass_rate_by_type(plt.gca(), stats)
+    elif plot_type == "failure_by_type":
+        _plot_failure_by_type(plt.gca(), stats)
+    elif plot_type == "rolling_pass_rate":
+        _plot_rolling_pass_rate(plt.gca(), df, stats)
+    elif plot_type == "confidence_analysis":
+        _plot_confidence_analysis(plt.gca(), df, stats)
     elif plot_type == "production_summary":
         _plot_production_summary(plt.gca(), stats)
     

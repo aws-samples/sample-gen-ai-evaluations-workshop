@@ -55,7 +55,6 @@ Teaches three complementary approaches to measuring output quality: programmatic
 | File | Purpose |
 |------|---------|
 | `01_LLM_as_Judge_analysis.ipynb` | Programmatic testing + single-judge evaluation |
-| `02_LLM_as_Jury_evaluation_analysis.ipynb` | Multi-judge agreement and confidence intervals |
 | `03_Evaluating_your_Judge.ipynb` | Calibrate and validate judges against human labels |
 | `city_pop.csv` | Ground truth dataset (US cities with population and land area) |
 | `judge_benchmark.jsonl` | Human-labeled benchmark for judge calibration |
@@ -147,7 +146,7 @@ Teaches you to evaluate AI agents that use tools across multiple steps. Agents i
 
 These principles recur throughout the foundational modules and apply to every evaluation you'll build in the rest of the workshop:
 
-1. **Start simple, add complexity only when needed.** Programmatic checks before LLM judges. Single judges before juries. Prompt fixes before evaluation infrastructure.
+1. **Start simple, add complexity only when needed.** Programmatic checks before LLM judges. Prompt fixes before evaluation infrastructure.
 
 2. **Ground truth is gold.** Whenever you have known-correct answers, use them. They're free, deterministic, and unambiguous. LLM-as-Judge is for when ground truth doesn't exist.
 
