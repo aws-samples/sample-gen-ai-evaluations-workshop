@@ -9,7 +9,6 @@ This module demonstrates advanced evaluation techniques for LLM applications usi
 | Notebook | Description |
 |---|---|
 | **01_LLM_as_Judge_analysis** | Programmatic testing against ground truth + LLM-as-a-Judge evaluation |
-| **02_LLM_as_Jury_evaluation_analysis** | Multi-judge agreement analysis using the LLM-as-Jury pattern |
 | **03_Evaluating_your_Judge** | Calibrate and validate an LLM judge against human-labeled benchmarks |
 
 ## What You'll Learn
@@ -24,7 +23,7 @@ Objective verification methods for factual accuracy:
 
 ### 2. LLM-as-a-Judge Evaluation
 Qualitative assessment using AI evaluators:
-- **Multi-dimensional Scoring**: Assess accuracy, completeness, and analytical quality
+- **Binary Pass/Fail Verdicts**: Clear verdicts instead of rating scales, which hide failure modes
 - **Question Type Classification**: Categorize queries by complexity and requirements
 - **Detailed Feedback Generation**: Receive specific improvement recommendations
 
@@ -34,7 +33,9 @@ Validate that your automated evaluators are trustworthy:
 - **Human-Labeled Benchmarks**: Split labeled data into few-shot / dev / test sets
 - **TPR/TNR Measurement**: Quantify judge accuracy as an estimator of real model error
 - **Repeatability Testing**: Verify the judge produces stable verdicts across runs
-- **Open-Coding Failure Analysis**: Data-driven identification of judge failure patterns
+- **Bias Checks**: Confirm verdicts aren't swayed by response length, confidence, or formatting
+
+Discovering *which* failure modes to judge in the first place (open coding on traces) is covered in the next module, [03: Understanding Failures](../03-understanding-failures/).
 
 
 ## Evaluation Methodologies
@@ -55,8 +56,7 @@ Validate that your automated evaluators are trustworthy:
 Run the notebooks in order:
 
 1. **01_LLM_as_Judge_analysis** — Establish programmatic and judge-based evaluation baselines
-2. **02_LLM_as_Jury_evaluation_analysis** — Compare multiple judges for agreement and confidence
-3. **03_Evaluating_your_Judge** — Calibrate your judge against human labels before trusting it in production
+2. **03_Evaluating_your_Judge** — Calibrate your judge against human labels before trusting it in production
 
 **Prerequisites:**
 - AWS account with Amazon Bedrock access

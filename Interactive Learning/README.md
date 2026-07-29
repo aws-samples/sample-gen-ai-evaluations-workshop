@@ -14,7 +14,7 @@ This directory contains AI-tutored interactive lessons for the AWS Evaluations W
 | Skill | What You'll Build |
 |-------|-------------------|
 | [SKILL-operational](foundational%20evaluations/SKILL-operational.md) | CloudWatch metrics, dashboards, and alarms for LLM monitoring |
-| [SKILL-quality](foundational%20evaluations/SKILL-quality.md) | LLM-as-Judge and Jury evaluation with agreement scoring |
+| [SKILL-quality](foundational%20evaluations/SKILL-quality.md) | LLM-as-Judge evaluation with binary pass/fail verdicts and judge calibration |
 | [SKILL-agentic](foundational%20evaluations/SKILL-agentic.md) | Agent trace evaluation, tool selection metrics, metric reuse |
 
 ### Workload-Specific Evaluations

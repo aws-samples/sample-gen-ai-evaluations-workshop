@@ -1,25 +1,25 @@
 ---
 name: llm-quality-evaluation
-description: Build LLM-as-Judge and LLM-as-Jury evaluation systems. Activate when asked to "evaluate LLM outputs", "build a judge prompt", "compare judge vs jury", "measure inter-judge agreement", or "add confidence intervals to evaluations".
+description: Build LLM-as-Judge evaluation systems with binary pass/fail verdicts. Activate when asked to "evaluate LLM outputs", "build a judge prompt", "calibrate a judge", "measure judge accuracy", or "add pass/fail evaluation".
 ---
 
-# LLM Quality Evaluation: Judge and Jury Patterns
+# LLM Quality Evaluation: The Judge Pattern
 
-Build automated evaluation systems that score LLM outputs using structured judge prompts, then scale to multi-judge juries with statistical confidence — so you know *how much* to trust each score.
+Build automated evaluation systems that deliver binary pass/fail verdicts on LLM outputs using structured judge prompts, then calibrate the judge itself against human-labeled data — so you know *how much* to trust each verdict.
 
 ## Prerequisites
 - Completion of Module 01 (concepts: operational metrics, CloudWatch dashboards, latency tracking)
-- Source notebooks: `../../Foundational Evaluations/02-quality-metrics/01_LLM_as_Judge_analysis.ipynb`, `../../Foundational Evaluations/02-quality-metrics/02_LLM_as_Jury_evaluation_analysis.ipynb`
-- AWS services: Amazon Bedrock (Claude 3.7 Sonnet)
+- Source notebooks: `../../Foundational Evaluations/02-quality-metrics/01_LLM_as_Judge_analysis.ipynb`, `../../Foundational Evaluations/02-quality-metrics/03_Evaluating_your_Judge.ipynb`
+- AWS services: Amazon Bedrock (Claude Sonnet 4.6)
 - Python libraries: boto3, numpy, pandas, matplotlib
 
 ## Learning Objectives
 By the end of this module, you will:
-- Implement a structured LLM-as-Judge evaluation with a multi-criteria scoring rubric
+- Implement a structured LLM-as-Judge evaluation with binary pass/fail verdicts
 - Run parallel judge evaluations across a dataset of model responses
-- Build a multi-judge jury system that quantifies inter-judge reliability
-- Calculate bootstrap confidence intervals from jury scores
-- Configure dynamic pass/fail thresholds that adjust for judge disagreement
+- Aggregate verdicts into pass rates with binomial confidence intervals
+- Calibrate a judge against human-labeled benchmarks using TPR/TNR
+- Test judge repeatability so verdicts are stable across runs
 
 ## Setup
 
@@ -31,45 +31,42 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 
 bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
-JUDGE_MODEL_ID = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+JUDGE_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 
 def call_judge_model(prompt: str) -> str:
     """Call Bedrock to get a judge evaluation."""
     response = bedrock.converse(
         modelId=JUDGE_MODEL_ID,
         messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": 2048, "temperature": 0.0}
+        inferenceConfig={"maxTokens": 1000, "temperature": 0.0}
     )
     return response["output"]["message"]["content"][0]["text"]
 ```
 
-## Section 1: Designing a Judge Prompt with Scoring Rubric
+## Section 1: Designing a Judge Prompt with Binary Pass/Fail Verdicts
 
-**Concept:** A single LLM evaluating another LLM's output is only as good as its rubric. Vague instructions like "rate quality 1-10" produce inconsistent scores. Structured rubrics with named criteria force the judge to evaluate each dimension independently, producing scores you can decompose and act on.
+**Concept:** A single LLM evaluating another LLM's output is only as good as its rubric. Vague instructions like "rate quality 1-10" produce inconsistent scores — rating scales introduce implicit variation that hides the actual failure state. A good judge prompt evaluates **one failure mode**, defines pass and fail explicitly, and forces reasoning before the verdict.
 
 **Build:**
 
 ```python
-JUDGE_PROMPT_TEMPLATE = """Evaluate the model response against these criteria:
+JUDGE_PROMPT_TEMPLATE = """Evaluate whether the model response is factually accurate given the context.
 
 <question>{question}</question>
 <model_response>{response}</model_response>
 <context>{context}</context>
 
-Score each criterion 1-5:
-1. **Data Accuracy**: Are facts correct given the context?
-2. **Calculation Correctness**: Are mathematical operations sound?
-3. **Analytical Depth**: Does it provide insight beyond retrieval?
-4. **Completeness**: Does it address all parts of the question?
+## Verdict Criteria (binary — do NOT use a rating scale)
+- PASS: The numerical data in the response matches the context. Approximate values
+  (e.g., "about 2.4 million" for 2,390,125) are acceptable. Additional commentary
+  that does not contradict the data is fine.
+- FAIL: The response contains a specific but wrong number, an incorrect calculation,
+  reverses a comparison, claims data is unavailable when it is in the context, or
+  does not answer the question asked.
 
 Respond in this exact format:
-<scores>
-accuracy: X/5
-calculation: X/5
-depth: X/5
-completeness: X/5
-</scores>
-<reasoning>Your explanation</reasoning>
+<reasoning>Your step-by-step analysis</reasoning>
+<verdict>pass or fail</verdict>
 """
 
 def build_judge_prompt(question: str, response: str, context: str = "") -> str:
@@ -78,15 +75,30 @@ def build_judge_prompt(question: str, response: str, context: str = "") -> str:
     )
 ```
 
+**Anti-patterns to avoid:**
+- `"Is this response good?"` — too vague, no criteria
+- `"Rate this response from 1-5"` — scales hide failure modes behind implicit variation
+- `"Check accuracy, completeness, tone, and helpfulness"` — multi-criteria overload; you can't tell which criterion failed. Build one judge per failure mode and combine results afterward.
+
 ## Section 2: Running Judge Evaluations at Scale
 
-**Concept:** Evaluating one response is trivial. Evaluating thousands requires parallel execution and structured result parsing. The pattern is: build all prompts first, execute concurrently, then parse structured output into a DataFrame for analysis.
+**Concept:** Evaluating one response is trivial. Evaluating thousands requires parallel execution and structured result parsing. The pattern is: build all prompts first, execute concurrently, then parse verdicts into a DataFrame for analysis.
 
 **Build:**
 
 ```python
-def run_judge_evaluations(responses: list[dict]) -> list[dict]:
-    """Evaluate responses in parallel using the judge prompt."""
+import re
+
+def parse_verdict(raw: str) -> str | None:
+    """Extract and normalize the pass/fail verdict from judge output."""
+    match = re.search(r"<verdict>(.*?)</verdict>", raw, re.DOTALL | re.IGNORECASE)
+    if not match:
+        return None
+    verdict = match.group(1).strip().lower()
+    return verdict if verdict in ("pass", "fail") else None
+
+def run_judge_evaluations(responses: list[dict]) -> pd.DataFrame:
+    """Evaluate responses in parallel and return verdicts as a DataFrame."""
     prompts = [
         build_judge_prompt(r["question"], r["model_response"], r.get("context", ""))
         for r in responses
@@ -95,146 +107,132 @@ def run_judge_evaluations(responses: list[dict]) -> list[dict]:
     with ThreadPoolExecutor(max_workers=3) as executor:
         raw_results = list(executor.map(call_judge_model, prompts))
 
-    parsed = []
-    for raw in raw_results:
-        scores = {}
-        for line in raw.split("\n"):
-            for criterion in ["accuracy", "calculation", "depth", "completeness"]:
-                if criterion in line and "/" in line:
-                    scores[criterion] = int(line.split("/")[0].strip()[-1])
-        parsed.append(scores)
-    return parsed
+    df = pd.DataFrame({
+        "question": [r["question"] for r in responses],
+        "verdict": [parse_verdict(raw) for raw in raw_results],
+    })
+    df["passed"] = df["verdict"] == "pass"
+    return df
 ```
 
-## Section 3: Multi-Judge Jury and Reliability Scoring
+## Section 3: Aggregating Verdicts — Pass Rates and Confidence Intervals
 
-**Concept:** A single judge can be biased — lenient, harsh, or inconsistent across metrics. LLM-as-Jury uses multiple judges evaluating the same response. But not all judges are equally trustworthy. Reliability scoring profiles each judge on consistency (low variance), discrimination (uses full scale), and centrality (not systematically biased).
+**Concept:** Binary verdicts aggregate into a pass rate, which is directly actionable: "91.7% of responses pass" tells you exactly how many cases need human review. But a pass rate from 20 samples is far less trustworthy than one from 1,000. Binomial confidence intervals quantify that uncertainty.
 
 **Build:**
 
 ```python
-def calculate_judge_reliability(scores_history: list[int]) -> dict:
-    """Score a judge's reliability from their evaluation history."""
-    arr = np.array(scores_history)
-    mean = np.mean(arr)
+def pass_rate_with_ci(passed: pd.Series, confidence: float = 0.95) -> dict:
+    """Pass rate with a normal-approximation binomial confidence interval."""
+    n = len(passed)
+    p = passed.mean()
+    z = 1.96  # 95% confidence
+    se = np.sqrt(p * (1 - p) / n) if n > 0 else 0
 
-    # Consistency: low coefficient of variation = more reliable
-    cv = np.std(arr) / mean if mean > 0 else 0
-    consistency = 1 - min(cv, 1)
-
-    # Discrimination: uses multiple distinct scores (not all 4s)
-    unique_ratio = len(np.unique(arr)) / 5  # scale is 1-5
-    discrimination = min(unique_ratio, 1.0)
-
-    # Centrality: not systematically extreme
-    centrality = 1 - abs(mean - 3.0) / 2.0
-
-    overall = 0.4 * consistency + 0.35 * discrimination + 0.25 * centrality
     return {
-        "consistency": round(consistency, 3),
-        "discrimination": round(discrimination, 3),
-        "centrality": round(centrality, 3),
-        "overall_reliability": round(overall, 3)
+        "pass_rate": round(p * 100, 1),
+        "ci_lower": round(max(0, p - z * se) * 100, 1),
+        "ci_upper": round(min(1, p + z * se) * 100, 1),
+        "n": n,
+        "failures": int((~passed).sum()),
+    }
+
+def pass_rate_by_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Break pass rates down by question type to find failure clusters."""
+    return df.groupby("question_type").agg(
+        pass_rate=("passed", "mean"),
+        count=("passed", "count"),
+        failures=("passed", lambda s: int((~s).sum())),
+    ).sort_values("pass_rate")
+```
+
+Failures rarely distribute evenly — they cluster in specific question types. The per-type breakdown tells you where to focus prompt engineering effort.
+
+## Section 4: Calibrating Your Judge Against Human Labels
+
+**Concept:** A judge is just another prompt — it needs its own test set. Before trusting the judge in production, run it against human-labeled examples and measure agreement. True Positive Rate (TPR: of real passes, how many did the judge catch?) and True Negative Rate (TNR: of real fails, how many did the judge catch?) quantify how accurate your judge is as an estimator of real model error.
+
+**Build:**
+
+```python
+def calibrate_judge(judge_labels: list[str], human_labels: list[str]) -> dict:
+    """Compare judge verdicts to human ground truth."""
+    df = pd.DataFrame({"judge": judge_labels, "human": human_labels})
+
+    actual_pass = df[df["human"] == "pass"]
+    actual_fail = df[df["human"] == "fail"]
+
+    tpr = (actual_pass["judge"] == "pass").mean() if len(actual_pass) else 0
+    tnr = (actual_fail["judge"] == "fail").mean() if len(actual_fail) else 0
+
+    return {
+        "accuracy": round((df["judge"] == df["human"]).mean(), 3),
+        "tpr": round(tpr, 3),   # catches real passes
+        "tnr": round(tnr, 3),   # catches real fails
+        "disagreements": df[df["judge"] != df["human"]],
     }
 ```
 
-## Section 4: Bootstrap Confidence Intervals from Jury Scores
+**Workflow:** Split your human-labeled benchmark into few-shot (~15%, examples placed in the judge prompt), dev (~45%, iterative calibration), and test (~40%, final blind validation). Analyze disagreements on the dev set, refine the judge prompt, and only touch the test set once at the end. Notebook 03 walks through the full loop.
 
-**Concept:** Three judges score a response: 3, 4, 5. The average is 4 — but how confident are you? Bootstrap resampling answers this by simulating thousands of possible jury compositions from your actual scores, producing a confidence interval like "95% confident the true score is between 3.0 and 4.7." Wide intervals mean judges disagree; narrow intervals mean you can trust the score.
+## Section 5: Judge Repeatability
 
-**Build:**
-
-```python
-def bootstrap_confidence_interval(
-    scores: list, n_bootstrap: int = 1000, confidence: float = 0.95
-) -> tuple[float, float, float]:
-    """Calculate bootstrap CI for jury scores."""
-    scores = np.array(scores)
-    bootstrap_means = [
-        np.mean(np.random.choice(scores, size=len(scores), replace=True))
-        for _ in range(n_bootstrap)
-    ]
-
-    alpha = 1 - confidence
-    ci_lower = np.percentile(bootstrap_means, (alpha / 2) * 100)
-    ci_upper = np.percentile(bootstrap_means, (1 - alpha / 2) * 100)
-    return float(np.mean(scores)), float(ci_lower), float(ci_upper)
-```
-
-## Section 5: Dynamic Thresholds — When Jury Beats Single Judge
-
-**Concept:** Fixed pass/fail thresholds ignore uncertainty. A score of 3.1 with tight agreement (CI: 3.0–3.2) is genuinely passing. A score of 3.1 with wide disagreement (CI: 2.0–4.2) is unreliable. Dynamic thresholds adjust upward when judges disagree, preventing false positives. This is precisely when a jury beats a single judge: when you need to *quantify* how much to trust the evaluation.
+**Concept:** A judge that flips its verdict on the same input across runs is unusable — you can't tell whether a change in pass rate comes from the model or from judge noise. Run the judge multiple times on identical inputs and measure verdict stability. Temperature 0 helps but does not guarantee determinism.
 
 **Build:**
 
 ```python
-def confidence_based_decision(
-    scores: list, base_threshold: float = 3.0, confidence_level: float = 0.95
-) -> dict:
-    """Make pass/fail decision accounting for judge disagreement."""
-    mean, ci_low, ci_high = bootstrap_confidence_interval(scores, confidence=confidence_level)
-    ci_width = ci_high - ci_low
-
-    # Widen threshold when judges disagree
-    adjusted_threshold = base_threshold + (ci_width * 0.5)
-
-    if ci_low >= base_threshold:
-        decision, conf = "PASS", 0.95
-    elif ci_high < base_threshold:
-        decision, conf = "FAIL", 0.95
-    elif mean >= adjusted_threshold:
-        decision, conf = "PASS", 0.7
-    else:
-        decision, conf = "FAIL", 0.7
+def test_repeatability(prompt: str, n_runs: int = 5) -> dict:
+    """Run the judge repeatedly on the same input and check verdict stability."""
+    verdicts = [parse_verdict(call_judge_model(prompt)) for _ in range(n_runs)]
+    counts = pd.Series(verdicts).value_counts()
 
     return {
-        "decision": decision,
-        "confidence": conf,
-        "mean_score": round(mean, 2),
-        "ci": (round(ci_low, 2), round(ci_high, 2)),
-        "adjusted_threshold": round(adjusted_threshold, 2),
-        "judges_agree": ci_width < 1.0
+        "verdicts": verdicts,
+        "stable": len(counts) == 1,
+        "majority": counts.index[0],
+        "agreement": round(counts.iloc[0] / n_runs, 2),
     }
 ```
+
+If verdicts flip between runs, your pass/fail definitions are ambiguous for that input — tighten the rubric or add a few-shot example covering the borderline case.
 
 ## Challenges
 
-### Challenge: End-to-End Judge vs. Jury Evaluation
+### Challenge: End-to-End Judge Build and Calibration
 
-Given a new dataset of LLM responses (e.g., customer support answers), implement both evaluation approaches and recommend which to use.
+Given a new dataset of LLM responses (e.g., customer support answers), build a pass/fail judge and prove it can be trusted.
 
 **Assessment criteria:**
 1. Runs without errors on the provided dataset
-2. Implements both single-judge (structured rubric) and multi-judge jury evaluation
-3. Handles judge disagreement by computing confidence intervals and flagging uncertain cases
-4. Uses an appropriate multi-criteria scoring rubric (not binary pass/fail)
-5. Learner explains when jury evaluation beats a single judge — with evidence from their own results (e.g., "jury caught 3 false positives the single judge missed because CI crossed threshold")
+2. Implements a single-failure-mode judge with explicit binary pass/fail definitions (no rating scales)
+3. Aggregates verdicts into pass rates with confidence intervals, broken down by question type
+4. Calibrates the judge against a small human-labeled set and reports TPR/TNR
+5. Learner explains what the disagreement analysis revealed and how they refined the judge prompt in response — with evidence from their own results (e.g., "the judge failed responses that used approximations, so I added an approximation rule to the rubric")
 
 **Starter structure:**
 ```python
-# 1. Define your rubric (adapt criteria to your domain)
-# 2. Run single-judge evaluation across all responses
-# 3. Run 3-judge jury on the same responses
-# 4. Compare: where do single-judge and jury disagree?
-# 5. For disagreements, show CI width and threshold adjustment
-# 6. Recommend: single judge (fast, cheap) vs jury (reliable, costly)
+# 1. Define ONE failure mode and explicit pass/fail criteria
+# 2. Build the judge prompt with structured output (reasoning before verdict)
+# 3. Run the judge across all responses in parallel
+# 4. Aggregate: overall pass rate + per-type breakdown with CIs
+# 5. Hand-label ~20 examples, run calibration, report TPR/TNR
+# 6. Analyze disagreements, refine the prompt, re-measure
 ```
 
 ## Wrap-Up
 
 **Key takeaways:**
-- Structured rubrics with named criteria produce decomposable, actionable scores
-- Bootstrap confidence intervals transform point estimates into ranges of trust
-- Dynamic thresholds prevent false positives when judges disagree — this is the core advantage of jury over single judge
+- Binary pass/fail verdicts beat rating scales: they force clear criteria, are easy to aggregate, and every failure is directly actionable
+- One failure mode per judge — combine multiple focused judges instead of one overloaded prompt
+- A judge is just another prompt: calibrate it against human labels (TPR/TNR) and test its repeatability before trusting it
 
 **What this does NOT cover:**
-- Human-in-the-loop calibration workflows
-- Cost optimization for multi-judge systems (token budgets)
+- Trace review, open coding, and failure-pattern discovery (Module 03: Understanding Failures)
 - Fine-tuning judge models on domain-specific rubrics
 - RAG pipeline construction (covered in Module 01 context section)
-- Statistical tests beyond bootstrap (Krippendorff's alpha, Cohen's kappa)
 
 **Next steps:**
 - Module 03: Agentic Metrics (evaluating multi-step agent behavior)
-- Extend jury to weighted voting using reliability scores from Section 3
-- Build a monitoring dashboard (Module 01) tracking judge agreement over time
+- Work through notebook 03's full calibration loop, including the held-out test set validation
+- Build a monitoring dashboard (Module 01) tracking pass rates and judge agreement over time
