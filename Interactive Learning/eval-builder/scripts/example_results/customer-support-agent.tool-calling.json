@@ -11,6 +11,7 @@
   "cases": [
     {
       "id": "tc-001",
+      "input": "What's the status of order ORD-48291?",
       "verdicts": {
         "tool_selection": true,
         "parameter_quality": true,
@@ -20,11 +21,12 @@
       },
       "overall_pass": false,
       "reason": {
-        "efficiency": "made a duplicate order-lookup call for the same order id"
+        "efficiency": "Made a duplicate lookup_order call for the same order ID before calling track_shipment"
       }
     },
     {
       "id": "tc-002",
+      "input": "Refund my order ORD-48310, the filters are defective.",
       "verdicts": {
         "tool_selection": true,
         "parameter_quality": true,
@@ -37,6 +39,7 @@
     },
     {
       "id": "tc-003",
+      "input": "Return order ORD-48344, I changed my mind.",
       "verdicts": {
         "tool_selection": false,
         "parameter_quality": true,
@@ -46,13 +49,14 @@
       },
       "overall_pass": false,
       "reason": {
-        "tool_selection": "called issue_refund when the user only asked for order status",
-        "sequence_logic": "attempted refund before verifying the order exists",
-        "response_quality": "final message did not answer the status question"
+        "tool_selection": "Called process_return on a 'placed' (not delivered) order instead of offering cancellation",
+        "sequence_logic": "Attempted return before verifying delivery status via lookup_order",
+        "response_quality": "Final message confirmed the return without noting it would fail"
       }
     },
     {
       "id": "tc-004",
+      "input": "Change my email to new@example.com, I'm CUST-1002.",
       "verdicts": {
         "tool_selection": true,
         "parameter_quality": false,
@@ -62,7 +66,7 @@
       },
       "overall_pass": false,
       "reason": {
-        "parameter_quality": "passed customer name instead of customer_id to lookup_customer"
+        "parameter_quality": "Called update_customer_record without first verifying identity via order history (prod-write safety violation)"
       }
     }
   ],
