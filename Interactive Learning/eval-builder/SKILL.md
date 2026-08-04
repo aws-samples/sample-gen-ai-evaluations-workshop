@@ -27,32 +27,66 @@ approve — scaffolds a working eval harness and produces a single interactive H
 2. **Fix before you automate.** If a failure can be resolved with a prompt edit, fix it now. Only
    build evaluation infrastructure for failures that need ongoing monitoring.
 3. **Layered, not parallel.** Foundational quality always runs first. Workload-specific evals
-   (tool-calling, RAG, guardrails…) build ON TOP of foundational findings. Framework-specific
-   layers (Strands Evals, AgentCore Runtime Evals) deepen those findings — they don't start from
-   scratch. Each layer feeds forward to the next.
+   build ON TOP of foundational findings. Framework layers deepen them. Each layer feeds forward.
 4. **Binary pass/fail.** Numeric scales (1–5) hide failure modes. Each evaluator answers one
    question: does this output exhibit failure X? Yes or no.
-5. **Evaluate the evaluator.** Every automated judge must be checked against human judgment before
-   trusting it.
-6. **Workshop is source of truth.** Read the workshop modules for patterns — never hardcode
-   evaluator names, imports, or API patterns from memory.
+5. **Evaluate the evaluator.** Every automated judge must be checked against human judgment.
+6. **Workshop is source of truth.** Always read from the workshop — never hardcode evaluator
+   names, imports, or patterns from memory.
 
-## Reference strategy (no-drift)
+## Workshop access (no-drift, no bundled references)
 
-The skill carries bundled `references/` for offline use. But if the workshop repo is available
-(either the current directory IS the workshop, or it can be cloned to a temp location), **prefer
-reading live module content** over bundled references — this eliminates drift. The decision:
+The skill reads the **live workshop content** directly. This eliminates drift entirely — patterns
+always come from the current workshop, not stale bundled copies.
 
-- If `Interactive Learning/` or `Foundational Evaluations/` exists in the working tree or a parent
-  → read live from it.
-- Otherwise, offer to clone:
-  `git clone --depth 1 https://github.com/aws-samples/sample-gen-ai-evaluations-workshop.git /tmp/eval-workshop-reference`
-  If the user declines or it fails, fall back to bundled `references/`.
-- At the end of a session that cloned, clean up: `rm -rf /tmp/eval-workshop-reference`.
+**How to get the workshop content:**
 
-When reading live, always read the README first to understand current structure, then navigate to
-the relevant module for each step. Never hardcode evaluator names, imports, or patterns — derive
-them from the module content.
+1. If the workshop repo is already on disk (check for `Foundational Evaluations/` in the working
+   tree, parent dirs, or a sibling directory) → read directly from it.
+2. Otherwise, clone it:
+   ```
+   git clone --depth 1 https://github.com/aws-samples/sample-gen-ai-evaluations-workshop.git /tmp/eval-workshop-reference
+   ```
+   If the user declines or clone fails → inform the user the skill needs workshop access and
+   cannot proceed without it. **There is no offline fallback.**
+3. At session end (if cloned): `rm -rf /tmp/eval-workshop-reference`
+
+**Always read the READMEs first** to understand current structure, then navigate to the relevant
+module. Never hardcode evaluator names, imports, or API patterns — derive everything from what the
+module currently contains.
+
+## Module routing table
+
+After detecting the workload type in Phase 1, read these paths from the workshop:
+
+| Module | Path in workshop repo | When to read |
+|--------|----------------------|--------------|
+| Workshop overview | `README.md` | Always |
+| Foundational overview | `Foundational Evaluations/README.md` | Always |
+| Operational metrics | `Foundational Evaluations/01-operational-metrics/` | Always — operational check |
+| Quality metrics / LLM-as-Judge | `Foundational Evaluations/02-quality-metrics/` | Always — evaluator design (binary pass/fail, judge calibration) |
+| Understanding failures | `Foundational Evaluations/03-understanding-failures/` | Always — failure discovery and categorization |
+| Agentic metrics | `Foundational Evaluations/04-agentic-metrics/` | When workload is an agent with tool use |
+| Tool Calling | `Workload Specific Evaluations/Tool Calling/` | When workload calls external tools |
+| Basic RAG | `Workload Specific Evaluations/Basic RAG/` | When workload uses retrieval-augmented generation |
+| MultiModal RAG | `Workload Specific Evaluations/MultiModal RAG/` | When RAG includes vision/audio/image retrieval |
+| Chatbot / multi-turn | `Workload Specific Evaluations/Chatbot/` | When workload has multi-turn conversations |
+| Guardrails | `Workload Specific Evaluations/Guardrails/` | When workload uses content filters / grounding / alignment |
+| Intelligent Document Processing | `Workload Specific Evaluations/Intelligent Document Processing/` | When workload extracts structured data from documents |
+| Multiagent Shared Context | `Workload Specific Evaluations/Multiagent Shared Context Evaluation/` | When workload has multiple coordinating agents |
+| Red Teaming | `Workload Specific Evaluations/Red Teaming/` | When adversarial / security testing is needed |
+| Automated Reasoning | `Workload Specific Evaluations/Automated Reasoning Evaluations/` | When workload uses formal reasoning / policy verification |
+| Speech to Speech | `Workload Specific Evaluations/Speech to Speech/` | When workload has voice / audio interaction |
+| Strands Evals SDK | `Framework Specific Evaluations/Strands/` | When agent is built with Strands SDK |
+| AgentCore | `Framework Specific Evaluations/AgentCore/` | When agent uses AgentCore deployment |
+| AgentCore Runtime Evals | `Framework Specific Evaluations/AgentCore Runtime Evals/` | When agent deployed to AgentCore Runtime + CloudWatch |
+| DeepEval | `Framework Specific Evaluations/DeepEval/` | When using DeepEval framework |
+| DSPy | `Framework Specific Evaluations/DSPy/` | When using DSPy optimization |
+| MLflow | `Framework Specific Evaluations/MLflow/` | When using MLflow tracking |
+| Promptfoo | `Framework Specific Evaluations/Prompt Foo/` | When using Promptfoo test harness |
+
+Multiple modules can apply to one workload. Foundational modules (operational, quality,
+understanding-failures) **always** apply.
 
 ## Flow overview
 
@@ -91,23 +125,22 @@ Do NOT proceed until confirmed.
 Goal: understand the workload(s) and any existing evals. **Read-only. No questions, no mapping,
 no file writes.**
 
-1. **Investigate the repository.** Read (do not modify):
-   - Dependency manifests for eval-relevant libraries (boto3, strands, bedrock-agentcore, vector/
-     retriever libs, jsonschema, deepeval, ragas, promptfoo).
+1. **Locate the workshop.** Check if the workshop repo is accessible (sibling dir, parent, or
+   already cloned). If not, clone it now. Read `README.md` and
+   `Foundational Evaluations/README.md` to confirm current structure.
+2. **Investigate the workload repository.** Read (do not modify):
+   - Dependency manifests for eval-relevant libraries.
    - Source for API signals — Bedrock converse/invoke_model, toolConfig/tools, retrieve/embeddings/
      KB, multi-agent handoffs, session state, doc/field extraction.
-   - Existing evals: `evals/` dirs, judge/scorer code, datasets, eval configs, CI eval steps,
-     framework usage (Strands Evals, AgentCore Runtime, promptfoo, mlflow, etc.).
-   - Side-effecting tools — classify each tool as read-only vs. side-effecting (write/delete/pay/
-     prod) from names/docstrings; flag dangerous tools in findings.
-2. **Detect workload type(s)** using `references/module-index.md`.
-3. **Present a Discovery findings report** — "Discovery complete. No files written." + a
+   - Existing evals: `evals/` dirs, judge/scorer code, datasets, eval configs, CI eval steps.
+   - Side-effecting tools — classify each as read-only vs. side-effecting; flag dangerous ones.
+3. **Detect workload type(s)** using the routing table above.
+4. **Present a Discovery findings report** — "Discovery complete. No files written." + a
    signal→evidence table. Include rows for: workload type, framework, tools (with ⚠️ for
    side-effecting), model/region, ground truth, guardrails, and **existing evals** (what/where/
    how many, or "none found").
-4. **Mode selection:** if existing evals found → offer Review; if none → default Build; if
-   ambiguous → ask. (Review mode evaluates the user's existing evals against the rubric and
-   recommends fixes + new evals. Build mode scaffolds fresh.)
+5. **Mode selection:** if existing evals found → offer Review; if none → default Build; if
+   ambiguous → ask.
 
 **STOP — confirm scope + mode.** Do not ask scoping questions, map modules, or propose evals.
 End your turn.
@@ -128,25 +161,31 @@ evals. **Still no file writes.**
    by frequency × severity. Present:
    - Failure categories found (with examples).
    - Which are fixable immediately (prompt edit, config change) vs. need ongoing monitoring.
-4. **Map to modules.** NOW map failures → workshop modules (via `references/module-index.md` or
-   live workshop content). State what's N/A and why. The mapping is **informed by what's actually
-   failing**, not generic.
+4. **Map to modules.** NOW map failures → workshop modules (using the routing table). Read the
+   relevant module READMEs/notebooks to understand what patterns they teach. State what's N/A and
+   why. The mapping is **informed by what's actually failing**, not generic.
 5. **Fix-before-automate gate.** For failures fixable with a prompt/config edit: suggest the fix.
    Ask: "Want to apply these fixes first, then re-sample, before I build evals for the rest?"
-   If yes → apply fixes (within `evals/` or the file the user designates), re-sample, update
-   failure categories. If no → proceed with all failures.
+   If yes → apply fixes, re-sample, update failure categories. If no → proceed with all failures.
 6. **Ask build-scoping questions** (judge model + region, operational thresholds, anything else
    needed to scaffold). Offer to propose demo-reasonable thresholds for approval.
 
 ### Review mode:
 
 1. **Read existing eval code** — judges, datasets, configs, aggregation, reporting.
-2. **Map existing evals to modules** — which dimensions does each judge/scorer cover?
-3. **Run the review rubric** (from the module's `## Review rubric` section) — binary pass/fail per
-   check, with evidence + severity. Flag: Likert scales, multi-criteria mega-judges, missing
-   calibration, no ground truth, etc.
-4. **Present the review report** — per-eval verdicts, coverage matrix, gaps, and a prioritized
-   fix list + new evals to fill gaps.
+2. **Read the relevant workshop modules** (from the routing table) to understand what they teach
+   about how evals should be built — binary pass/fail, one failure mode per judge, judge
+   calibration, deterministic checks first, pass-rate reporting, etc.
+3. **Grade the existing evals against what the workshop teaches.** For each existing eval, assess:
+   - Does it use binary pass/fail or a rating scale?
+   - Is it one failure mode per judge or a multi-criteria mega-judge?
+   - Is it calibrated/validated against human labels?
+   - Does it use deterministic checks where possible before LLM judges?
+   - Does it report pass rates (not averaged scores)?
+   - What dimensions/failure modes does it cover vs. what the mapped module(s) teach?
+4. **Present the review report** — per-eval findings (with evidence: file/line), a coverage matrix
+   (what's covered vs. what the modules say should be), gaps, and a prioritized fix list + new
+   evals to fill gaps.
 
 **STOP — wait for response.** In Build mode: user answers scoping Qs or approves fixes. In Review
 mode: user acknowledges findings and decides whether to remediate.
@@ -164,7 +203,7 @@ get approval, then build.
 |---|---|---|
 | **A: Foundational Quality** | Always | Output correctness — binary pass/fail judges per failure mode discovered in Phase 2. Programmatic checks (deterministic, $0) first, LLM-as-judge for subjective dimensions. boto3 only. |
 | **Agentic Process** | If tool-use / multi-step | HOW the agent reached the answer — tool selection, parameter accuracy, sequence, efficiency. Separate from WHAT it answered. |
-| **B: Strands Evals SDK** | If strands-agents-evals available | Framework evaluators + experiment runner. Derive evaluators from workshop (not hardcoded). Informed by Layer A findings. |
+| **B: Framework Evals** | If framework SDK available | Framework-specific evaluators (Strands Evals, DeepEval, DSPy, MLflow, Promptfoo). Derive evaluators from workshop — not hardcoded. Informed by Layer A findings. |
 | **C: AgentCore Runtime Evals** | If deployed to AgentCore + CW Transaction Search | Managed `evaluate()` API with built-in evaluators on full traces. Informed by Layer A findings. |
 
 **Feed-forward:** Layer A's failure categories explicitly scope what Layers B/C evaluate. Framework
@@ -177,7 +216,8 @@ evals don't start from scratch — they deepen understanding of foundational fai
 - Dataset (cases from ground truth / sampled outputs, enriched with expected values).
 - Aggregation: per-check pass rate + all-checks-pass. Never averaged.
 - The `evals/` layout to be written.
-- For Review-mode remediation: specific fixes to existing evals (in-place edits) + new evals for gaps.
+- For Review-mode remediation: specific fixes to existing evals (in-place edits) + new evals for
+  gaps.
 
 **STOP — approval gate.** Do NOT create or modify any file until the user approves.
 
@@ -197,9 +237,10 @@ evals/
 Rules:
 - **Every LLM-as-judge is binary pass/fail** (`{"passed": bool, "reason": str}`), one failure mode
   per judge. Never 1–5. Never averaged scores.
-- **Mirror workshop patterns** from references or live modules. Never invent Bedrock APIs.
+- **Mirror workshop patterns.** Read the relevant module from the cloned workshop and use its
+  patterns directly. Never invent Bedrock APIs or hardcode evaluator names.
 - **Tools are mocked by default; real side-effecting tools are NEVER executed.** Evals assess the
-  model's *decisions*, not real side effects. For irreversible tools, lean on deterministic checks.
+  model's *decisions*, not real side effects.
 - **Substitute user's model IDs + region.**
 - Write `eval_config.yaml` first (enables repeatable re-runs without re-discovery).
 
@@ -211,20 +252,13 @@ Only after build is complete. Goal: run evals and emit one shareable HTML summar
 
 1. **STOP — confirm before running.** Running calls the user's Bedrock and costs money.
 2. On confirmation, run each `run_<workload>.py`. If one errors, record it and continue.
-3. **Generate the report:**
-
-   ```bash
-   python3 scripts/build_report.py evals/results/ -o evals/report.html
-   ```
-
-   Self-contained `evals/report.html` with:
-   - **Review tab** (if Review mode): rubric verdicts, coverage matrix, gaps.
+3. **Generate the report** — a self-contained `evals/report.html` (inline CSS/JS, no deps) with:
+   - **Review tab** (if Review mode): existing-eval findings, coverage matrix, gaps.
    - **Results tab**: per-workload pass-rate bars, all-checks-pass gate, expandable per-case table
      with failure reasons.
    - **Summary tab**: aggregate across workloads.
    - Workloads with an `error` render an error panel.
    - Plus aggregated `evals/results.json` for CI/diffing.
-
 4. **Feed-forward note:** after results, suggest: "These results surface new failure patterns.
    Want to iterate — re-categorize failures and tighten the evals?"
 
@@ -234,17 +268,17 @@ Only after build is complete. Goal: run evals and emit one shareable HTML summar
 
 - **One phase per turn.** Do a single phase, hit its STOP, wait for the user.
 - **Failure-first.** Never design evaluators without first looking at actual outputs and
-  categorizing what's failing. Generic metrics without failure grounding are forbidden.
+  categorizing what's failing.
 - **Fix before automate.** Suggest prompt/config fixes before building eval infrastructure for
   trivially-fixable failures.
 - **Layered, feed-forward.** Foundational always first; workload-specific builds on it; framework
-  layers deepen it. Each layer's findings inform the next.
+  layers deepen it.
 - **Binary pass/fail only.** `{"passed": bool, "reason": str}`, one failure mode per judge. Never
   1–5 scales. Never averaged scores. Report pass rates.
-- **Tools mocked; no real side effects.** Never execute side-effecting tools in evals. Evaluate
-  model *decisions*, not outcomes.
+- **Tools mocked; no real side effects.** Never execute side-effecting tools in evals.
 - **Writes only under `evals/`, Phase 3+ only.** During Phases 1–2, write nothing.
-- **Workshop is source of truth.** Prefer live workshop content (clone if needed); fall back to
-  bundled `references/`. Never hardcode evaluator names/imports from memory.
+- **Workshop is the only source of truth.** Always read live from the cloned workshop. No bundled
+  references, no hardcoded patterns from memory. If you can't access the workshop, stop and tell
+  the user.
 - **No secrets to disk; use existing credentials only.**
 - **Evaluate the evaluator.** Flag when a judge hasn't been validated against human labels.
