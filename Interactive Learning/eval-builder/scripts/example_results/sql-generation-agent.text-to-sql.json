@@ -8,5 +8,5 @@
     "all_checks_pass_rate": null,
     "n": 0
   },
-  "error": "Bedrock InvokeModel failed: ThrottlingException (Too many requests). Retried 5x with exponential backoff and still exceeded the account's on-demand TPM quota for anthropic.claude-3-5-sonnet. No cases were evaluated for this workload."
+  "error": "Bedrock InvokeModel failed: ThrottlingException — exceeded on-demand TPM quota for anthropic.claude-sonnet-4-6 after 5 retries with exponential backoff. No cases were evaluated."
 }
