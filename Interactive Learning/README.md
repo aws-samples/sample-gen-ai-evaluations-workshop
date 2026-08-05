@@ -11,11 +11,11 @@ This directory contains AI-tutored interactive lessons for the AWS Evaluations W
 ## Two modes: Learn vs. Build
 
 - **Learn mode (tutor)** — the SKILLs below teach evaluation techniques through hands-on, Socratic challenges. Say _"Teach me about [topic]."_
-- **Build mode (`eval-builder`)** — a separate skill that helps you **build real evals for your own workload** rather than learn concepts. It discovers your app, proposes a plan you approve, scaffolds binary pass/fail evals into an `evals/` folder, runs them, and produces an interactive HTML report.
+- **Build mode (`eval-builder`)** — a separate skill that **builds real evals for your own workload** using a failure-first approach: it discovers what's actually failing, maps failures to the right workshop modules, and scaffolds binary pass/fail judges. It also has a **Review mode** that grades your existing eval pipeline against what the workshop teaches.
 
 ## Build mode: `eval-builder`
 
-[`eval-builder/`](eval-builder/) is a portable skill for Claude Code and Kiro. You run it in **your own** workload repo (not this one), so install it into your **global** skills directory once and use it anywhere.
+[`eval-builder/`](eval-builder/) is a portable skill for Claude Code and Kiro. It runs in **your own** workload repo (not this one), reads the workshop's live module content as its source of truth, and produces an interactive HTML report.
 
 **Install (agent-driven — no manual file moving, no script):**
 
@@ -25,13 +25,16 @@ This directory contains AI-tutored interactive lessons for the AWS Evaluations W
    - Kiro → `~/.kiro/skills/eval-builder/`
    - Claude Code → `~/.claude/skills/eval-builder/`
 
-The agent performs the copy itself (cross-platform — nothing to run).
-
 **Use it:**
 
 1. `cd` into the repository containing the workload you want to evaluate.
-2. Invoke it (e.g. `/eval-builder`, or _"build evals for my app"_).
-3. It confirms you're in the right repo, discovers your workload, proposes a plan (**you approve**), scaffolds the evals, and — **after you confirm** — runs them and writes `evals/report.html`.
+2. Invoke it (e.g. `/eval-builder`, or _"build evals for my app"_, or _"review my evals"_).
+3. The skill follows a failure-first, gated workflow:
+   - **Discover** — scans your repo, detects workload type(s), finds existing evals → confirms scope with you.
+   - **Failure-first** — samples real outputs, categorizes what's failing, suggests prompt fixes before building infrastructure, maps failures to workshop modules → you answer scoping questions.
+   - **Plan & Build** — proposes layered evals (foundational → workload-specific → framework) → **you approve** → scaffolds binary pass/fail judges into `evals/`.
+   - **Run** — **you confirm** (Bedrock spend) → runs evals → writes `evals/report.html`.
+4. If existing evals are found, it offers **Review mode**: grades them against workshop patterns, shows a coverage matrix, and recommends fixes + new evals.
 
 ## Skill Map
 
