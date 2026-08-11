@@ -22,3 +22,9 @@
 **/05-04-AgentCore-Runtime-Evals/Dockerfile
 **/05-04-AgentCore-Runtime-Evals/.dockerignore
 **/.bedrock_agentcore.yaml
+.omni/
+.claude/
+.github/
+.cursor/
+.kiro/
+.agents/
