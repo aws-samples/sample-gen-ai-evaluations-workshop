@@ -25,3 +25,6 @@
 
 # Generated notebook outputs
 **/email_responses.json
+
+**/cities_evaluation_results.json
+**/cities_evaluation_summary.csv
