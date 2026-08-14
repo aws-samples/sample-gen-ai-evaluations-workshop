@@ -1,206 +1,134 @@
-# Amazon Bedrock AgentCore Evaluation Framework
+# Amazon Bedrock AgentCore: Run, Observe, Evaluate, Improve
 
-Comprehensive evaluation tools for AI agents deployed on Amazon Bedrock AgentCore Runtime, providing both deployment capabilities and sophisticated evaluation methodologies.
-This section of the workshop is structured into 2 parts. In the 1st part we deploy an agent we created in 03 onto AgentCore Runtime. And in the 2nd part we push run evaluations against the deployed agent through the evaluations notebook. 
+This module teaches AgentCore evaluation as one connected workflow instead of a collection of unrelated APIs. You will build one deterministic agent, deploy it once, inspect its traces, evaluate specific sessions, add ground truth, create focused custom evaluators, monitor sampled traffic, and then use simulation and optimization as an optional advanced loop.
 
-# Note!  These are custom evaluations for agents running on AgentCore Runtime.  To use the native AgentCore Evaluations capability, see module 5-03!
+The examples use a fixed city-facts dataset rather than live web search. That makes expected responses and tool trajectories stable enough for regression testing.
 
-## 📁 Repository Structure
+## Learning Path
 
+Complete the notebooks in order. Each notebook reuses the `CityAnalyst` runtime created in notebook 01.
+
+| Notebook | Focus | Typical time | AWS resources |
+|---|---|---:|---|
+| [01 - AgentCore Foundations](01-agentcore-foundations.ipynb) | Runtime, observability, traces, and one shared deployment | 35-50 min | Runtime and supporting CDK resources |
+| [02 - Built-in On-Demand Evaluations](02-built-in-on-demand-evaluations.ipynb) | Built-in evaluators through the CLI and Python SDK | 30-45 min | Evaluation model calls |
+| [03 - Ground Truth and Curated Datasets](03-ground-truth-and-datasets.ipynb) | Reference inputs, curated scenarios, and dataset runners | 40-60 min | Runtime invocations and evaluation calls |
+| [04 - Custom Evaluators](04-custom-evaluators.ipynb) | Focused LLM judges, deterministic code evaluators, and judge calibration | 45-60 min | Optional custom evaluator resources |
+| [05 - Batch and Online Evaluation](05-batch-and-online-evaluation.ipynb) | Batch regression, CI gates, and sampled production monitoring | 35-50 min | Optional batch and online evaluation resources |
+| [06 - Simulation and Optimization](06-simulation-and-optimization.ipynb) | Simulated users, insights, recommendations, config bundles, and A/B tests | 35-60 min | Optional preview and optimization resources |
+
+Notebooks 01-04 form the core path. Notebooks 05-06 are production and advanced extensions.
+
+## Mental Model
+
+| Layer | Responsibility |
+|---|---|
+| AgentCore Runtime | Hosts and scales an agent loop that you own. This module uses a Strands agent and the HTTP protocol. |
+| AgentCore Observability | Emits OpenTelemetry-compatible sessions, traces, model spans, and tool spans to CloudWatch. |
+| AgentCore Evaluations | Scores instrumented session, trace, or tool-call behavior with built-in or custom evaluators. |
+| AgentCore CLI | Manages the project, local development, deployment, traces, evaluators, datasets, and evaluation jobs. |
+| Python SDK | Automates targeted evaluations, curated scenario runners, simulation, and custom evaluator logic. |
+
+AgentCore Runtime and AgentCore Harness are different choices. Runtime hosts agent code and orchestration that you provide. Harness is a managed, configuration-driven agent loop. The evaluation concepts in this module apply to both, but the hands-on agent uses Runtime so learners can see the application and tool boundaries directly.
+
+## Repository Layout
+
+```text
+AgentCore/
+├── README.md
+├── requirements.txt
+├── 01-agentcore-foundations.ipynb
+├── 02-built-in-on-demand-evaluations.ipynb
+├── 03-ground-truth-and-datasets.ipynb
+├── 04-custom-evaluators.ipynb
+├── 05-batch-and-online-evaluation.ipynb
+├── 06-simulation-and-optimization.ipynb
+├── agentcore/                         # AgentCore CLI project configuration
+├── app/CityAnalyst/                   # Shared deterministic Runtime agent
+├── data/                              # Evaluation and calibration fixtures
+├── evaluators/                        # Custom code-based evaluator
+├── src/                               # Notebook helpers and cleanup
+└── generated/                         # Local results and traces; gitignored
 ```
-05-04-AgentCore/
-├── 05-04-03-README.md                 # This guide
-├── 05-04-04-requirements.txt          # Python dependencies
-├── 05-04-01-Agentic-Metrics-AgentCore.ipynb # Agent deployment and basic metrics
-├── 05-04-02-Agent-and-tool-evals-with-xray.ipynb # Advanced evaluation with X-Ray observability
-├── AgentCore-Evaluation.ipynb         # Comprehensive evaluation framework (recommended)
-├── AgentCore-Cleanup.ipynb            # Resource cleanup and account ID masking
-├── citysearch.py                      # city search agent - Generated in 05-04-01-Agentic-Metrics-AgentCore.ipynb 
-├── Dockerfile                         # Container configuration - Generated in 05-04-01-Agentic-Metrics-AgentCore.ipynb
-├── .bedrock_agentcore.yaml            # AgentCore configuration - Generated in 05-04-01-Agentic-Metrics-AgentCore.ipynb
-├── .dockerignore                      # Docker ignore file - Generated implicitly in 05-04-01-Agentic-Metrics-AgentCore.ipynb
-├── evaluation_results_*.json          # Evaluation output files - Generated in 05-04-02-Agent-and-tool-evals-with-xray.ipynb
-└── images/                            # AgentCore observability screenshots - For reference
-    ├── Citysearch-AgentCore-Obs-1.png # Runtime overview dashboard
-    ├── Citysearch-AgentCore-Obs-2.png # Performance metrics
-    ├── Citysearch-AgentCore-Obs-3.png # Request tracing
-    └── Citysearch-AgentCore-Obs-4.png # Advanced analytics
-```
 
-## 📚 Notebooks Overview
+## Prerequisites
 
-### 1. 05-04-01-Agentic-Metrics-AgentCore.ipynb
-**Agent Development and Deployment Pipeline**
+- Node.js 20 or later
+- Python 3.10 or later
+- `uv`
+- AWS credentials for a workshop or development account
+- Access to the configured Amazon Bedrock model
+- Permissions for AgentCore, CloudFormation, IAM, CloudWatch, X-Ray, and Bedrock model invocation
 
-- Creates and deploys city search agents using Strands framework
-- Integrates with AgentCore Runtime for AWS deployment
-- Uses Amazon Nova Micro model with DuckDuckGo web search
-- Demonstrates production-ready agent implementation
+Install the current AgentCore CLI:
 
-### 2. 05-04-02-Agent-and-tool-evals-with-xray.ipynb
-**Advanced Evaluation Framework with X-Ray Observability**
-
-- Multi-dimensional quality assessment (helpfulness, accuracy, clarity, professionalism, completeness)
-- LLM-as-Judge evaluation using Claude Sonnet
-- Advanced X-Ray integration for distributed tracing
-- Tool usage analysis and performance monitoring
-- Session-based trace filtering and comprehensive reporting
-
-### 3. AgentCore-Evaluation.ipynb (Recommended)
-**Comprehensive Evaluation Framework**
-
-- **Enhanced User Experience**: Streamlined interface with automated agent ARN detection
-- **Extended Test Coverage**: 6 comprehensive test cases covering various scenarios
-- **Rich Visualizations**: Quality metrics charts, response time distributions, performance analysis
-- **Detailed Reporting**: Individual test case analysis with recommendations
-- **Multiple Output Formats**: JSON, CSV, and Markdown reports
-- **Account ID Security**: Built-in masking for safe GitHub commits
-
-### 4. AgentCore-Cleanup.ipynb
-**Resource Cleanup and Security**
-
-- **Complete Resource Removal**: Deletes all AgentCore resources (runtime, ECR, IAM roles, etc.)
-- **Account ID Masking**: Cleans notebook outputs to remove sensitive information
-- **Cost Prevention**: Ensures no resources are left running after testing
-- **GitHub Safety**: Makes notebooks safe for public repository commits
-
-## 🚀 Quick Start
-
-### Prerequisites
-- AWS Account with Bedrock and AgentCore permissions
-- Python 3.8+ with Jupyter
-- AWS CLI configured
-
-### Installation
 ```bash
+npm install -g @aws/agentcore
+```
+
+The older Python Starter Toolkit also installs an `agentcore` command. Remove it before the workshop so the two CLIs do not conflict:
+
+```bash
+pip uninstall bedrock-agentcore-starter-toolkit
+```
+
+Create a notebook environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+jupyter lab
 ```
 
-### Usage
-1. **Deploy Agent**: Run `05-04-01-Agentic-Metrics-AgentCore.ipynb`
-2. **Evaluate Agent**: Run `AgentCore-Evaluation.ipynb` (recommended) or `05-04-02-Agent-and-tool-evals-with-xray.ipynb`
-3. **Clean Up Resources**: Run `AgentCore-Cleanup.ipynb` to remove all AWS resources and mask account IDs
+Run all commands from this directory. Start with `01-agentcore-foundations.ipynb`.
 
-## 🏙️ City Search Agent (citysearch.py)
+## Reproducibility
 
-Production-ready conversational AI agent for city information queries.
+The city data in `app/CityAnalyst/data/city_facts.json` is a workshop fixture, not a claim of current demographic data. The agent has three deterministic tools:
 
-**Key Features:**
-- **Model**: Amazon Nova Micro (optimized for latency/cost)
-- **Tool**: DuckDuckGo web search with regional optimization
-- **Integration**: Four-line AgentCore Runtime pattern
-- **Output**: Structured XML tags for programmatic processing
+- `lookup_city`
+- `compare_cities`
+- `calculate_density`
 
-```python
-# AgentCore Integration Pattern
-from bedrock_agentcore.runtime import BedrockAgentCoreApp
-app = BedrockAgentCoreApp()
+This creates meaningful test cases for tool selection, tool parameters, expected responses, and multi-turn behavior without making results depend on a search engine or a changing web page.
 
-@app.entrypoint
-def invoke(payload):
-    return chatbot(payload.get("prompt", ""))
+## Feature Status
 
-if __name__ == "__main__":
-    app.run()
+- On-demand and online AgentCore Evaluations are the mainline path.
+- Dataset evaluation, including predefined and simulated scenarios, is public preview as of August 14, 2026.
+- Batch evaluation is public preview and does not currently emit CloudTrail events. Do not use it for workflows that require a complete API audit trail.
+- Insights is public preview. Recommendations, configuration bundles, and A/B testing are fast-moving optional extensions. Notebook 06 shows how to verify the installed CLI surface before use.
+- Built-in evaluator names can change. The notebooks show the ten evaluator IDs recognized by AgentCore CLI `0.27.0` and ask learners to verify their installed version.
+
+## Cost, Security, and Cleanup
+
+Evaluation calls invoke judge models. Dataset and simulation runs also invoke the agent. Online evaluation adds judge calls for the sampled portion of live traffic.
+
+Use `100%` online sampling only for the small, controlled traffic generated by this workshop. Start production monitoring around `1-5%`, then adjust using traffic volume, risk, and cost data.
+
+Traces and evaluation results can contain prompts, responses, and tool parameters. In production:
+
+- scrub or avoid sensitive data before telemetry export
+- encrypt CloudWatch log groups and evaluation resources with customer-managed KMS keys where required
+- set log retention
+- scope IAM permissions to the runtime, evaluator, and log resources
+- review cross-region inference against data-residency requirements
+
+Run the cleanup helper after the module:
+
+```bash
+python src/cleanup.py --yes
 ```
 
-## 📊 AgentCore Observability
+The helper temporarily deploys an empty project specification so CloudFormation removes resources managed by this module, then restores the checked-in workshop configuration. Verify any externally managed Lambda functions, KMS keys, retained log groups, or manually created resources separately.
 
-AgentCore provides comprehensive monitoring through four key dashboards:
+## Official References
 
-### 1. Runtime Overview
-![Runtime Overview](images/Citysearch-AgentCore-Obs-1.png)
-- Agent status, request volume, performance indicators, resource utilization
-
-### 2. Performance Metrics
-![Performance Metrics](images/Citysearch-AgentCore-Obs-2.png)
-- Response time analysis, throughput monitoring, error tracking, trend analysis
-
-### 3. Request Tracing
-![Request Tracing](images/Citysearch-AgentCore-Obs-3.png)
-- Individual request traces, tool call visualization, timing breakdowns, error context
-
-### 4. Advanced Analytics
-![Advanced Analytics](images/Citysearch-AgentCore-Obs-4.png)
-- Usage patterns, performance optimization, cost analysis, quality metrics
-
-**Integration with Evaluation Framework:**
-```python
-def extract_agentcore_metrics(agent_arn, time_range):
-    return {
-        'response_times': get_response_time_percentiles(agent_arn, time_range),
-        'success_rate': get_success_rate(agent_arn, time_range),
-        'tool_usage': get_tool_usage_stats(agent_arn, time_range)
-    }
-```
-
-## 📈 Evaluation Results
-
-Sample evaluation output:
-```
-🤖 Agent: citysearch
-📝 Total Test Cases: 3
-✅ Success Rate: 100.0%
-🎯 Overall Score: 4.61/5.0
-
-📈 QUALITY METRICS (1-5 scale):
-  🟢 Helpfulness: 4.33    🟢 Accuracy: 4.67
-  🟢 Clarity: 5.00        🟢 Professionalism: 4.33
-  🟢 Completeness: 4.33   🟢 Tool_Usage: 5.00
-
-⏱️ RESPONSE TIME PERCENTILES:
-  P50: 3.529s  P90: 3.721s  P95: 3.721s  P99: 3.721s
-```
-
-## 🔧 Key Technologies
-
-**Dependencies (requirements.txt):**
-- `strands-agents` - Core agent framework
-- `boto3` - AWS SDK for Bedrock/X-Ray integration
-- `bedrock-agentcore` - AgentCore runtime
-- `ddgs` - DuckDuckGo search integration
-- `pandas` - Data processing for metrics
-
-**AWS Services:**
-- Amazon Bedrock (Foundation models)
-- AgentCore Runtime (Agent deployment)
-- AWS X-Ray (Distributed tracing)
-- CloudWatch (Metrics and logging)
-
-
-
-## 🚀 Follow-Up: Expert-Level Content
-
-This module covers deploying agents to AgentCore Runtime and running custom evaluations with X-Ray observability. To go deeper, explore the following resources:
-
-- **[Amazon Bedrock AgentCore Samples Repository](https://github.com/awslabs/amazon-bedrock-agentcore-samples)** — The official samples repo includes a dedicated `features/Evaluation` section with deep dives on built-in and custom evaluators for on-demand and online evaluation, plus end-to-end production applications combining multiple AgentCore capabilities.
-- **[Getting Started with Amazon Bedrock AgentCore - Workshop](https://catalog.workshops.aws)** — An official AWS hands-on workshop covering the fundamentals of building and deploying agents with AgentCore.
-- **[Diving Deep into Bedrock AgentCore - Workshop](https://catalog.workshops.aws)** — An advanced AWS workshop that goes beyond the basics into production-grade patterns, identity management, observability, and evaluation at scale.
-
----
-
-## 🔒 Optional - Account ID Security & Masking
-
-This repository includes automated security measures to prevent AWS account IDs from being exposed in published notebooks.
-Below is the script which has been added to the repo (.git/hooks/pre-commit). You can customize it in your local git repo:
-```
-#!/bin/bash
-set -e
-
-# Get only staged files in the target directory
-staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep "^Framework Specific Evaluations/AgentCore/.*\.\(ipynb\|py\)$" || true)
-
-if [ -n "$staged_files" ]; then
-    python3 "Framework Specific Evaluations/AgentCore/04 optional clean notebooks.py" $staged_files
-    git add $staged_files
-fi
-```
-
-### How Account ID Masking Works
-
-1. **Pre-commit Hook**: Git automatically runs `05-04-04-optional-clean-notebooks.py` before each commit
-2. **Pattern Detection**: Scans notebook outputs for 12-digit numbers (AWS account ID format)  
-3. **Safe Replacement**: Replaces account IDs with `XXXXXXXXXXXX` while preserving all other outputs
-4. **Re-staging**: Automatically adds cleaned notebooks back to the commit
-
-**Note**: This repository uses account ID masking instead of complete output removal to maintain notebook functionality while ensuring security.
+- [AgentCore Evaluations](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/evaluations.html)
+- [Evaluation types](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/evaluations-types.html)
+- [Dataset evaluation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/dataset-evaluations.html)
+- [AgentCore Observability](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability.html)
+- [AgentCore Runtime](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime.html)
+- [AgentCore CLI](https://github.com/aws/agentcore-cli)
+- [AgentCore Python SDK](https://github.com/aws/bedrock-agentcore-sdk-python)

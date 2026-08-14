@@ -1,0 +1,8 @@
+bedrock-agentcore[datasets,simulation]>=1.21.0,<2
+boto3>=1.43.35,<2
+botocore>=1.43.35,<2
+jupyterlab>=4.4,<5
+pandas>=2.2,<3
+pydantic>=2.12,<3
+pytest>=9,<10
+

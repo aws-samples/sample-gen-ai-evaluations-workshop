@@ -1,0 +1,12 @@
+# Secrets
+.env.local
+
+# CDK and CLI-generated artifacts
+cdk/
+.cache/
+.cli/*
+*.zip
+*/staging/
+
+# Keep an empty, non-sensitive state file in the workshop.
+!.cli/deployed-state.json
