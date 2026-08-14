@@ -8,7 +8,7 @@ This workshop teaches systematic approaches to evaluating Generative AI workload
 
 ## How to use this repository
 
-We strongly recommend going in order through the [Foundational Evaluations](Foundational%20Evaluations) modules. These cover the core of generative AI evaluations which will be critical in all workloads. After that, please feel free to select any of the workload-specific, framework-specific, or industry-specific modules in any order, according to what is most relevant to you.
+We strongly recommend going in order through the [Foundational Evaluations](Foundational%20Evaluations/) modules. These cover the core of generative AI evaluations which will be critical in all workloads. After that, please feel free to select any of the workload-specific, framework-specific, or industry-specific modules in any order, according to what is most relevant to you.
 
 ### Interactive Learning
 
@@ -16,7 +16,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 
 ## What You'll Learn
 
-### Foundational Evaluations - Do all of these in order!
+### [Foundational Evaluations](Foundational%20Evaluations/) - Do all of these in order!
 
 - 01 Operational Metrics: evaluate how your workload is running in terms of cost and performance.
 - 02 Quality Metrics: evaluate and tune the quality of your results.
@@ -24,7 +24,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 - 04 Agentic Metrics: evaluate your agents and use agents for evaluation.
 
 ### Optional Modules - Do any of these in any order!
-
+- [Workload Specific Evaluations](Workload%20Specific%20Evaluations/)
   - Intelligent Document Processing: evaluate structured data extraction accuracy with field-level precision/recall.
   - Guardrails: configure and test content filters, grounding checks, alignment, and operational controls.
   - Basic RAG: evaluate retrieval quality and end-to-end answer generation with precision@k, NDCG, and faithfulness scoring.
@@ -36,6 +36,8 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
   - Coding Assistant: coming soon.
+  
+- [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
   - Prompt Foo: configure YAML-based evaluations, write assertion test cases, and compare models across providers.
   - Strands: evaluate agents using the Strands Evals SDK with output quality, trajectory, and custom evaluators.
   - AgentCore: evaluate agents deployed on Amazon Bedrock AgentCore Runtime with LLM-as-Judge and CloudWatch log analysis.
@@ -44,7 +46,9 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
   - DeepEval: evaluate LLM applications with pytest-style metrics for RAG, agents, multi-turn, and safety, plus custom G-Eval for any criteria.
 
-### Industry Specific Evaluations
+- [Interactive Learning Mode](Interactive%20Learning/README.md): guided challenges, exercises, and real-time feedback with an interactive tutor.
+
+### [Industry Specific Evaluations](Industry%20Specific%20Evaluations/)
 
 These modules apply the same foundational evaluation techniques to domain-specific workloads. Generic patterns teach you how to evaluate. Industry-specific modules teach you what to look for — the failure modes, data shapes, and compliance requirements unique to a vertical.
 
