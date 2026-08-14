@@ -88,13 +88,13 @@ pip install boto3 pandas numpy
 # Module 02 — Quality Metrics
 pip install matplotlib seaborn scipy
 
-# Module 03 — Agentic Metrics
+# Foundational Module 04 — Agentic Metrics
 pip install strands-agents duckduckgo-search beautifulsoup4
 
-# Module 04 — Workload Evaluations
+# Optional Workload Evaluations
 pip install llama-index faiss-cpu chromadb python-dotenv PyPDF2
 
-# Module 05 — Framework Evaluations
+# Optional Framework Evaluations
 pip install strands-agents strands-agents-tools strands-agents-evals "dspy>=3.1,<4" bedrock-agentcore bedrock-agentcore-starter-toolkit duckduckgo-search
 
 # Requires Node.js 18+

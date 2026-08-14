@@ -12,7 +12,7 @@ In previous modules, the model only *generated text*. A successful attack produc
 
 This means agent security requires evaluating two dimensions:
 
-1. **What the agent said** (text output) — same as Modules 04-12-01 through 04-12-03
+1. **What the agent said** (text output) — the same surface covered by the preceding LLM application, Guardrails, and RAG submodules
 2. **What the agent did** (tool calls) — unique to agent red teaming
 
 ### Three-Layer Testing Architecture
@@ -110,7 +110,7 @@ flowchart LR
 
 ## What You'll Do in the Notebook
 
-The accompanying Jupyter notebook (`04-12-04-agent-red-teaming.ipynb`) provides a hands-on walkthrough:
+The accompanying Jupyter notebook, [01 agent red teaming.ipynb](01%20agent%20red%20teaming.ipynb), provides a hands-on walkthrough:
 
 - Build a Strands agent with tools of varying privilege levels
 - Test normal behavior and try manual adversarial probes

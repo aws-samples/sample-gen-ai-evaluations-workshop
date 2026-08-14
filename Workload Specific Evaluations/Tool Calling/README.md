@@ -1,4 +1,4 @@
-# 04-08 Evaluating Tool-Calling Agents Without Real Tool Execution
+# Evaluating Tool-Calling Agents Without Real Tool Execution
 
 ## Overview
 
@@ -6,7 +6,7 @@ This module tackles one of the hardest problems in agentic AI evaluation: **how 
 
 Real tool calls are expensive, slow, non-deterministic, and can have side effects (sending emails, modifying databases, charging credit cards). Yet tool calling is the core capability that separates an agent from a chatbot. If you can't evaluate it safely and cheaply, you can't iterate on it.
 
-This module uses the **Amazon Bedrock Converse API** directly (no agent framework required) to demonstrate five progressively sophisticated evaluation approaches.
+This module uses the **Amazon Bedrock Converse API** directly (no agent framework required) to demonstrate six progressively sophisticated evaluation approaches.
 
 ## The Core Insight
 
@@ -65,9 +65,9 @@ The most sophisticated approach. Uses the Strands Evals SDK's `ToolSimulator` (L
 ## File Structure
 
 ```
-04-08-tool-calling/
+Tool Calling/
 ├── README.md                              # This file
-├── 04-08-Tool-Calling-Evaluation.ipynb    # Main evaluation notebook
+├── 01 Tool Calling Evaluation.ipynb       # Main evaluation notebook
 ├── requirements.txt                       # Python dependencies
 └── data/
     ├── tool_definitions.json              # Tool schemas for the evaluation scenario
@@ -85,7 +85,7 @@ The most sophisticated approach. Uses the Strands Evals SDK's `ToolSimulator` (L
 2. Ensure you have AWS credentials configured with access to Amazon Bedrock:
    - Claude Sonnet 4 for both the agent under test and LLM-as-Judge
 
-3. Open `04-08-Tool-Calling-Evaluation.ipynb` and work through the approaches in order.
+3. Open [01 Tool Calling Evaluation.ipynb](01%20Tool%20Calling%20Evaluation.ipynb) and work through the approaches in order.
 
 ## Prerequisites
 
@@ -96,7 +96,7 @@ The most sophisticated approach. Uses the Strands Evals SDK's `ToolSimulator` (L
 ## Key Takeaways
 
 By completing this module, you will:
-- Understand five distinct approaches to evaluating tool-calling agents without real execution
+- Understand six distinct approaches to evaluating tool-calling agents without real execution
 - Know when to use each approach based on cost, speed, and depth tradeoffs
 - Be able to compute programmatic metrics (F1, schema compliance, sequence match) on traces
 - Build a mock tool layer for safe, repeatable agent testing with the Bedrock Converse API
