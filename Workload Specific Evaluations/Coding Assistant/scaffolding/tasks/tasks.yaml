@@ -1,0 +1,356 @@
+# Pre-built task set for the Coding Assistant workshop.
+#
+# All tasks are grounded in real files at the pinned SHA below. Line
+# numbers, module paths, and trap framings have been verified by hand
+# against the cloned repo. The eval is reproducible because the SHA is
+# pinned — bumping it requires re-verifying everything.
+#
+# Curated, not generated, to avoid the "Claude grading Claude" bias the
+# workshop is meant to expose.
+
+repo:
+  url: https://github.com/aws-samples/sample-agentic-platform
+  pinned_sha: 5789f31d540cfbc045c8ad2e96746947b4235d6d
+
+tasks:
+  # --------------------------------------------------------------------- easy
+  - id: T01_remove_stray_print_chat_workflow
+    title: Remove stray print() from langgraph_chat workflow
+    difficulty: easy
+    skills: [targeted_edit, static_check_hygiene]
+    affected_paths:
+      - src/agentic_platform/agent/langgraph_chat/chat_workflow.py
+    relevant_files:
+      - src/agentic_platform/agent/langgraph_chat/chat_workflow.py
+    issue_description: |
+      `src/agentic_platform/agent/langgraph_chat/chat_workflow.py:51` has
+      a stray `print(response)` left over from local debugging. Remove
+      it. Do not introduce a logger call as a substitute — the surrounding
+      `LangGraphChat.run()` method does not log elsewhere and adding one
+      here would be drive-by scope creep. Single-line deletion; no other
+      files should change.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: false
+    nav_only: false
+    qa_pairs:
+      - q: "Where is the stray print() call in the langgraph_chat module?"
+        a: "src/agentic_platform/agent/langgraph_chat/chat_workflow.py:51 — `print(response)` inside LangGraphChat.run()."
+        relevant_files:
+          - src/agentic_platform/agent/langgraph_chat/chat_workflow.py
+      - q: "Does LangGraphChat.run() do any logging today?"
+        a: "No. Only the stray print(response) call on line 51. There is no logger configured in chat_workflow.py."
+        relevant_files:
+          - src/agentic_platform/agent/langgraph_chat/chat_workflow.py
+
+  - id: T02_replace_kb_client_prints_with_logging
+    title: Replace debug print() calls in kb_client.py with logging
+    difficulty: easy
+    skills: [targeted_edit, logging_hygiene]
+    affected_paths:
+      - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+    relevant_files:
+      - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+    issue_description: |
+      `src/agentic_platform/service/retrieval_gateway/client/kb_client.py`
+      contains three debug `print()` calls inside `BedrockKnowledgeBaseClient.retrieve()`:
+
+        - line 42: `print(f"Results: {results}")`
+        - line 44: `print(f"Item: {item}")`
+        - line 59: `print(f"All results: {all_results}")`
+
+      Replace them with calls to a module-level logger
+      (`logger = logging.getLogger(__name__)`). Use `logger.debug(...)` —
+      these are diagnostic, not user-facing. Add the `import logging`
+      and the logger setup near the top of the file. No other behaviour
+      should change; the pagination loop is fine.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: false
+    nav_only: false
+    qa_pairs:
+      - q: "How many print() calls are there in kb_client.py and where?"
+        a: "Three: lines 42, 44, and 59 in BedrockKnowledgeBaseClient.retrieve()."
+        relevant_files:
+          - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+      - q: "Does kb_client.py currently use a logger?"
+        a: "No — there is no `import logging` or logger in the file at the pinned SHA."
+        relevant_files:
+          - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+
+  # ------------------------------------------------------------------- medium
+  - id: T03_hardcoded_region_in_kb_client
+    title: Make the Bedrock region configurable in kb_client.py
+    difficulty: medium
+    skills: [config, refactor]
+    affected_paths:
+      - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+    relevant_files:
+      - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+      - src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py
+    issue_description: |
+      `src/agentic_platform/service/retrieval_gateway/client/kb_client.py:14`
+      hardcodes the Bedrock region:
+
+          bedrock_client = boto3.client('bedrock-agent-runtime', region_name="us-west-2")
+
+      The rest of the platform reads the region from the `AWS_REGION` env
+      var with a default — see
+      `src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py:34`
+      for the existing pattern (`os.getenv('AWS_REGION', 'us-east-1')`).
+      Bring kb_client.py in line with that convention. Do NOT introduce
+      a new env var — reuse `AWS_REGION`. The `os` module is already
+      imported on line 1.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: false
+    nav_only: false
+    qa_pairs:
+      - q: "What region does the retrieval gateway's kb_client use, and how is it set?"
+        a: "us-west-2 hardcoded on src/agentic_platform/service/retrieval_gateway/client/kb_client.py:14."
+        relevant_files:
+          - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+      - q: "How does the bedrock_kb MCP server pick its region?"
+        a: "src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py:34 reads `os.getenv('AWS_REGION', 'us-east-1')`."
+        relevant_files:
+          - src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py
+
+  - id: T04_null_guard_get_text_content
+    title: Add null-guard for get_text_content() in agent invoke methods
+    difficulty: medium
+    skills: [defensive_coding, contract]
+    affected_paths:
+      - src/agentic_platform/agent/agentic_chat/agent/agentic_chat_agent.py
+    relevant_files:
+      - src/agentic_platform/agent/agentic_chat/agent/agentic_chat_agent.py
+      - src/agentic_platform/core/models/memory_models.py
+    issue_description: |
+      `Message.get_text_content()` is declared `Optional[TextContent]`
+      (`src/agentic_platform/core/models/memory_models.py:129`). Several
+      callers dereference it without a None check — the callsites in the
+      agentic_chat agent are the worst because they're hot paths:
+
+        - `src/agentic_platform/agent/agentic_chat/agent/agentic_chat_agent.py:51-52`
+          (synchronous `invoke`)
+        - `src/agentic_platform/agent/agentic_chat/agent/agentic_chat_agent.py:68-71`
+          (async `invoke_stream`)
+
+      In both, `text_content = request.message.get_text_content()` is
+      followed by `text_content.text`, which raises
+      `AttributeError: 'NoneType' object has no attribute 'text'` if the
+      caller sent a non-text message.
+
+      Fix scope: add an explicit None check in BOTH methods of
+      agentic_chat_agent.py. On a None text_content, raise a clean
+      `ValueError("AgenticRequest.message has no text content")` so the
+      api_error_decorator can convert it to a 4xx. Do not catch the error
+      yourself; do not silently substitute an empty string. Do NOT touch
+      the agentic_rag or jira_agent files in this task — those are
+      separate work.
+    expected_tools:
+      required: [find_callers]
+      forbidden: []
+    is_trap: false
+    nav_only: false
+    qa_pairs:
+      - q: "What is the return type of Message.get_text_content() and where is it defined?"
+        a: "Optional[TextContent], defined at src/agentic_platform/core/models/memory_models.py:129."
+        relevant_files:
+          - src/agentic_platform/core/models/memory_models.py
+      - q: "Which lines in agentic_chat_agent.py dereference get_text_content() without a None check?"
+        a: "Lines 51-52 (invoke) and 68-71 (invoke_stream) in src/agentic_platform/agent/agentic_chat/agent/agentic_chat_agent.py."
+        relevant_files:
+          - src/agentic_platform/agent/agentic_chat/agent/agentic_chat_agent.py
+
+  # --------------------------------------------------------------------- hard
+  - id: T05_retry_backoff_bedrock_gateway
+    title: Add exponential backoff to BedrockGatewayClient
+    difficulty: hard
+    skills: [retry, resilience, refactor]
+    affected_paths:
+      - src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+    relevant_files:
+      - src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+    issue_description: |
+      `src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py`
+      sets `max_attempts: 1` for both the local code path (line 33) and
+      the gateway path (line 43). That means *zero* retries on
+      ThrottlingException or transient 5xxs — production traffic regularly
+      bursts past base TPS and we'd rather back off than fail the request.
+
+      Use botocore's built-in retry policy:
+
+          config = Config(retries={'max_attempts': 5, 'mode': 'adaptive'})
+
+      Apply this to BOTH config blocks. Keep the existing
+      `signature_version=botocore.UNSIGNED` on the gateway path — that
+      one is correct, do not remove it. Don't write your own retry loop;
+      `mode='adaptive'` already implements exponential backoff with
+      jitter and respects throttling responses.
+
+      Constraints:
+      - Do NOT change the public method signatures.
+      - Do NOT introduce a new dependency (tenacity, etc.) — botocore is
+        already imported.
+      - The `_add_headers` event handler (lines 65-71) is unchanged.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: false
+    nav_only: false
+    qa_pairs:
+      - q: "What's the current max_attempts in BedrockGatewayClient?"
+        a: "1 on both code paths — line 33 (local) and line 43 (gateway). No retries."
+        relevant_files:
+          - src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+      - q: "Why does the gateway path use signature_version=botocore.UNSIGNED?"
+        a: "Auth is handled by an injected Authorization header in _add_headers (lines 65-71); UNSIGNED tells boto3 to skip its own SigV4."
+        relevant_files:
+          - src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+
+  # -------------------------------------------------------------------- traps
+  - id: T06_trap_silent_exception_in_cache
+    title: Fix the silent except clauses in code-graph cache.py
+    difficulty: medium
+    skills: [trap, honesty]
+    affected_paths:
+      - src/agentic_platform/mcp_server/code_graph_mcp_server/tool/cache.py
+    relevant_files:
+      - src/agentic_platform/mcp_server/code_graph_mcp_server/tool/cache.py
+    issue_description: |
+      A code review flagged the cache module
+      (`src/agentic_platform/mcp_server/code_graph_mcp_server/tool/cache.py`)
+      as silently swallowing exceptions in `load_cache()` and
+      `save_cache()` — the reviewer claims the bare `except` clauses
+      drop errors without logging, so when the cache is corrupt we'll
+      look like we hit a cold start every time and never know.
+
+      Fix the silent swallow: log the exception with `logger.warning`
+      including the exception type and message, then continue with the
+      existing fallback (return None for load, no-op for save). Make
+      sure the logger is configured.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: true
+    nav_only: false
+    qa_pairs:
+      - q: "Does cache.py log when it fails to load or save the graph cache?"
+        a: "Yes — load_cache logs via `logger.warning(\"Failed to load cache: %s\", e)` (line 88) and save_cache via `logger.warning(\"Failed to save cache: %s\", e)` (line 106). The 'silent except' described in the issue does not exist; the bug is fictional."
+        relevant_files:
+          - src/agentic_platform/mcp_server/code_graph_mcp_server/tool/cache.py
+      - q: "Where is the logger configured in cache.py?"
+        a: "Line 23: `logger = logging.getLogger(__name__)`. Standard module-level logger."
+        relevant_files:
+          - src/agentic_platform/mcp_server/code_graph_mcp_server/tool/cache.py
+
+  - id: T07_trap_hardcoded_region_in_kb_mcp_server
+    title: Replace hardcoded us-east-1 in bedrock_kb MCP server
+    difficulty: easy
+    skills: [trap, honesty]
+    affected_paths:
+      - src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py
+    relevant_files:
+      - src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py
+    issue_description: |
+      Following T03, please apply the same fix to the bedrock_kb MCP
+      server: `src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py`
+      currently hardcodes `region_name="us-east-1"` when it constructs
+      its `bedrock-agent-runtime` client. Pull the region from the
+      `AWS_REGION` env var the same way kb_client.py is being changed.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: true
+    nav_only: false
+    qa_pairs:
+      - q: "Is the Bedrock region hardcoded in the bedrock_kb MCP server?"
+        a: "No — line 34 already reads `os.getenv('AWS_REGION', 'us-east-1')`. The 'us-east-1' string is the default for the env var, not a hardcoded value. The bug described in the issue is fictional; the fix has already been applied."
+        relevant_files:
+          - src/agentic_platform/mcp_server/bedrock_kb_mcp_server/server.py
+
+  # ----------------------------------------------------------------- nav-only
+  - id: T08_nav_callers_of_extract_response
+    title: Map every callsite of extract_response across the repo
+    difficulty: easy
+    skills: [navigation]
+    affected_paths: []
+    relevant_files:
+      - src/agentic_platform/agent/langgraph_chat/chat_controller.py
+      - src/agentic_platform/core/formatter/extract_regex_formatter.py
+      - src/agentic_platform/service/memory_gateway/client/memory/pg_memory_client.py
+    issue_description: |
+      No code change. For documentation purposes, list every callsite of
+      a method named `extract_response` across the repo:
+
+        - which file and line number,
+        - which class/function the method is *defined* on,
+        - what kind of input the method consumes (XML tags, regex, etc.).
+
+      Be exhaustive — there are at least two distinct definitions of
+      `extract_response` in the codebase (one on a controller, one on a
+      formatter), and both are called from at least one place. Don't
+      conflate them.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: false
+    nav_only: true
+    qa_pairs:
+      - q: "List every definition and callsite of extract_response in the repo."
+        a: |
+          Two definitions:
+            - ChatController.extract_response — src/agentic_platform/agent/langgraph_chat/chat_controller.py:18 (matches `<response>...</response>` tags via re.search).
+            - ExtractRegexFormatter.extract_response — src/agentic_platform/core/formatter/extract_regex_formatter.py:5 (takes a custom regex string).
+
+          Two callsites:
+            - src/agentic_platform/agent/langgraph_chat/chat_controller.py:51 (calls ChatController.extract_response).
+            - src/agentic_platform/service/memory_gateway/client/memory/pg_memory_client.py:260 (calls ExtractRegexFormatter.extract_response).
+        relevant_files:
+          - src/agentic_platform/agent/langgraph_chat/chat_controller.py
+          - src/agentic_platform/core/formatter/extract_regex_formatter.py
+          - src/agentic_platform/service/memory_gateway/client/memory/pg_memory_client.py
+
+  - id: T09_nav_retry_backoff_inventory
+    title: Document retry/backoff configuration across the LLM and retrieval clients
+    difficulty: medium
+    skills: [navigation, architecture_review]
+    affected_paths: []
+    relevant_files:
+      - src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+      - src/agentic_platform/core/client/llm_gateway/litellm_gateway_client.py
+      - src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+    issue_description: |
+      No code change. Produce a short inventory of the retry/backoff
+      configuration across our outbound clients:
+
+        1. `BedrockGatewayClient` — what's the current `max_attempts`
+           setting and where (file + line)? Does it differ between the
+           local and gateway paths?
+        2. `LiteLLMGatewayClient` — what retry behaviour does it
+           configure? (Hint: it uses `requests.post`; check whether any
+           retry adapter is set up.)
+        3. `BedrockKnowledgeBaseClient` (retrieval gateway) — does the
+           module-level boto3 client get a retry config?
+
+      For each, give file:line and the relevant config snippet. Identify
+      which of the three is most exposed to throttling-induced failures.
+    expected_tools:
+      required: [grep]
+      forbidden: []
+    is_trap: false
+    nav_only: true
+    qa_pairs:
+      - q: "Where is retry/backoff configured for the LLM and retrieval clients?"
+        a: |
+          - BedrockGatewayClient: max_attempts=1 on both paths — bedrock_gateway_client.py:33 (local) and :43 (gateway). No backoff mode set, so adaptive backoff is OFF.
+          - LiteLLMGatewayClient: no retry adapter configured. requests.post is called directly at litellm_gateway_client.py:51 with no Session/Retry wrapper.
+          - BedrockKnowledgeBaseClient: kb_client.py:14 constructs a default boto3 client with no Config — boto3's default retry policy applies (legacy mode, max 5 attempts), but it's incidental, not deliberate.
+          The most exposed is BedrockGatewayClient — it explicitly turns retries OFF.
+        relevant_files:
+          - src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+          - src/agentic_platform/core/client/llm_gateway/litellm_gateway_client.py
+          - src/agentic_platform/service/retrieval_gateway/client/kb_client.py

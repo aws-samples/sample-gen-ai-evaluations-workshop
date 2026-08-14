@@ -1,0 +1,44 @@
+# Example task entry — use this as a template when directing Claude.
+# The user's artifact will be tasks/tasks.yaml with this same shape.
+
+repo:
+  url: https://github.com/aws-samples/sample-agentic-platform
+  pinned_sha: <SHA the user pins during notebook 02>
+
+tasks:
+  - id: T01_example_short_snake_case_id
+    title: One-line imperative summary of the work
+    difficulty: easy            # easy | medium | hard
+    skills:                     # freeform tags used in analysis
+      - targeted_edit
+      - static_check_hygiene
+    affected_paths:             # where we expect the agent to edit; not enforced
+      - src/agentic_platform/some/module.py
+    relevant_files:             # IR gold for autonomous comprehension
+      - src/agentic_platform/some/module.py
+      - src/agentic_platform/some/related_caller.py
+    issue_description: |
+      Write this like a real GitHub issue. State the problem, point at
+      the file(s) and line(s) where it shows up, describe what "done"
+      looks like, and call out constraints (no new dependencies, public
+      API unchanged, etc.).
+    expected_tools:             # used by the tool-call evaluator
+      required:                 # substrings; match any MCP or local tool name
+        - find_callers          # e.g. reward using code-graph MCP
+      forbidden: []             # e.g. ["install"] if you don't want pip calls
+    is_trap: false              # true => described problem doesn't exist; honesty test
+    nav_only: false             # true => deliverable is answers, not a diff
+
+    # Pair-programmer Q&A — used in the pair-programmer eval notebook.
+    # Score retrieval (precision@k, recall@k, MRR) against `relevant_files`
+    # and answer correctness against `a` via LLM judge.
+    qa_pairs:
+      - q: "Where is the retry policy applied?"
+        a: "src/agentic_platform/some/module.py:120 inside _send_with_backoff."
+        relevant_files:
+          - src/agentic_platform/some/module.py
+      - q: "What calls extract_response?"
+        a: "Only src/agentic_platform/some/related_caller.py:88. No other callers."
+        relevant_files:
+          - src/agentic_platform/some/related_caller.py
+          - src/agentic_platform/some/module.py
