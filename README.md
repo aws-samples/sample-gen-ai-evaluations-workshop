@@ -24,7 +24,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 - 04 Agentic Metrics: evaluate your agents and use agents for evaluation.
 
 ### Optional Modules - Do any of these in any order!
-- [Workload Specific Evaluations](Workload%20Specific%20Evaluations/)
+- #### [Workload Specific Evaluations](Workload%20Specific%20Evaluations/)
   - Intelligent Document Processing: evaluate structured data extraction accuracy with field-level precision/recall.
   - Guardrails: configure and test content filters, grounding checks, alignment, and operational controls.
   - Basic RAG: evaluate retrieval quality and end-to-end answer generation with precision@k, NDCG, and faithfulness scoring.
@@ -37,7 +37,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
   - Coding Assistant: coming soon.
   
-- [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
+- #### [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
   - Prompt Foo: configure YAML-based evaluations, write assertion test cases, and compare models across providers.
   - Strands: evaluate agents using the Strands Evals SDK with output quality, trajectory, and custom evaluators.
   - AgentCore: evaluate agents deployed on Amazon Bedrock AgentCore Runtime with LLM-as-Judge and CloudWatch log analysis.
@@ -46,13 +46,12 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
   - DeepEval: evaluate LLM applications with pytest-style metrics for RAG, agents, multi-turn, and safety, plus custom G-Eval for any criteria.
 
-- [Interactive Learning Mode](Interactive%20Learning/README.md): guided challenges, exercises, and real-time feedback with an interactive tutor.
-
-### [Industry Specific Evaluations](Industry%20Specific%20Evaluations/)
-
+- #### [Industry Specific Evaluations](Industry%20Specific%20Evaluations/)
 These modules apply the same foundational evaluation techniques to domain-specific workloads. Generic patterns teach you how to evaluate. Industry-specific modules teach you what to look for — the failure modes, data shapes, and compliance requirements unique to a vertical.
-
   - Retail and CPG: evaluate product catalog enrichment accuracy (taxonomy classification, allergen extraction, description hallucination), demand sensing agent calibration and boundary adherence, and supply chain chatbot guardrail compliance.
+
+- #### [Interactive Learning Mode](Interactive%20Learning/README.md)
+Interactive learning!  Guided challenges, exercises, and real-time feedback with an interactive tutor.
 
 ## Prerequisites
 
