@@ -125,8 +125,9 @@ python -m pip install \
   -r "Framework Specific Evaluations/AgentCore/requirements.txt"
 ```
 
-The retired Python Starter Toolkit also installed an `agentcore` command.
-Removing it prevents that command from shadowing the current Node.js CLI.
+Some Python environments may expose a conflicting `agentcore` command through
+`bedrock-agentcore-starter-toolkit`. Removing it ensures the workshop uses the
+Node.js CLI.
 
 ## AWS Configuration
 

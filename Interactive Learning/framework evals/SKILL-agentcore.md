@@ -68,8 +68,7 @@ The current CLI is the Node.js package `@aws/agentcore`. Stop if
 `run eval`; another installation is still shadowing the current CLI.
 
 Create the small Runtime adapter used by the dataset and simulation sections.
-Keeping it here makes the data flow visible instead of hiding it in a workshop
-utility:
+Defining it here keeps the data flow visible throughout the lesson:
 
 ```python
 from pathlib import Path
@@ -329,8 +328,8 @@ for row in span_rows:
 On first enablement, wait until the destination reports `CloudWatchLogs` and
 `ACTIVE`; initial search availability can take up to 10 minutes. After that
 one-time setup, complete traces normally become searchable in under about
-10 seconds. The bounded loop polls ordinary ingestion instead of assuming a
-long fixed delay.
+10 seconds. The bounded loop accommodates ordinary ingestion latency and
+reports a clear timeout when telemetry does not arrive.
 
 Before continuing, explain why the session ID joins invocation, telemetry, and evaluation.
 
@@ -364,12 +363,12 @@ Ground-truth trajectories add three deterministic session-level evaluators:
 | `Builtin.TrajectoryInOrderMatch` | Expected tools occur in order; extras are allowed |
 | `Builtin.TrajectoryAnyOrderMatch` | Expected tools occur in any order; extras are allowed |
 
-This is the current service catalog. The Node CLI installed while this lesson
-was authored, `1.0.0-preview.22`, has a local level map for the older ten
-evaluators and defaults unknown `Builtin.*` IDs to `SESSION`. Until
-`agentcore --version` reports a release that recognizes the newer IDs, use the
-Python or AWS SDK for targeted `Harmfulness`, `Stereotyping`, and especially
-`ToolParameterAccuracy` evaluation. The examples below use CLI-compatible IDs.
+This is the current service catalog. Node CLI `1.0.0-preview.22` has local
+target-level metadata for ten evaluator IDs and defaults unrecognized
+`Builtin.*` IDs to `SESSION`. Check `agentcore --version` and use the Python or
+AWS SDK when the installed CLI does not recognize targeted `Harmfulness`,
+`Stereotyping`, or `ToolParameterAccuracy` evaluation. The examples below use
+CLI-compatible IDs.
 
 Expected responses and assertions are semantic references rather than
 exact-string rules. Expected trajectories are evaluated by the deterministic
@@ -959,9 +958,9 @@ Current service status as of August 14, 2026:
 - Batch evaluations, recommendations, and A/B tests are generally available
 - AgentCore Insights and the Python SDK simulation surface remain in preview
 
-The source notebook prose retains some preview labels from its authoring
-snapshot; use this current table when the two disagree. Availability still
-varies by region, and optional CLI surfaces evolve.
+Availability varies by region, and optional CLI surfaces evolve. Verify feature
+availability in the target region and installed CLI before running the optional
+examples.
 
 | Need | Mechanism |
 |---|---|
@@ -1146,9 +1145,9 @@ for metric in sorted(
 ```
 
 CloudWatch namespace, metric, and dimension names are case-sensitive and may
-evolve. Create alarms only after confirming which deployed metric represents
-evaluator errors or a calibrated aggregate score; do not copy an identifier
-from an older release.
+evolve. Discover the emitted metrics and create alarms only after confirming
+which deployed metric represents evaluator errors or a calibrated aggregate
+score.
 
 Simulation targets interaction states that are rare or awkward to script. Give
 the actor a goal, context, traits, turn limit, and assertions. Treat low scores

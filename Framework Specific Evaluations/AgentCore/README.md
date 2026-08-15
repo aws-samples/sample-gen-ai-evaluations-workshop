@@ -1,6 +1,6 @@
 # Amazon Bedrock AgentCore: Run, Observe, Evaluate, Improve
 
-This module teaches AgentCore evaluation as one connected workflow instead of a collection of unrelated APIs. You will build one deterministic agent, deploy it once, inspect its traces, evaluate specific sessions, add ground truth, create focused custom evaluators, monitor sampled traffic, and then use simulation and optimization as an optional advanced loop.
+This module presents AgentCore evaluation as an end-to-end workflow. You will build one deterministic agent, deploy it once, inspect its traces, evaluate specific sessions, add ground truth, create focused custom evaluators, monitor sampled traffic, and then use simulation and optimization as an optional advanced loop.
 
 The examples use a fixed city-facts dataset rather than live web search. That makes expected responses and tool trajectories stable enough for regression testing.
 
@@ -66,7 +66,7 @@ Install the current AgentCore CLI:
 npm install -g @aws/agentcore
 ```
 
-The older Python Starter Toolkit also installs an `agentcore` command. Remove it before the workshop so the two CLIs do not conflict:
+Some Python environments may expose a conflicting `agentcore` command through `bedrock-agentcore-starter-toolkit`. Remove that package so the workshop uses the Node.js CLI:
 
 ```bash
 pip uninstall bedrock-agentcore-starter-toolkit
