@@ -95,7 +95,7 @@ pip install strands-agents duckduckgo-search beautifulsoup4
 pip install llama-index faiss-cpu chromadb python-dotenv PyPDF2
 
 # Optional Framework Evaluations
-pip install strands-agents strands-agents-tools strands-agents-evals "dspy>=3.1,<4" bedrock-agentcore bedrock-agentcore-starter-toolkit duckduckgo-search
+pip install strands-agents strands-agents-tools strands-agents-evals "dspy>=3.1,<4" bedrock-agentcore duckduckgo-search
 
 # Requires Node.js 18+
 npm install -g promptfoo

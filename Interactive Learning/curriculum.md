@@ -119,15 +119,13 @@ python -m pip install boto3 pandas matplotlib numpy jupyterlab
 AgentCore environment:
 
 ```bash
-python -m pip uninstall -y bedrock-agentcore-starter-toolkit
 npm install -g @aws/agentcore
+hash -r
+agentcore --version
+agentcore --help
 python -m pip install \
   -r "Framework Specific Evaluations/AgentCore/requirements.txt"
 ```
-
-Some Python environments may expose a conflicting `agentcore` command through
-`bedrock-agentcore-starter-toolkit`. Removing it ensures the workshop uses the
-Node.js CLI.
 
 ## AWS Configuration
 

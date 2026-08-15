@@ -55,7 +55,6 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python -m pip uninstall -y bedrock-agentcore-starter-toolkit
 npm install -g @aws/agentcore
 hash -r
 agentcore --help
@@ -63,9 +62,9 @@ aws sts get-caller-identity
 agentcore validate
 ```
 
-The current CLI is the Node.js package `@aws/agentcore`. Stop if
-`agentcore --help` does not include `create`, `dev`, `deploy`, `traces`, and
-`run eval`; another installation is still shadowing the current CLI.
+The workshop uses the Node.js package `@aws/agentcore`. Before continuing,
+confirm that `agentcore --help` includes `create`, `dev`, `deploy`, `traces`,
+and `run eval`.
 
 Create the small Runtime adapter used by the dataset and simulation sections.
 Defining it here keeps the data flow visible throughout the lesson:

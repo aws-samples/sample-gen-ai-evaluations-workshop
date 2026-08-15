@@ -60,16 +60,13 @@ AgentCore/
 - Access to the configured Amazon Bedrock model
 - Permissions for AgentCore, CloudFormation, IAM, CloudWatch, X-Ray, and Bedrock model invocation
 
-Install the current AgentCore CLI:
+Install the AgentCore CLI and verify the installation:
 
 ```bash
 npm install -g @aws/agentcore
-```
-
-Some Python environments may expose a conflicting `agentcore` command through `bedrock-agentcore-starter-toolkit`. Remove that package so the workshop uses the Node.js CLI:
-
-```bash
-pip uninstall bedrock-agentcore-starter-toolkit
+hash -r
+agentcore --version
+agentcore --help
 ```
 
 Create a notebook environment:
