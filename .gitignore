@@ -22,3 +22,9 @@
 **/05-04-AgentCore-Runtime-Evals/Dockerfile
 **/05-04-AgentCore-Runtime-Evals/.dockerignore
 **/.bedrock_agentcore.yaml
+
+# Generated notebook outputs
+**/email_responses.json
+
+**/cities_evaluation_results.json
+**/cities_evaluation_summary.csv

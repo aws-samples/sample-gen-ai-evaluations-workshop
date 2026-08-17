@@ -1,0 +1,36 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+ignore = [
+    "E401",   # multiple imports on one line
+    "E402",   # module-level import not at top (common in notebooks)
+    "E501",   # line too long
+    "E701",   # multiple statements on one line
+    "F401",   # unused import (notebook cells often import for later use)
+    "F811",   # redefinition of unused name
+    "W291",   # trailing whitespace
+    "W292",   # no newline at end of file
+    "W293",   # whitespace before ':'
+    "I001",   # import sort order
+    "UP006",  # deprecated typing.Dict / typing.List
+    "UP035",  # deprecated typing imports
+]
+
+[tool.pylint.messages_control]
+disable = [
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+    "C0301",  # line-too-long
+    "C0303",  # trailing-whitespace
+    "C0411",  # wrong-import-order
+    "E0401",  # import-error (can't resolve notebook sys.path hacks)
+    "E0601",  # used-before-assignment (false positives in notebooks)
+    "W0612",  # unused-variable
+    "W0613",  # unused-argument
+    "W0621",  # redefined-outer-name
+    "W0718",  # broad-exception-caught
+    "W1514",  # unspecified-encoding
+]
