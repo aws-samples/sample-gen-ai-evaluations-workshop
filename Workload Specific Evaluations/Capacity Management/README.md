@@ -7,7 +7,7 @@ workload outgrows what a single model will serve you.
 
 At high volume the binding constraint stops being quality and becomes **quota**. If you need
 1,000 requests per minute and your best model gives you 250, no amount of prompt engineering on
-that one model fixes the problem. You need several models, and you need to know which ones are
+that one model fixes the problem. You need several models, optimize your workload for each model, and prove which ones are
 good enough to trust with production traffic.
 
 That turns model selection from a ranking problem into a **portfolio** problem, and it gives
