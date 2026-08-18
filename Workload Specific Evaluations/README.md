@@ -108,6 +108,24 @@ Key topics: semantic metrics (LLM-as-Judge), static metrics (latency, compressio
 
 ---
 
+### [Capacity Management](Capacity%20Management/)
+
+**Evaluate a model portfolio and route around quota limits**
+
+For workloads too large to serve from a single model, model selection becomes a portfolio problem
+and evaluation decides who is allowed in. Measures BANKING77 intent classification across five
+models from three providers, optimizes the prompt for each of them in one Advanced Prompt
+Optimization job steered by a custom Lambda evaluator, then routes a workload through a
+token-bucket rate limiter that spends quota from whichever admitted model has it. Builds toward
+quality-weighted capacity: the aggregate quota of every model that passes your quality bar.
+
+Key topics: token bucket rate limiting, simulated per-model quotas, priority-ordered routing with
+queueing, Advanced Prompt Optimization (input preparation, custom Lambda metric, reading results),
+per-model prompt maps, output-parser sensitivity, quality bar plus cost ceiling admission, blended
+cost as a function of load.
+
+---
+
 ### [Coding Assistant](Coding%20Assistant/)
 
 Coming soon.
