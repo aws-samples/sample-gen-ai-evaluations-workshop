@@ -18,8 +18,8 @@ evaluation a new job: deciding who is allowed in the portfolio.
 > **Quality-weighted capacity** = the sum of the quota of every model that passes your quality bar
 
 One model at 82% accuracy and 250 RPM buys you 250 RPM. Four models that all clear the bar buy
-you four models' worth. Which makes **prompt optimization a capacity lever, not just a quality
-lever** — every model you can lift over the bar adds its quota to your ceiling.
+you four models' worth. This makes **evaluation and prompt optimization a capacity lever, not just a quality
+lever.** Every model you can lift over the quality bar adds its quota to your ceiling.
 
 In this module's measured run, optimizing prompts per model moved quality-weighted capacity from
 650 RPM to 1,350 RPM without a single quota increase request.
