@@ -35,6 +35,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - Chatbot: evaluate multi-turn conversational AI with simulated users, custom binary evaluators, and synthetic data generation.
   - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
+  - Capacity Management: evaluate a workload across a model portfolio, optimize prompts per model with Advanced Prompt Optimization, and route around quota limits.
   - Coding Assistant: coming soon.
   
 - #### [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
