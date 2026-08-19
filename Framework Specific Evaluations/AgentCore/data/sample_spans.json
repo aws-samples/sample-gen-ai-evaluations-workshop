@@ -1,0 +1,35 @@
+[
+  {
+    "traceId": "11111111111111111111111111111111",
+    "spanId": "1111111111111111",
+    "name": "CityAnalyst.invoke",
+    "attributes": {
+      "session.id": "fixture-session-000000000000000000000000",
+      "gen_ai.operation.name": "invoke_agent"
+    }
+  },
+  {
+    "traceId": "11111111111111111111111111111111",
+    "spanId": "2222222222222222",
+    "parentSpanId": "1111111111111111",
+    "name": "lookup_city",
+    "attributes": {
+      "session.id": "fixture-session-000000000000000000000000",
+      "gen_ai.operation.name": "execute_tool",
+      "gen_ai.tool.name": "lookup_city",
+      "gen_ai.tool.call.arguments": "{\"city\":\"Seattle\",\"state\":\"WA\"}"
+    }
+  },
+  {
+    "traceId": "11111111111111111111111111111111",
+    "spanId": "3333333333333333",
+    "parentSpanId": "1111111111111111",
+    "name": "CityAnalyst.response",
+    "attributes": {
+      "session.id": "fixture-session-000000000000000000000000",
+      "gen_ai.operation.name": "chat",
+      "gen_ai.response.content": "{\"answer\":\"Seattle has 780995 people and 83.8 square miles of land.\",\"cities\":[{\"city\":\"Seattle\",\"state\":\"WA\",\"population\":780995,\"land_area_mi2\":83.8,\"density_per_mi2\":9319.7}],\"tools_used\":[\"lookup_city\"]}"
+    }
+  }
+]
+

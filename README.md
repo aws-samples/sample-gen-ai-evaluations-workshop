@@ -31,7 +31,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - MultiModal RAG: evaluate retrieval across text, vision, and audio modalities using ImageBind embeddings.
   - Speech to Speech: end-to-end evaluation of Nova Sonic interactions using CloudWatch telemetry and LLM-as-Judge.
   - Automated Reasoning Evaluations: verify LLM outputs against formal policy rules using SMT solver-based guardrails.
-  - Tool Calling: evaluate agent tool-calling behavior without real tool execution using five progressively sophisticated approaches.
+  - Tool Calling: evaluate agent tool-calling behavior without real tool execution using six progressively sophisticated approaches.
   - Chatbot: evaluate multi-turn conversational AI with simulated users, custom binary evaluators, and synthetic data generation.
   - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
@@ -41,8 +41,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 - #### [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
   - Prompt Foo: configure YAML-based evaluations, write assertion test cases, and compare models across providers.
   - Strands: evaluate agents using the Strands Evals SDK with output quality, trajectory, and custom evaluators.
-  - AgentCore: evaluate agents deployed on Amazon Bedrock AgentCore Runtime with LLM-as-Judge and CloudWatch log analysis.
-  - AgentCore Runtime Evals: run native AgentCore Evaluations API with built-in evaluators for helpfulness and tool selection accuracy.
+  - AgentCore: run, observe, evaluate, and improve an AgentCore Runtime agent through built-in and custom evaluators, curated datasets, batch and online monitoring, simulation, and optimization.
   - DSPy: optimize prompts automatically with BootstrapFewShot and measure improvement with custom metrics.
   - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
   - DeepEval: evaluate LLM applications with pytest-style metrics for RAG, agents, multi-turn, and safety, plus custom G-Eval for any criteria.

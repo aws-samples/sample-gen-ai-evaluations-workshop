@@ -30,21 +30,11 @@ Key topics: `OutputEvaluator` with custom rubrics, `TrajectoryEvaluator` for too
 
 ### [AgentCore](AgentCore/)
 
-**Custom evaluations for agents deployed on Amazon Bedrock AgentCore Runtime**
+**Run, observe, evaluate, and improve agents with Amazon Bedrock AgentCore**
 
-This module deploys a Strands-based city search agent to AgentCore Runtime and evaluates it using custom LLM-as-Judge scoring across five quality dimensions (helpfulness, accuracy, clarity, professionalism, completeness). It also demonstrates extracting tool usage data from CloudWatch logs to compute tool selection precision/recall, and provides comprehensive visualization of evaluation results.
+This progressive six-notebook module treats AgentCore Runtime, Observability, and Evaluations as one workflow. It deploys one deterministic Strands city-information agent, follows sessions through OpenTelemetry traces, applies built-in evaluators at session, trace, and tool-call levels, adds stable ground truth and curated datasets, builds focused custom evaluators, and extends the same evidence into batch evaluation, sampled online monitoring, simulation, insights, recommendations, and controlled A/B testing.
 
-Key topics: AgentCore Runtime deployment, multi-dimensional LLM-as-Judge, CloudWatch log-based tool evaluation, X-Ray distributed tracing, account ID masking for safe commits.
-
----
-
-### [AgentCore Runtime Evals](AgentCore%20Runtime%20Evals/)
-
-**Native AgentCore Evaluations API with built-in evaluators**
-
-Unlike the custom evaluation approach in the AgentCore module, this module uses the native AgentCore Evaluations API — built-in evaluators that analyze full agent execution traces directly from CloudWatch. The built-in evaluators (`Builtin.Helpfulness`, `Builtin.ToolSelectionAccuracy`) have access to every LLM call, tool invocation, and intermediate reasoning step, enabling assessment of the agent's reasoning process rather than just its final output.
-
-Key topics: `evaluate()` API, built-in evaluators, session span retrieval, score/label/explanation interpretation, on-demand vs. online evaluation modes.
+Key topics: AgentCore CLI project workflow, Runtime deployment, CloudWatch Transaction Search, session/trace/tool-call evaluation levels, `EvaluationClient`, dataset runners, ground-truth reference inputs, binary LLM-as-a-Judge, code-based evaluators, evaluator calibration, batch evaluation, online sampling, simulated users, insights, recommendations, configuration bundles, and cleanup.
 
 ---
 
@@ -85,4 +75,4 @@ All modules require:
 - Python 3.10+
 - AWS credentials configured
 
-Individual modules may have additional requirements (Node.js for PromptFoo, Docker for AgentCore). See each module's README for specific setup instructions.
+Individual modules may have additional requirements (Node.js for PromptFoo and the AgentCore CLI). See each module's README for specific setup instructions.

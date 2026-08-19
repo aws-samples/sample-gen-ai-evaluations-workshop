@@ -1,0 +1,17 @@
+{
+  "data_version": "workshop-snapshot-2026-08",
+  "description": "Fixed workshop fixture derived from the repository city dataset. Values are intentionally stable for evaluation exercises.",
+  "cities": [
+    {"city": "New York", "state": "NY", "population": 8478072, "land_area_mi2": 300.5},
+    {"city": "Los Angeles", "state": "CA", "population": 3878704, "land_area_mi2": 469.5},
+    {"city": "Chicago", "state": "IL", "population": 2721308, "land_area_mi2": 227.7},
+    {"city": "Austin", "state": "TX", "population": 993588, "land_area_mi2": 319.9},
+    {"city": "San Francisco", "state": "CA", "population": 827526, "land_area_mi2": 46.9},
+    {"city": "Seattle", "state": "WA", "population": 780995, "land_area_mi2": 83.8},
+    {"city": "Denver", "state": "CO", "population": 729019, "land_area_mi2": 153.1},
+    {"city": "Boston", "state": "MA", "population": 673458, "land_area_mi2": 48.3},
+    {"city": "Portland", "state": "OR", "population": 635749, "land_area_mi2": 133.5},
+    {"city": "Miami", "state": "FL", "population": 487014, "land_area_mi2": 36.0}
+  ]
+}
+

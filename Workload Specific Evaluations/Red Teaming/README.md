@@ -49,10 +49,10 @@ Each subfolder applies red teaming to a different workload type:
 
 | Submodule | Description |
 |-----------|-------------|
-| [`04-12-01-llm-app-red-teaming`](04-12-01-llm-app-red-teaming/) | Red teaming a basic Bedrock-powered LLM application — foundational setup, plugin selection, and interpreting results |
-| [`04-12-02-testing-bedrock-guardrails`](04-12-02-testing-bedrock-guardrails/) | Testing Amazon Bedrock Guardrails configurations against adversarial inputs to validate filter and policy effectiveness |
-| [`04-12-03-RAG-red-teaming`](04-12-03-RAG-red-teaming/) | Red teaming RAG pipelines built with Amazon Bedrock Knowledge Bases — indirect prompt injection via retrieved documents, context poisoning |
-| [`04-12-04-agent-red-teaming`](04-12-04-agent-red-teaming/) | Red teaming agentic applications built with Strands Agents and Amazon Bedrock AgentCore — tool misuse, privilege escalation, multi-step exploits |
+| [01 LLM App Red Teaming](01%20LLM%20App%20Red%20Teaming/) | Red teaming a basic Bedrock-powered LLM application — foundational setup, plugin selection, and interpreting results |
+| [02 Testing Bedrock Guardrails](02%20Testing%20Bedrock%20Guardrails/) | Testing Amazon Bedrock Guardrails configurations against adversarial inputs to validate filter and policy effectiveness |
+| [03 RAG Red Teaming](03%20RAG%20Red%20Teaming/) | Red teaming RAG pipelines built with Amazon Bedrock Knowledge Bases — indirect prompt injection via retrieved documents, context poisoning |
+| [04 Agent Red Teaming](04%20Agent%20Red%20Teaming/) | Red teaming agentic applications built with Strands Agents and Amazon Bedrock AgentCore — tool misuse, privilege escalation, multi-step exploits |
 
 ## Prerequisites
 
@@ -66,5 +66,5 @@ Each subfolder applies red teaming to a different workload type:
 ## Getting Started
 
 1. Read through this README to understand the red teaming concepts and Promptfoo's approach.
-2. Start with [`04-12-01-llm-app-red-teaming`](04-12-01-llm-app-red-teaming/) for the foundational walkthrough.
+2. Start with [01 LLM App Red Teaming](01%20LLM%20App%20Red%20Teaming/) for the foundational walkthrough.
 3. Proceed through the remaining submodules in order — each builds on the prior concepts while introducing workload-specific considerations.
