@@ -58,16 +58,19 @@ AgentCore/
 - `uv`
 - AWS credentials for a workshop or development account
 - Access to the configured Amazon Bedrock model
-- Permissions for AgentCore, CloudFormation, IAM, CloudWatch, X-Ray, and Bedrock model invocation
+- Permissions to bootstrap and deploy AWS CDK resources and to use AgentCore, CloudWatch, X-Ray, and Bedrock
 
 Install the AgentCore CLI and verify the installation:
 
 ```bash
-npm install -g @aws/agentcore
+npm install -g @aws/agentcore@0.27.0
 hash -r
 agentcore --version
-agentcore --help
+aws sts get-caller-identity
+aws configure get region
 ```
+
+If the Region command is empty, set `AWS_REGION` or configure a default Region before continuing.
 
 Create a notebook environment:
 
@@ -76,6 +79,18 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 jupyter lab
+```
+
+Before the first deployment, bootstrap the AWS account and Region. CDK bootstrap is a one-time setup for each account and Region:
+
+```bash
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region)}}
+
+cd agentcore/cdk
+npm ci --no-audit --no-fund
+./node_modules/.bin/cdk bootstrap "aws://${ACCOUNT_ID}/${REGION}"
+cd ../..
 ```
 
 Run all commands from this directory. Start with `01-agentcore-foundations.ipynb`.

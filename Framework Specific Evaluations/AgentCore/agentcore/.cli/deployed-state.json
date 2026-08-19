@@ -1,4 +1,17 @@
 {
-  "targets": {}
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "CityAnalyst": {
+            "runtimeId": "AgentCoreEvals_CityAnalyst-YYq9Rv60Zl",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-west-2:965021810746:runtime/AgentCoreEvals_CityAnalyst-YYq9Rv60Zl",
+            "roleArn": "arn:aws:iam::965021810746:role/AgentCore-AgentCoreEvals--ApplicationAgentCityAnaly-bUam5Y3Beav2"
+          }
+        },
+        "stackName": "AgentCore-AgentCoreEvals-default",
+        "deployHash": "1b4200873f9f48dc"
+      }
+    }
+  }
 }
-

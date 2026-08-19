@@ -1,8 +1,11 @@
 # Secrets
 .env.local
 
-# CDK and CLI-generated artifacts
-cdk/
+# CDK build artifacts
+cdk/cdk.out/
+cdk/node_modules/
+
+# CLI-generated artifacts
 .cache/
 .cli/*
 *.zip

@@ -1,4 +1,5 @@
 import json
+import shlex
 import subprocess
 import time
 import uuid
@@ -32,16 +33,55 @@ class RuntimeInfo:
         return f"/aws/bedrock-agentcore/runtimes/{self.runtime_id}-DEFAULT"
 
 
-def run_cli_json(*args: str) -> dict[str, Any]:
-    command = ["agentcore", *args, "--json"]
+def _cli_error(command: list[str], completed: subprocess.CompletedProcess[str]) -> RuntimeError:
+    details = completed.stderr.strip() or completed.stdout.strip()
+    log_path = None
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        payload = None
+
+    if isinstance(payload, dict):
+        details = payload.get("error") or payload.get("message") or details
+        log_path = payload.get("logPath")
+
+    message = (
+        f"AgentCore command failed with exit code {completed.returncode}:\n"
+        f"{shlex.join(command)}"
+    )
+    if details:
+        message += f"\n\n{details}"
+    if log_path:
+        message += f"\n\nDetailed log: {MODULE_ROOT / log_path}"
+    return RuntimeError(message)
+
+
+def run_cli(*args: str, json_output: bool = False) -> subprocess.CompletedProcess[str]:
+    command = ["agentcore", *args]
+    if json_output and "--json" not in command:
+        command.append("--json")
+
     completed = subprocess.run(
         command,
         cwd=MODULE_ROOT,
-        check=True,
         capture_output=True,
         text=True,
     )
-    return json.loads(completed.stdout)
+    if completed.returncode != 0:
+        raise _cli_error(command, completed)
+    return completed
+
+
+def run_cli_json(*args: str) -> dict[str, Any]:
+    completed = run_cli(*args, json_output=True)
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError(
+            "AgentCore returned invalid JSON for:\n"
+            f"{shlex.join(['agentcore', *args, '--json'])}\n\n"
+            f"{completed.stdout.strip() or 'No output returned.'}"
+        ) from error
 
 
 def load_runtime_info(
@@ -182,4 +222,3 @@ def summarize_spans(spans: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             }
         )
     return rows
-

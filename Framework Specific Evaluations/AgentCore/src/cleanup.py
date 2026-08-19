@@ -33,7 +33,7 @@ def empty_project_config(config: dict) -> dict:
     return cleaned
 
 
-def deploy_empty_project() -> None:
+def deploy_empty_project(target_name: str) -> None:
     original = CONFIG_PATH.read_bytes()
     config = json.loads(original)
     empty_config = empty_project_config(config)
@@ -43,7 +43,7 @@ def deploy_empty_project() -> None:
     )
     try:
         subprocess.run(
-            ["agentcore", "deploy", "-y"],
+            ["agentcore", "deploy", "--target", target_name, "--yes"],
             cwd=MODULE_ROOT,
             check=True,
         )
@@ -51,11 +51,27 @@ def deploy_empty_project() -> None:
         CONFIG_PATH.write_bytes(original)
 
 
+def clear_generated_outputs() -> None:
+    GENERATED_DIR.mkdir(exist_ok=True)
+    for path in GENERATED_DIR.iterdir():
+        if path.name == ".gitkeep":
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Delete AgentCore resources managed by this workshop project."
     )
     parser.add_argument("--yes", action="store_true", help="Confirm resource deletion.")
+    parser.add_argument(
+        "--target",
+        default="default",
+        help="Deployment target to clean up (default: default).",
+    )
     parser.add_argument(
         "--keep-generated",
         action="store_true",
@@ -68,13 +84,13 @@ def main() -> int:
         return 2
 
     try:
-        deploy_empty_project()
+        deploy_empty_project(args.target)
     except subprocess.CalledProcessError as error:
         print(f"AgentCore cleanup deploy failed with exit code {error.returncode}.", file=sys.stderr)
         return error.returncode or 1
 
     if not args.keep_generated:
-        shutil.rmtree(GENERATED_DIR, ignore_errors=True)
+        clear_generated_outputs()
 
     print("Managed project resources were removed and the workshop config was restored.")
     print("Review retained CloudWatch logs, KMS keys, and externally managed resources separately.")
@@ -83,4 +99,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
