@@ -5,11 +5,9 @@
 cdk/cdk.out/
 cdk/node_modules/
 
-# CLI-generated artifacts
+# CLI-generated local state and artifacts
 .cache/
-.cli/*
+.cli/
+aws-targets.json
 *.zip
 */staging/
-
-# Keep an empty, non-sensitive state file in the workshop.
-!.cli/deployed-state.json

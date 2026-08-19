@@ -88,6 +88,10 @@ def load_runtime_info(
     runtime_name: str = RUNTIME_NAME,
     target_name: str | None = None,
 ) -> RuntimeInfo:
+    if not DEPLOYED_STATE_PATH.exists():
+        raise RuntimeError(
+            "No local deployment state found. Complete notebook 01 first."
+        )
     state = json.loads(DEPLOYED_STATE_PATH.read_text(encoding="utf-8"))
     targets = state.get("targets", {})
     if not targets:
@@ -102,6 +106,10 @@ def load_runtime_info(
             f"Runtime {runtime_name!r} is not deployed in target {selected_target!r}."
         )
 
+    if not AWS_TARGETS_PATH.exists():
+        raise RuntimeError(
+            "No local deployment target found. Complete notebook 01 first."
+        )
     target_specs = json.loads(AWS_TARGETS_PATH.read_text(encoding="utf-8"))
     region = next(
         (
