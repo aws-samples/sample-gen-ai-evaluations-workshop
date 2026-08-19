@@ -5,7 +5,7 @@
 ## Overview
 
 Most model evaluation asks *"which model is best?"* and ships the winner. That works until your
-workload outgrows what a single model will serve you.
+workload outgrows what a single model will serve you. It also locks you out of taking advantage of increased quality and cost savings when new models are launched. 
 
 At high volume the binding constraint stops being quality and becomes **quota**. If you need
 1,000 requests per minute and your best model gives you 400, no amount of prompt engineering on
