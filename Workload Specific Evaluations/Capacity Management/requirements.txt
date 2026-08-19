@@ -1,0 +1,11 @@
+boto3>=1.35.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+# pandas .style tables are rendered through jinja2
+jinja2>=3.1.0
+
+# The Advanced Prompt Optimization APIs (create_advanced_prompt_optimization_job
+# and friends) require a newer boto3 than the notebook itself needs. Only the
+# authoring script in scripts/ calls them, and the notebook loads the committed
+# results instead, so this is optional for working through the module:
+#   boto3>=1.43.0
