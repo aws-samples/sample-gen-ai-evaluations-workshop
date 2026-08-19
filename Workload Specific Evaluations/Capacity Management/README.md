@@ -1,12 +1,14 @@
 # Capacity Management for Large Generative AI Workloads
 
+![Two-panel summary of the module's measured result. Left panel: the routing priority list drawn as a supply curve, with cumulative quality-weighted capacity in requests per minute on the x-axis and cost per 1,000 classifications on the y-axis. Three admitted models form a rising staircase, each step as wide as its quota and as tall as its cost: GPT-5.6 Luna, 400 RPM at $0.132 per 1,000, 82.5% accuracy; gpt-oss-120b, 400 RPM at $0.408, 83.8%; Claude Haiku 4.5, 100 RPM at $1.660, 76.0%. A heavy black line overlays the staircase showing the blended cost actually paid, flat at $0.132 while the first model has capacity and rising to $0.424 per 1,000 at the full 900 RPM. A dashed line marks the $2.00 per 1,000 cost ceiling. Past the admitted region, a ghost step running off the top of the chart shows Claude Sonnet 5 rejected at $7.008 per 1,000, 53 times GPT-5.6 Luna's cost, despite clearing the quality bar at 78.6%. Right panel: at 900 requests per minute of demand, a single first-choice model serves 400 RPM at $0.132 per 1,000 and leaves 500 RPM throttled or queued, while the three-model priority list serves all 900 RPM at a blended $0.424 per 1,000 with 82.4% expected accuracy.](images/fig6-capacity-supply-curve-hero.png)
+
 ## Overview
 
 Most model evaluation asks *"which model is best?"* and ships the winner. That works until your
 workload outgrows what a single model will serve you.
 
 At high volume the binding constraint stops being quality and becomes **quota**. If you need
-1,000 requests per minute and your best model gives you 250, no amount of prompt engineering on
+1,000 requests per minute and your best model gives you 400, no amount of prompt engineering on
 that one model fixes the problem. You need several models, optimize your workload for each model, and prove which ones are
 good enough to trust with production traffic.
 
@@ -17,12 +19,17 @@ evaluation a new job: deciding who is allowed in the portfolio.
 
 > **Quality-weighted capacity** = the sum of the quota of every model that passes your quality bar
 
-One model at 82% accuracy and 250 RPM buys you 250 RPM. Four models that all clear the bar buy
+One model at 82% accuracy and 400 RPM buys you 400 RPM. Four models that all clear the bar buy
 you four models' worth. This makes **evaluation and prompt optimization a capacity lever, not just a quality
 lever.** Every model you can lift over the quality bar adds its quota to your ceiling.
 
-In this module's measured run, optimizing prompts per model moved quality-weighted capacity from
-650 RPM to 1,350 RPM without a single quota increase request.
+In this module's measured run, one model gives you 400 RPM while every model that clears the bar
+gives you 1,000 RPM — no quota increase requested. Prompt optimization is what makes the difference
+between two models clearing the bar and four.
+
+Admission takes a price test as well as a quality test, so once a $2.00 per 1,000 cost ceiling is
+applied the routing table settles at **900 RPM** across three models. That is what the figure above
+prices, slice by slice.
 
 ## What You'll Learn
 
@@ -87,14 +94,16 @@ Capacity Management/
 │   ├── advpo_input.jsonl                      # the AdvPO job input, as submitted
 │   └── advpo_results.jsonl                    # real AdvPO job output, committed
 ├── images/
-│   ├── fig1-quality-weighted-capacity.png     # headline result, 650 -> 1,350 RPM
 │   ├── fig2-routing-timeline.png              # same burst, one model vs a portfolio
 │   ├── fig3-load-curve.png                    # blended cost and accuracy vs load
 │   ├── fig4-token-bucket-mechanics.png        # token bucket draining and refilling
-│   └── fig5-quality-weighted-capacity-hero.png # quality decision and the capacity it buys
+│   ├── fig5-quality-weighted-capacity-hero.png # one model vs every model that qualifies
+│   └── fig6-capacity-supply-curve-hero.png    # the priority list priced (README hero)
 └── scripts/
     ├── lambda_evaluator.py                    # the custom AdvPO scoring function
-    └── run_advpo_job.py                       # creates infra, submits the job, fetches results
+    ├── run_advpo_job.py                       # creates infra, submits the job, fetches results
+    ├── make_fig5_figure.py                    # regenerates fig5 from model_config
+    └── make_hero_figure.py                    # regenerates fig6 from model_config
 ```
 
 ## About the Simulated Quotas
@@ -104,14 +113,28 @@ requests. The module imposes much smaller **artificial** per-model limits so
 throttling is observable in seconds. The mechanics are identical; only the numbers are smaller.
 Tune `DEMO_QUOTAS` in `model_config.py` to trade runtime against realism.
 
+The *shape* of the example limits is deliberate, though. On Bedrock the smaller and cheaper models
+generally carry the higher default request quotas, while frontier models carry the tighter ones, so
+`PRODUCTION_QUOTAS_EXAMPLE` gives the two cheapest models four times the ceiling of the rest. That
+matters for the result: prompt optimization tends to rescue the models that were failing the bar,
+and those are usually the ones with the least quota to contribute. You can check the current
+defaults for your own account with:
+
+```bash
+aws service-quotas list-aws-default-service-quotas --service-code bedrock \
+  --region us-east-1 --query \
+  'Quotas[?contains(QuotaName, `requests per minute`)].[QuotaName,Value]'
+```
+
 A local limiter is also less artificial than it first looks. In production it is common to put a
 per-workload or per-tenant limiter *in front of* Bedrock so one workload cannot drain the
 account's quota. In that architecture a local limiter that knows its own budget is exactly what
 you run.
 
-The module models **requests per minute only**. Bedrock also enforces tokens per minute on most
-endpoints, and a few endpoints enforce RPM only. Whichever limit binds first, the routing lesson
-is the same. In production, monitor both.
+The module models **requests per minute only**. Bedrock also enforces tokens per minute, and RPM
+is not enforced for every model — several models are governed by token quotas alone. Whichever
+limit binds first, the routing lesson is the same, because a token bucket behaves identically
+either way. In production, check which limits actually apply to your models and monitor both.
 
 ## Getting Started
 

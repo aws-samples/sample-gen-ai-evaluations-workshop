@@ -78,15 +78,29 @@ DEMO_QUOTAS = {m: 6 for m in CANDIDATE_MODELS}
 # slow without teaching anything new.
 EVAL_QUOTAS = {m: 10_000 for m in CANDIDATE_MODELS}
 
-# A more realistic shape for the projection section: the strongest and newest
-# models usually carry the tightest limits, which is precisely why you cannot
-# simply send everything to your favourite model.
+# Example per-model limits for the projection section. Also ARTIFICIAL, and small
+# for the same reason as DEMO_QUOTAS: we want the limits to be easy to reach so
+# the routing behaviour is visible inside a workshop.
+#
+# The *shape* is deliberate. On Bedrock, smaller and cheaper models generally
+# carry the higher default request quotas while frontier models carry the tighter
+# ones, so the two cheapest models here get four times the ceiling of the rest.
+# Check the current defaults for your own account and Region with:
+#
+#     aws service-quotas list-aws-default-service-quotas --service-code bedrock \
+#       --region us-east-1 --query \
+#       'Quotas[?contains(QuotaName, `requests per minute`)].[QuotaName,Value]'
+#
+# Two things to know when you do. Real ceilings are orders of magnitude higher
+# than these, and RPM is not enforced for every model — several are governed by
+# token quotas alone. A token bucket behaves the same whichever dimension binds
+# first, which is why modelling RPM only still teaches the right lesson.
 PRODUCTION_QUOTAS_EXAMPLE = {
-    NOVA_2_LITE: 1_000,
-    CLAUDE_HAIKU_45: 500,
-    CLAUDE_SONNET_5: 200,
+    NOVA_2_LITE: 100,
+    CLAUDE_HAIKU_45: 100,
+    CLAUDE_SONNET_5: 100,
     GPT_OSS_120B: 400,
-    GPT_56_LUNA: 250,
+    GPT_56_LUNA: 400,
 }
 
 # ---------------------------------------------------------------------------
