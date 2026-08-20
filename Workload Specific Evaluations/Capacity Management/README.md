@@ -9,7 +9,7 @@ workload outgrows what a single model will serve you. It also locks you out of t
 
 At high volume the binding constraint stops being quality and becomes **quota**. If you need
 1,000 requests per minute and your best model gives you 400, no amount of prompt engineering on
-that one model fixes the problem. You need several models, optimize your workload for each model, and prove which ones are
+that one model fixes the problem. You need to evaluate several models, to optimize your workload for each model, and to prove which ones are
 good enough to trust with production traffic.
 
 That turns model selection from a ranking problem into a **portfolio** problem, and it gives
@@ -19,16 +19,15 @@ evaluation a new job: deciding who is allowed in the portfolio.
 
 > **Quality-weighted capacity** = the sum of the quota of every model that passes your quality bar
 
-One model at 82% accuracy and 400 RPM buys you 400 RPM. Four models that all clear the bar buy
+One model at 82% accuracy and 400 RPM buys you 400 RPM. Four models that all clear your accuracy bar buy
 you four models' worth. This makes **evaluation and prompt optimization a capacity lever, not just a quality
 lever.** Every model you can lift over the quality bar adds its quota to your ceiling.
 
-In this module's measured run, one model gives you 400 RPM while every model that clears the bar
+In this module's example run, one model gives you 400 RPM while every model that clears the bar
 gives you 1,000 RPM — no quota increase requested. Prompt optimization is what makes the difference
 between two models clearing the bar and four.
 
-Admission takes a price test as well as a quality test, so once a $2.00 per 1,000 cost ceiling is
-applied the routing table settles at **900 RPM** across three models. That is what the figure above
+We also put a price cap on adding models to our portfolio.  In our example, we add a $2.00 per 1,000 token cost ceiling.  This excludes one model so the routing table settles at **900 RPM** across three models. That is what the figure above
 prices, slice by slice.
 
 ## What You'll Learn
@@ -56,13 +55,6 @@ A sampled subset is vendored under `data/`, so the notebook runs with no downloa
 > BANKING77 is from Casanueva et al., *Efficient Intent Detection with Dual Sentence Encoders*,
 > published at [PolyAI-LDN/task-specific-datasets](https://github.com/PolyAI-LDN/task-specific-datasets)
 > and licensed CC-BY-4.0.
-
-Two data quirks the module handles, because both silently corrupt results:
-
-- `Refund_not_showing_up` is the **only** label with an uppercase character. Compare
-  case-sensitively and all five models appear to fail that class.
-- Three labels are substrings of others (`card_not_working` inside `virtual_card_not_working`,
-  `exchange_rate` inside two longer labels), so substring matching must prefer the longest match.
 
 ## Models Used
 
@@ -117,7 +109,7 @@ The *shape* of the example limits is deliberate, though. On Bedrock the smaller 
 generally carry the higher default request quotas, while frontier models carry the tighter ones, so
 `PRODUCTION_QUOTAS_EXAMPLE` gives the two cheapest models four times the ceiling of the rest. That
 matters for the result: prompt optimization tends to rescue the models that were failing the bar,
-and those are usually the ones with the least quota to contribute. You can check the current
+and those are usually the ones with the most quota to contribute. You can check the current
 defaults for your own account with:
 
 ```bash
@@ -159,10 +151,10 @@ either way. In production, check which limits actually apply to your models and 
 ## Re-running the Prompt Optimization Job
 
 An AdvPO job is asynchronous and takes 15 minutes to several hours, so it does not fit in a
-notebook cell. The job was run for real and its output is committed to
+notebook cell. To save time while learning, the job was run for real and the results are committed to
 `data/advpo_results.jsonl`; the notebook shows the full setup and loads those results.
 
-To run it yourself, `scripts/run_advpo_job.py` handles the whole lifecycle:
+To run the AdvPO job yourself, `scripts/run_advpo_job.py` handles the whole lifecycle:
 
 ```bash
 python scripts/run_advpo_job.py build      # build the input JSONL, no AWS calls
