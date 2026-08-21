@@ -15,6 +15,8 @@ good enough to trust with production traffic.
 That turns model selection from a ranking problem into a **portfolio** problem, and it gives
 evaluation a new job: deciding who is allowed in the portfolio.
 
+![Two-panel summary of the module's measured results](images/fig3-load-curve.png)
+
 ## The Core Metric
 
 > **Quality-weighted capacity** = the sum of the quota of every model that passes your quality bar
