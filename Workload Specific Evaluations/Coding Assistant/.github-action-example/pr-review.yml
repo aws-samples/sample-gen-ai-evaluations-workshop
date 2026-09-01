@@ -1,0 +1,65 @@
+name: PR Review (aligned)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Concurrency: one review per PR. New pushes cancel the prior run.
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write        # required for AWS OIDC
+  contents: read
+  pull-requests: write   # to post the review comment
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install reviewer deps
+        run: pip install boto3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      # Adjust PR_REVIEWER_PATH to wherever you copy the pr_reviewer package.
+      # Here we assume it lives at .github/pr_reviewer/ inside the consumer repo.
+      - name: Run aligned PR reviewer
+        id: review
+        run: |
+          set +e
+          python -m pr_reviewer \
+            --repo . \
+            --base origin/${{ github.event.pull_request.base.ref }} \
+            --format markdown > review.md
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.github
+
+      - name: Post review as PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: aligned-pr-review
+          path: review.md
+
+      - name: Fail the check if review failed
+        if: steps.review.outputs.exit != '0'
+        run: |
+          echo "Aligned PR review failed. See the PR comment for details."
+          exit 1

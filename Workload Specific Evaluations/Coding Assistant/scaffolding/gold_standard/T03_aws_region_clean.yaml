@@ -1,0 +1,22 @@
+# Gold-standard entry: T03 done correctly.
+#
+# Single-line change: replace the hardcoded region with
+# `os.getenv('AWS_REGION', 'us-west-2')`. Keeps existing convention.
+
+pr_slug: T03_aws_region_clean
+pr_number: 1005
+pr_title: "T03 reference solution: read AWS_REGION env var"
+
+rubric_path: ../ground_truth/T03_hardcoded_region_in_kb_client.md
+diff_path: ./diffs/T03_aws_region_clean.diff
+
+human_verdicts:
+  correctness: pass
+  scope_discipline: pass
+  config_convention: pass
+
+human_red_flags_hit: []
+
+notes: |
+  Textbook minimal fix: reuses the existing env-var convention, keeps
+  the previous default for backward compat, no drive-by edits.

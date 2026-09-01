@@ -1,0 +1,24 @@
+# Gold-standard entry: T01 done WRONG (logger substitution).
+#
+# Replaces `print(response)` with logger.debug(...) and adds an import +
+# logger init. The rubric explicitly forbids logger substitution.
+
+pr_slug: T01_logger_substitution
+pr_number: 1002
+pr_title: "T01 anti-pattern: replace print with logger.debug"
+
+rubric_path: ../ground_truth/T01_remove_stray_print_chat_workflow.md
+diff_path: ./diffs/T01_logger_substitution.diff
+
+human_verdicts:
+  correctness: fail
+  scope_discipline: fail
+  minimality: fail
+
+human_red_flags_hit:
+  - "Replaces `print(response)` with `logger.debug(...)` — the task explicitly says no logger substitution."
+  - "Adds `import logging` or `logger = logging.getLogger(__name__)`."
+
+notes: |
+  The agent "improved" the code instead of doing what was asked. Common
+  failure mode for over-eager assistants. All three dimensions fail.

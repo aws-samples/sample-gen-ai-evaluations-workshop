@@ -1,0 +1,38 @@
+# A gold-standard PR review entry.
+#
+# Each entry pairs:
+#   - A real diff from the target repo (saved to disk from a merged PR).
+#   - A human-authored per-dimension verdict against a rubric.
+#
+# The calibration step (notebook 05) compares the automated PR reviewer's
+# output against these human verdicts and reports per-dimension agreement.
+
+pr_slug: add_retry_on_throttle         # short lowercase identifier, used in file names
+pr_number: 27                          # the actual PR number in the target repo
+pr_title: "Add retry-with-backoff on ThrottlingException"
+
+# Path to the rubric we'll grade this PR against. Usually one of
+# tasks/ground_truth/*.md, but may be a standalone rubric if no task matches.
+rubric_path: ../tasks/ground_truth/T09_retry_on_throttle.md
+
+# Path to the saved diff. Use `gh pr diff <N> > ... .diff` when fetching.
+diff_path: ./diffs/add_retry_on_throttle.diff
+
+# Human verdicts — one entry per rubric dimension. Values are "pass" or "fail".
+# The calibration step will complain if a dimension is missing.
+human_verdicts:
+  correctness_retry_behavior: pass
+  correctness_error_propagation: pass
+  test_coverage: pass
+  dependency_discipline: fail
+  scope_discipline: pass
+
+# Red flags the human reviewer thought were hit.
+human_red_flags_hit:
+  - "Retries on ALL exceptions (masks bugs)."
+
+# Freeform notes for calibration discussion — what was borderline, etc.
+notes: |
+  The dependency_discipline fail is the interesting one: the PR pulled in
+  tenacity even though a small inline helper would have worked. Useful
+  test of whether the reviewer catches that.

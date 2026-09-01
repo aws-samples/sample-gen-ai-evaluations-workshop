@@ -1,0 +1,33 @@
+diff --git a/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py b/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+index 9999999..bbbbbbb 100644
+--- a/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
++++ b/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional
+ import os
+ from functools import partial
+ from agentic_platform.core.models.llm_models import LLMResponse, LLMRequest
++from tenacity import retry, stop_after_attempt, wait_exponential
+ from agentic_platform.core.models.embedding_models import EmbedRequest, EmbedResponse
+ from agentic_platform.core.converter.llm_request_converters import ConverseRequestConverter
+ from agentic_platform.core.converter.llm_response_converters import ConverseResponseConverter
+@@ -82,6 +83,11 @@ class BedrockGatewayClient:
+     def get_client(self):
+         return self.client
+
++    @retry(
++        stop=stop_after_attempt(5),
++        wait=wait_exponential(multiplier=1, min=1, max=30),
++        reraise=True,
++    )
+     def chat_invoke(self, request: LLMRequest) -> LLMResponse:
+         '''
+         This is the main single LLM call endpoint. It takes in our owned type and returns our owned type.
+diff --git a/requirements.txt b/requirements.txt
+index 1234567..2345678 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -10,3 +10,4 @@ boto3
+ botocore
+ pydantic
+ fastapi
++tenacity>=8.2

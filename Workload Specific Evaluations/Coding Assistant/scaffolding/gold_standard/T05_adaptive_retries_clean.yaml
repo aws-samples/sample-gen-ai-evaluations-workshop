@@ -1,0 +1,22 @@
+# Gold-standard entry: T05 done correctly.
+#
+# Both Config blocks updated to max_attempts=5, mode='adaptive'. UNSIGNED
+# preserved. Public API untouched.
+
+pr_slug: T05_adaptive_retries_clean
+pr_number: 1007
+pr_title: "T05 reference solution: adaptive retries via botocore Config"
+
+rubric_path: ../ground_truth/T05_retry_backoff_bedrock_gateway.md
+diff_path: ./diffs/T05_adaptive_retries_clean.diff
+
+human_verdicts:
+  correctness: pass
+  scope_discipline: pass
+  resilience_quality: pass
+
+human_red_flags_hit: []
+
+notes: |
+  Both paths use the same retry policy. botocore.UNSIGNED is preserved
+  on the gateway path. No new dependencies, no hand-rolled loop.

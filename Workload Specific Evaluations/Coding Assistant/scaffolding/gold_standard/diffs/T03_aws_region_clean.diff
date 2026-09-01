@@ -1,0 +1,13 @@
+diff --git a/src/agentic_platform/service/retrieval_gateway/client/kb_client.py b/src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+index aaaaaaa..ddddddd 100644
+--- a/src/agentic_platform/service/retrieval_gateway/client/kb_client.py
++++ b/src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+@@ -11,7 +11,7 @@ from agentic_platform.core.models.vectordb_models import (
+ knowledgebase_id = os.getenv("KNOWLEDGE_BASE_ID")
+
+ # Create boto3 client at module level
+-bedrock_client = boto3.client('bedrock-agent-runtime', region_name="us-west-2")
++bedrock_client = boto3.client('bedrock-agent-runtime', region_name=os.getenv('AWS_REGION', 'us-west-2'))
+
+ class BedrockKnowledgeBaseClient:
+     """Client for Bedrock Knowledge Base search with built-in pagination."""

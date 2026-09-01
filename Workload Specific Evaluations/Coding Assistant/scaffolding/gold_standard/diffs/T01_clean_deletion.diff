@@ -1,0 +1,12 @@
+diff --git a/src/agentic_platform/agent/langgraph_chat/chat_workflow.py b/src/agentic_platform/agent/langgraph_chat/chat_workflow.py
+index 1111111..2222222 100644
+--- a/src/agentic_platform/agent/langgraph_chat/chat_workflow.py
++++ b/src/agentic_platform/agent/langgraph_chat/chat_workflow.py
+@@ -48,7 +48,6 @@ class LangGraphChat:
+
+         # Run the agent
+         response: LLMResponse = self.agent.invoke(prompt)
+-        print(response)
+         return Message(
+             role='assistant',
+             text=response.text

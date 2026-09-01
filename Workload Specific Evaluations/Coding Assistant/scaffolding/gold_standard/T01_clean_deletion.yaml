@@ -1,0 +1,23 @@
+# Gold-standard entry: T01 done correctly.
+#
+# A clean single-line deletion of `print(response)` with no logger
+# substitution and no other edits. The textbook pass.
+
+pr_slug: T01_clean_deletion
+pr_number: 1001
+pr_title: "T01 reference solution: remove stray print, no substitution"
+
+rubric_path: ../ground_truth/T01_remove_stray_print_chat_workflow.md
+diff_path: ./diffs/T01_clean_deletion.diff
+
+human_verdicts:
+  correctness: pass
+  scope_discipline: pass
+  minimality: pass
+
+human_red_flags_hit: []
+
+notes: |
+  This is the reference "good" diff for T01. Every dimension passes
+  because the change is exactly what the rubric asks for: delete one
+  line, change nothing else.

@@ -1,0 +1,41 @@
+diff --git a/src/agentic_platform/service/retrieval_gateway/client/kb_client.py b/src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+index aaaaaaa..ccccccc 100644
+--- a/src/agentic_platform/service/retrieval_gateway/client/kb_client.py
++++ b/src/agentic_platform/service/retrieval_gateway/client/kb_client.py
+@@ -1,4 +1,5 @@
+ import os
++import logging
+ import boto3
+ from typing import List, Dict, Any, Optional
+ from agentic_platform.core.models.vectordb_models import (
+@@ -8,6 +9,9 @@ from agentic_platform.core.models.vectordb_models import (
+     FilterCondition
+ )
+
++logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
++logger = logging.getLogger("kb")
++
+ knowledgebase_id = os.getenv("KNOWLEDGE_BASE_ID")
+
+ # Create boto3 client at module level
+@@ -39,9 +43,9 @@ class BedrockKnowledgeBaseClient:
+
+             # Extract and convert results
+             results = response.get("retrievalResults", [])
+-            print(f"Results: {results}")
++            logger.info("Results: %s", results)
+             for item in results:
+-                print(f"Item: {item}")
++                logger.info("Item: %s", item)
+                 all_results.append(BedrockKnowledgeBaseClient._convert_result(item))
+
+                 # Stop if we've reached the limit
+@@ -56,7 +60,7 @@ class BedrockKnowledgeBaseClient:
+         # Trim to requested limit
+         all_results = all_results[:request.limit]
+
+-        print(f"All results: {all_results}")
++        logger.info("All results: %s", all_results)
+
+         # Return final response
+         return VectorSearchResponse(

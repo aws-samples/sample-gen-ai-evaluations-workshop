@@ -1,0 +1,29 @@
+# Gold-standard entry: T03 done WRONG.
+#
+# Two failures bundled:
+#   - introduces a NEW env var name `BEDROCK_REGION` instead of reusing
+#     the existing `AWS_REGION` convention.
+#   - drive-by edits the bedrock_kb_mcp_server, which the rubric
+#     explicitly forbids (out of scope for this PR).
+
+pr_slug: T03_new_envvar_and_drive_by
+pr_number: 1006
+pr_title: "T03 anti-pattern: new env var + cross-file drive-by"
+
+rubric_path: ../ground_truth/T03_hardcoded_region_in_kb_client.md
+diff_path: ./diffs/T03_new_envvar_and_drive_by.diff
+
+human_verdicts:
+  correctness: fail
+  scope_discipline: fail
+  config_convention: fail
+
+human_red_flags_hit:
+  - "Introduces a new env var name (`BEDROCK_REGION`, `KB_REGION`, etc)."
+  - "Edits the `bedrock_kb_mcp_server/server.py` file in the same PR — that file already does the right thing, and touching it widens the blast radius unnecessarily."
+
+notes: |
+  All three dimensions fail. Notably, the agent broke a working file
+  (server.py) by changing AWS_REGION to BEDROCK_REGION there too —
+  this is the kind of cascading scope creep the rubric is designed to
+  catch.

@@ -1,0 +1,22 @@
+diff --git a/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py b/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+index 9999999..aaaaaaa 100644
+--- a/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
++++ b/src/agentic_platform/core/client/llm_gateway/bedrock_gateway_client.py
+@@ -30,7 +30,7 @@ class BedrockGatewayClient:
+         # In local environment, use IAM credentials directly
+         if self.environment == 'local':
+             # Use default credentials and sign requests
+-            config = Config(retries={'max_attempts': 1})
++            config = Config(retries={'max_attempts': 5, 'mode': 'adaptive'})
+
+             # For local development, we can use Bedrock directly
+             self.client = boto3.client(
+@@ -40,7 +40,7 @@ class BedrockGatewayClient:
+         else:
+             # For non-local environments, use the gateway with auth tokens
+             config = Config(
+-                retries={'max_attempts': 1},
++                retries={'max_attempts': 5, 'mode': 'adaptive'},
+                 signature_version=botocore.UNSIGNED
+             )
+
