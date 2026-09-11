@@ -35,7 +35,7 @@ setuptools
 # Media and file processing
 soundfile==0.13.1
 decord==0.6.0
-Pillow==11.2.1
+Pillow==12.2.0
 
 # Text processing
 ftfy==6.3.1
