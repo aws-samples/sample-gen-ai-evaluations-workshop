@@ -78,6 +78,16 @@ Key topics: evaluation pyramid (cost vs. depth tradeoffs), static trajectory ana
 
 ---
 
+### [MCP Tool Calling](MCP%20Tool%20Calling/)
+
+**Evaluate agents that call tools via the Model Context Protocol (MCP)**
+
+Goes beyond generic tool-calling evaluation to test the behaviors unique to MCP: schema-driven tool discovery from a `tools/list` response, argument construction validated against JSON Schema (types, enums, numeric `minimum`/`maximum` bounds, string `format`), structured error-envelope interpretation with appropriate recovery actions, and permission-scoped tool access. Uses Amazon Bedrock (Claude) as the evaluation target with synthetic fixtures — no live MCP server required.
+
+Key topics: MCP `tools/list` schema discovery, JSON Schema argument validation (jsonschema FormatChecker), structured error envelopes (`{ok, error{code}}`), recovery-action mapping, permission scoping, binary pass/fail checks.
+
+---
+
 ### [Chatbot](Chatbot/)
 
 **Evaluate multi-turn conversational AI systems**

@@ -31,7 +31,8 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - MultiModal RAG: evaluate retrieval across text, vision, and audio modalities using ImageBind embeddings.
   - Speech to Speech: end-to-end evaluation of Nova Sonic interactions using CloudWatch telemetry and LLM-as-Judge.
   - Automated Reasoning Evaluations: verify LLM outputs against formal policy rules using SMT solver-based guardrails.
-  - Tool Calling: evaluate agent tool-calling behavior without real tool execution using six progressively sophisticated approaches.
+  - Tool Calling: evaluate agent tool-calling behavior without real tool execution using five progressively sophisticated approaches.
+  - MCP Tool Calling: evaluate agents that call tools via the Model Context Protocol — schema-driven tool discovery, JSON Schema argument validation, structured error-envelope handling, and permission-scoped access. Synthetic fixtures, no live MCP server required.
   - Chatbot: evaluate multi-turn conversational AI with simulated users, custom binary evaluators, and synthetic data generation.
   - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
