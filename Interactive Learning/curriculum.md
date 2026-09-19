@@ -1,136 +1,141 @@
-# AWS Evaluations Workshop
+# AWS Evaluations Workshop Curriculum
 
 ## Overview
 
-This workshop teaches you how to evaluate Large Language Model (LLM) applications on AWS using Amazon Bedrock. You'll progress from basic operational metrics through quality assessment, agentic evaluation, workload-specific testing, and framework-integrated evaluation pipelines. Designed for ML engineers, solution architects, and developers building production LLM applications who need systematic evaluation approaches.
+This workshop teaches systematic evaluation for generative AI applications on
+AWS. Learners first build a shared foundation, then choose workload-specific or
+framework-specific modules based on what they are building.
 
-## Module Dependency Map
+## Learning Path
 
-```
-Module 01: Operational Metrics ─────────────────┐
-  (no prerequisites)                             │
-                                                 ├──▶ Module 04: Workload-Specific
-Module 02: Quality Metrics ─────────────────────┤     (recommends 01 + 02)
-  (no prerequisites)                             │
-                                                 │
-Module 03: Agentic Metrics ─────────────────────┼──▶ Module 05: Framework-Specific
-  (recommends Module 01)                         │     (recommends 01 + 02 + 03)
-                                                 │
-                                                 │
-  ┌──────────────────────────────────────────────┘
-  │
-  ▼
-Modules 04 & 05 are independent of each other.
-Pick based on your workload or framework.
-```
+Complete the four foundational modules in order:
 
-## Module Summaries
-
-| Module | Title | Description | Notebooks | Key Skills |
-|--------|-------|-------------|-----------|------------|
-| 01 | Operational Metrics | Measure cost, latency (TTFT/TTLT), throttling, and throughput for Bedrock models using email summarization | 01-Operational-Metrics.ipynb | Token cost analysis, latency profiling, throughput measurement, model comparison |
-| 02 | Quality Metrics | Evaluate response quality using the LLM-as-Judge pattern against ground truth, then calibrate the judge itself | 01_LLM_as_Judge_analysis.ipynb, 03_Evaluating_your_Judge.ipynb | Programmatic testing, LLM-as-Judge setup, judge calibration, evaluation visualization |
-| 03 | Agentic Metrics | Evaluate agent performance, tool execution reliability, and resource efficiency | 03-Agentic-Metrics.ipynb | Agent accuracy measurement, tool selection analysis, token/latency tracking, reliability testing |
-| 04 | Workload-Specific Evaluations | Apply evaluation techniques to specific workloads: structured data extraction, guardrails, RAG, multimodal RAG, speech-to-speech, and automated reasoning | 04-01 through 04-06 (11 notebooks) | Precision/recall/F1 for extraction, guardrail cost tracking, RAG component evaluation, multimodal assessment, speech pipeline evaluation, reasoning verification |
-| 05 | Framework-Specific Evaluations | Integrate evaluations into frameworks: PromptFoo, AgentCore, Strands, and DSPy | 05-01 through 05-05 (8 notebooks) | PromptFoo test harness, AgentCore metrics with CloudWatch, Strands Evals SDK, runtime evaluation, DSPy prompt optimization |
-
-## Module 04 Breakdown
-
-| Sub-module | Topic | Notebook(s) |
-|------------|-------|-------------|
-| 04-01 | Structured Data Extraction | 04-01-Simple-structured-data-evaluation.ipynb |
-| 04-02 | Guardrails | 04-02-01 through 04-02-06 (5 notebooks: filters, grounding, alignment, operational, evaluation) |
-| 04-03 | Basic RAG | 04-03-Basic-RAG-Evaluation.ipynb |
-| 04-04 | Multimodal RAG | 04-04-01-Multimodal-RAG.ipynb |
-| 04-05 | Speech-to-Speech | s2s_entire_eval_pipeline.ipynb |
-| 04-06 | Automated Reasoning | 04-06-01-automated-reasoning-evaluation.ipynb |
-
-## Module 05 Breakdown
-
-| Sub-module | Topic | Notebook(s) |
-|------------|-------|-------------|
-| 05-01 | PromptFoo | 05-01-Promptfoo-basic.ipynb |
-| 05-02 | AgentCore | 05-02-01-Agentic-Metrics-AgentCore.ipynb, 05-02-02-Agent-and-tool-evals-with-cwlogs.ipynb |
-| 05-03 | Strands | 05-03-Strands-Evals.ipynb |
-| 05-04 | AgentCore Runtime | 05-04-AgentCore-Runtime-Evals.ipynb |
-| 05-05 | DSPy | 05-05-DSPy-Prompt-Optimization.ipynb |
-
-## IAM Permissions Required
-
-All modules combined require these IAM actions:
-
-```
-bedrock:InvokeModel
-bedrock:InvokeModelWithResponseStream
-bedrock:CreateGuardrail
-bedrock:TagResource
-bedrock:ApplyGuardrail
-cloudwatch:PutMetricData
-logs:FilterLogEvents
-ecr:DescribeRepositories
+```text
+01 Operational Metrics
+        |
+02 Quality Metrics
+        |
+03 Understanding Failures
+        |
+04 Agentic Metrics
+        |
+        +--> Workload-Specific Evaluations
+        |
+        +--> Framework-Specific Evaluations
 ```
 
-Attach these to your workshop IAM role or user. For least-privilege, scope `bedrock:*` actions to specific model ARNs in your region.
+The workload and framework branches are independent. Choose modules from either
+branch after the foundations.
 
-## Learning Artifacts
+## Foundational Modules
 
-Each module includes SKILL docs (interactive lessons) and CHALLENGE files (integrative assessments).
+| Order | Topic | Source notebook(s) | Interactive skill |
+|---:|---|---|---|
+| 01 | Operational Metrics | `../Foundational Evaluations/01-operational-metrics/01-Operational-Metrics.ipynb` | `foundational evaluations/SKILL-operational.md` |
+| 02 | Quality Metrics | `../Foundational Evaluations/02-quality-metrics/01_LLM_as_Judge_analysis.ipynb`, `03_Evaluating_your_Judge.ipynb` | `foundational evaluations/SKILL-quality.md` |
+| 03 | Understanding Failures | `../Foundational Evaluations/03-understanding-failures/01_Discovering_Failure_Patterns.ipynb` | `foundational evaluations/SKILL-understanding-failures.md` |
+| 04 | Agentic Metrics | `../Foundational Evaluations/04-agentic-metrics/01-Agentic-Metrics.ipynb` | `foundational evaluations/SKILL-agentic.md` |
 
-| Sub-module | SKILL File | Notes |
-|------------|-----------|-------|
-| 01 Operational Metrics | `./foundational evaluations/SKILL-operational.md` | |
-| 02 Quality Metrics | `./foundational evaluations/SKILL-quality.md` | |
-| 03 Agentic Metrics | `./foundational evaluations/SKILL-agentic.md` | |
-| 04-01 IDP | `./workload evals/SKILL-structured-data.md` | |
-| 04-02 Guardrails | `./workload evals/SKILL-guardrails.md` | Covers all 5 guardrails notebooks |
-| 04-03/04 RAG | `./workload evals/SKILL-rag-evaluation.md` | Covers basic + multimodal RAG |
-| 04-05/06 Speech+AR | `./workload evals/SKILL-speech-reasoning.md` | Covers speech-to-speech + automated reasoning |
-| 05-01 PromptFoo | `./framework evals/SKILL-promptfoo.md` | |
-| 05-02/04 AgentCore | `./framework evals/SKILL-agentcore.md` | Covers metrics, CW evals, and runtime |
-| 05-03 Strands | `./framework evals/SKILL-strands.md` | |
-| 05-05 DSPy | `./framework evals/SKILL-dspy.md` | |
-| **Module 04 Capstone** | `./workload evals/CHALLENGE-capstone.md` | Requires all module-04 SKILLs |
-| **Module 05 Deep-Dive** | `./framework evals/CHALLENGE-deep-dive.md` | Pick one framework, go deep |
+## Workload-Specific Modules
 
-## Setup Instructions
+| Topic | Source directory | Interactive skill |
+|---|---|---|
+| Intelligent Document Processing | `../Workload Specific Evaluations/Intelligent Document Processing/` | `workload evals/SKILL-structured-data.md` |
+| Guardrails | `../Workload Specific Evaluations/Guardrails/` | `workload evals/SKILL-guardrails.md` |
+| Basic and Multimodal RAG | `../Workload Specific Evaluations/Basic RAG/`, `MultiModal RAG/` | `workload evals/SKILL-rag-evaluation.md` |
+| Speech and Automated Reasoning | `../Workload Specific Evaluations/Speech to Speech/`, `Automated Reasoning Evaluations/` | `workload evals/SKILL-speech-reasoning.md` |
+| Tool Calling | `../Workload Specific Evaluations/Tool Calling/` | `workload evals/SKILL-tool-calling.md` |
+| Multi-Turn Chatbot | `../Workload Specific Evaluations/Chatbot/` | `workload evals/SKILL-chatbot.md` |
+| Red Teaming | `../Workload Specific Evaluations/Red Teaming/` | `workload evals/SKILL-red-teaming.md` |
+| Multi-Agent Shared Context | `../Workload Specific Evaluations/Multiagent Shared Context Evaluation/` | `workload evals/SKILL-multiagent-context.md` |
 
-### Prerequisites
+The workload capstone is `workload evals/CHALLENGE-capstone.md`.
 
-- AWS account with Amazon Bedrock model access enabled (Claude, Titan)
-- Python 3.10+
+## Framework-Specific Modules
+
+| Framework | Source notebook(s) | Interactive skill |
+|---|---|---|
+| Promptfoo | `../Framework Specific Evaluations/Prompt Foo/01 Promptfoo basic.ipynb` | `framework evals/SKILL-promptfoo.md` |
+| Amazon Bedrock AgentCore | Six-notebook progression described below | `framework evals/SKILL-agentcore.md` |
+| Strands Evals | `../Framework Specific Evaluations/Strands/01 Strands Evals.ipynb` | `framework evals/SKILL-strands.md` |
+| DSPy | `../Framework Specific Evaluations/DSPy/01 DSPy Prompt Optimization.ipynb` | `framework evals/SKILL-dspy.md` |
+| MLflow | `../Framework Specific Evaluations/MLflow/01 Mlflow Evaluation.ipynb` | `framework evals/SKILL-mlflow.md` |
+| DeepEval | `../Framework Specific Evaluations/DeepEval/01 DeepEval RAG Evaluation.ipynb` | Source workshop module; no Interactive Learning skill yet |
+
+The framework extension is `framework evals/CHALLENGE-deep-dive.md`.
+
+## AgentCore Learning Progression
+
+AgentCore is one cumulative module, not separate metrics and Runtime modules.
+Every notebook reuses the deterministic `CityAnalyst` Runtime deployed in
+notebook 01.
+
+| Order | Notebook | Learning checkpoint |
+|---:|---|---|
+| 01 | `01-agentcore-foundations.ipynb` | Connect Runtime, Observability, Evaluations, CLI, and SDK; deploy once and inspect session/trace/tool spans |
+| 02 | `02-built-in-on-demand-evaluations.ipynb` | Select built-ins by failure mode and level; run targeted CLI and SDK evaluations |
+| 03 | `03-ground-truth-and-datasets.ipynb` | Add expected responses, assertions, trajectories, and curated single-turn/multi-turn datasets |
+| 04 | `04-custom-evaluators.ipynb` | Build focused binary LLM judges and deterministic code evaluators; calibrate against human labels |
+| 05 | `05-batch-and-online-evaluation.ipynb` | Add historical batch scoring, fail-closed release gates, and sampled online monitoring |
+| 06 | `06-simulation-and-optimization.ipynb` | Simulate harder users, analyze failures, review recommendations, and validate changes through controlled experiments |
+
+Notebooks 01-04 form the core path. Notebooks 05-06 are production and advanced
+extensions.
+
+### AgentCore Mental Model
+
+| Layer | Responsibility |
+|---|---|
+| Runtime | Hosts and scales the agent loop supplied by the developer |
+| Observability | Emits OpenTelemetry-compatible sessions, traces, model spans, and tool spans |
+| Evaluations | Scores behavior at `SESSION`, `TRACE`, or `TOOL_CALL` level |
+| AgentCore CLI | Manages project configuration, deployment, traces, evaluators, datasets, and jobs |
+| Python SDK | Automates targeted evaluations, dataset runners, simulation, and custom evaluator logic |
+
+## Prerequisites
+
+- AWS account with Amazon Bedrock model access
+- Python 3.10 or later
 - AWS CLI configured with credentials
+- An AI coding assistant that can read `Interactive Learning/AGENTS.md`
 
-### Installation
+AgentCore additionally requires:
+
+- Node.js 20 or later
+- `uv`
+- Permissions for AgentCore, CloudFormation, IAM, CloudWatch, X-Ray, and Bedrock
+  model invocation
+
+## Installation
+
+Core workshop environment:
 
 ```bash
-# Clone the repository
-git clone <repo-url> && cd evals-workshop
-
-# Install core dependencies
-pip install boto3 pandas matplotlib numpy
-
-# Module-specific installs
-pip install promptfoo          # Module 05-01
-pip install strands-agents     # Module 05-03
-pip install strands-agents-evals
-pip install dspy               # Module 05-05
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install boto3 pandas matplotlib numpy jupyterlab
 ```
 
-### AWS Configuration
+AgentCore environment:
+
+```bash
+npm install -g @aws/agentcore
+hash -r
+agentcore --version
+agentcore --help
+python -m pip install \
+  -r "Framework Specific Evaluations/AgentCore/requirements.txt"
+```
+
+## AWS Configuration
 
 ```bash
 aws configure
-# Set your default region (us-east-1 or us-west-2 recommended for Bedrock)
-
-# Verify Bedrock access
-aws bedrock list-foundation-models --query "modelSummaries[0].modelId"
+aws sts get-caller-identity
+aws bedrock list-foundation-models \
+  --query "modelSummaries[0].modelId"
 ```
 
-### Running Notebooks
-
-```bash
-pip install jupyter
-jupyter notebook
-```
-
-Navigate to any module directory and open the notebook. Each module is self-contained — start with Module 01 or 02 if new to LLM evaluation.
+Use workshop or development accounts for modules that create resources. Scope
+permissions and resource ARNs for production rather than copying broad workshop
+roles.

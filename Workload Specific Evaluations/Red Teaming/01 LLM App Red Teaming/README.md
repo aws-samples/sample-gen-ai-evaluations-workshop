@@ -103,7 +103,7 @@ The key steps are:
 
 ## What You'll Do in the Notebook
 
-The accompanying Jupyter notebook (`04-12-01-llm-app-red-teaming.ipynb`) provides a hands-on walkthrough of this entire workflow:
+The accompanying Jupyter notebook, [01 llm app red teaming.ipynb](01%20llm%20app%20red%20teaming.ipynb), provides a hands-on walkthrough of this entire workflow:
 
 - Configure a `promptfooconfig.yaml` targeting a Bedrock foundation model
 - Select a representative set of plugins and strategies

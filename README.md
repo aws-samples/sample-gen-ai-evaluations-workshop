@@ -1,15 +1,14 @@
-![Workshop Structure](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/blob/main/evals%20workshop.png?v=2 "Evals are so cool!")
 # Generative AI Evaluations Workshop
 
 This workshop teaches systematic approaches to evaluating Generative AI workloads for production use. You'll learn to build evaluation frameworks that go beyond basic metrics to ensure reliable model performance while optimizing cost and performance.
 
-[![Slide Deck](GenAI-Evals-AWS.png)](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/raw/main/GenAI-Evals-AWS.pptx)
+[![evals workshop](evals%20workshop.png)](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/raw/main/GenAI-Evals-AWS.pptx)
 
-📥 **[Download the slide deck (.pptx)](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/raw/main/GenAI-Evals-AWS.pptx)** — covers the basics of evaluations and includes an overview of this workshop.
+📥 [Download the slide deck (.pptx)](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/raw/main/GenAI-Evals-AWS.pptx) — covers the basics of evaluations and includes an overview of this workshop.
 
 ## How to use this repository
 
-We strongly recommend going in order through the [Foundational Evaluations](Foundational%20Evaluations/) modules. These cover the core of generative AI evaluations which will be critical in all workloads. After that, please feel free to select any of the workload- and framework-specific modules in any order, according to what is most relevant to you.
+We strongly recommend going in order through the [Foundational Evaluations](Foundational%20Evaluations/) modules. These cover the core of generative AI evaluations which will be critical in all workloads. After that, please feel free to select any of the workload-specific, framework-specific, or industry-specific modules in any order, according to what is most relevant to you.
 
 ### Interactive Learning
 
@@ -18,13 +17,14 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 ## What You'll Learn
 
 ### [Foundational Evaluations](Foundational%20Evaluations/) - Do all of these in order!
+
 - 01 Operational Metrics: evaluate how your workload is running in terms of cost and performance.
 - 02 Quality Metrics: evaluate and tune the quality of your results.
 - 03 Understanding Failures: discover failure patterns by reading agent traces.
 - 04 Agentic Metrics: evaluate your agents and use agents for evaluation.
 
 ### Optional Modules - Do any of these in any order!
-- [Workload Specific Evaluations](Workload%20Specific%20Evaluations/)
+- #### [Workload Specific Evaluations](Workload%20Specific%20Evaluations/)
   - Intelligent Document Processing: evaluate structured data extraction accuracy with field-level precision/recall.
   - Guardrails: configure and test content filters, grounding checks, alignment, and operational controls.
   - Basic RAG: evaluate retrieval quality and end-to-end answer generation with precision@k, NDCG, and faithfulness scoring.
@@ -32,21 +32,27 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - Speech to Speech: end-to-end evaluation of Nova Sonic interactions using CloudWatch telemetry and LLM-as-Judge.
   - Automated Reasoning Evaluations: verify LLM outputs against formal policy rules using SMT solver-based guardrails.
   - Tool Calling: evaluate agent tool-calling behavior without real tool execution using five progressively sophisticated approaches.
+  - MCP Tool Calling: evaluate agents that call tools via the Model Context Protocol — schema-driven tool discovery, JSON Schema argument validation, structured error-envelope handling, and permission-scoped access. Synthetic fixtures, no live MCP server required.
   - Chatbot: evaluate multi-turn conversational AI with simulated users, custom binary evaluators, and synthetic data generation.
   - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
+  - Capacity Management: evaluate a workload across a model portfolio, optimize prompts per model with Advanced Prompt Optimization, and route around quota limits.
   - Coding Assistant: coming soon.
   
-- [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
+- #### [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
   - Prompt Foo: configure YAML-based evaluations, write assertion test cases, and compare models across providers.
   - Strands: evaluate agents using the Strands Evals SDK with output quality, trajectory, and custom evaluators.
-  - AgentCore: evaluate agents deployed on Amazon Bedrock AgentCore Runtime with LLM-as-Judge and CloudWatch log analysis.
-  - AgentCore Runtime Evals: run native AgentCore Evaluations API with built-in evaluators for helpfulness and tool selection accuracy.
+  - AgentCore: run, observe, evaluate, and improve an AgentCore Runtime agent through built-in and custom evaluators, curated datasets, batch and online monitoring, simulation, and optimization.
   - DSPy: optimize prompts automatically with BootstrapFewShot and measure improvement with custom metrics.
   - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
   - DeepEval: evaluate LLM applications with pytest-style metrics for RAG, agents, multi-turn, and safety, plus custom G-Eval for any criteria.
 
-- [Interactive Learning Mode](Interactive%20Learning/README.md): guided challenges, exercises, and real-time feedback with an interactive tutor.
+- #### [Industry Specific Evaluations](Industry%20Specific%20Evaluations/)
+These modules apply the same foundational evaluation techniques to domain-specific workloads. Generic patterns teach you how to evaluate. Industry-specific modules teach you what to look for — the failure modes, data shapes, and compliance requirements unique to a vertical.
+  - Retail and CPG: evaluate product catalog enrichment accuracy (taxonomy classification, allergen extraction, description hallucination), demand sensing agent calibration and boundary adherence, and supply chain chatbot guardrail compliance.
+
+- #### [Interactive Learning Mode](Interactive%20Learning/README.md)
+Interactive learning!  Guided challenges, exercises, and real-time feedback with an interactive tutor.
 
 ## Prerequisites
 
@@ -59,7 +65,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 1. Clone the repository
 2. Configure AWS credentials
 3. Work through the Foundational Evaluations modules in order
-4. Pick from the Workload Specific and Framework Specific modules based on what's relevant to you
+4. Pick from the Workload Specific, Framework Specific, and Industry Specific modules based on what's relevant to you
 
 ## Security
 

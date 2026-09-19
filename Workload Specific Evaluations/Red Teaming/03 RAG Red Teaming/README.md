@@ -6,7 +6,7 @@ This submodule walks through red teaming a RAG (Retrieval-Augmented Generation) 
 
 ### Two Attack Surfaces
 
-Unlike testing a bare LLM application (Module 04-12-01) or a guardrail in isolation (Module 04-12-02), RAG systems have **two distinct attack surfaces**:
+Unlike testing a bare LLM application in [01 LLM App Red Teaming](../01%20LLM%20App%20Red%20Teaming/) or a guardrail in isolation in [02 Testing Bedrock Guardrails](../02%20Testing%20Bedrock%20Guardrails/), RAG systems have **two distinct attack surfaces**:
 
 1. **Query path**: Adversarial user queries sent directly to the system — the same attack surface tested in previous modules
 2. **Retrieval path**: Malicious content embedded in documents that get retrieved and injected into the model's context — unique to RAG
@@ -66,7 +66,7 @@ These simulate real-world scenarios where an attacker gains write access to a sh
 
 ## What You'll Do in the Notebook
 
-The accompanying Jupyter notebook (`04-12-03-RAG-red-teaming.ipynb`) provides a hands-on walkthrough:
+The accompanying Jupyter notebook, [01 RAG red teaming.ipynb](01%20RAG%20red%20teaming.ipynb), provides a hands-on walkthrough:
 
 - Create synthetic HR policy documents (clean and poisoned)
 - Build a Bedrock Knowledge Base programmatically with an S3 data source

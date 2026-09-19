@@ -1,4 +1,4 @@
-# 04-11 Multi-Turn Chatbot Evaluations
+# Multi-Turn Chatbot Evaluations
 
 ## Overview
 
@@ -28,32 +28,32 @@ This module follows evaluation practices that have emerged as standard in the in
 
 | Notebook | Description | Sections Covered | Time |
 |----------|-------------|------------------|------|
-| `04-11-01-intro-and-setup.ipynb` | Introduction to multi-turn evaluation concepts, approach, environment setup, and building the travel booking assistant | 1, 2, 3 | ~15 min |
-| `04-11-02-strands-simulation.ipynb` | Multi-turn conversation simulation with Strands `ActorSimulator`: creating test cases, generating actor profiles, running goal-oriented conversations, and capturing traces | 4a | ~20 min |
-| `04-11-03-deepeval-simulation.ipynb` | Multi-turn conversation simulation with DeepEval `ConversationSimulator`: defining scenarios with `ConversationalGolden`, writing the model callback, and designing diverse user personas | 4b | ~20 min |
-| `04-11-04-deepeval-metrics.ipynb` | Custom binary DeepEval metrics. `ConversationalGEval` provides pass/fail criteria and `ConversationalDAGMetric` for decision-tree logic, built from the travel booking domain's real failure modes | 5a-5e | ~30 min |
-| `04-11-05-strands-evaluators.ipynb` | Custom binary Strands evaluators. `OutputEvaluator` provides pass/fail rubrics and `GoalSuccessRateEvaluator` in assertion mode. Shows how to derive evaluators from failure modes and validate them against human labels | 6a-6c | ~25 min |
-| `04-11-06-synthetic-data.ipynb` | Dimension-driven synthetic data generation. Define failure hypotheses, derive dimensions, write seed tuples manually, then scale with two-step tuple-to-query generation | 7a, 7b, 7c | ~20 min |
-| `04-11-07-tool-simulation.ipynb` | Using Strands `ToolSimulator` for LLM-powered tool responses, combining `ActorSimulator` + `ToolSimulator` for fully simulated end-to-end conversations | 8 | ~20 min |
-| `04-11-08-e2e-pipeline.ipynb` | End-to-end multi-turn evaluation pipeline covering dimensions → simulation → custom binary evaluators → pass rate per failure mode | 9, 10, 11 | ~20 min |
+| [01 intro and setup.ipynb](01%20intro%20and%20setup.ipynb) | Introduction to multi-turn evaluation concepts, approach, environment setup, and building the travel booking assistant | 1, 2, 3 | ~15 min |
+| [02 strands simulation.ipynb](02%20strands%20simulation.ipynb) | Multi-turn conversation simulation with Strands `ActorSimulator`: creating test cases, generating actor profiles, running goal-oriented conversations, and capturing traces | 4a | ~20 min |
+| [03 deepeval simulation.ipynb](03%20deepeval%20simulation.ipynb) | Multi-turn conversation simulation with DeepEval `ConversationSimulator`: defining scenarios with `ConversationalGolden`, writing the model callback, and designing diverse user personas | 4b | ~20 min |
+| [04 deepeval metrics.ipynb](04%20deepeval%20metrics.ipynb) | Custom binary DeepEval metrics. `ConversationalGEval` provides pass/fail criteria and `ConversationalDAGMetric` for decision-tree logic, built from the travel booking domain's real failure modes | 5a-5e | ~30 min |
+| [05 strands evaluators.ipynb](05%20strands%20evaluators.ipynb) | Custom binary Strands evaluators. `OutputEvaluator` provides pass/fail rubrics and `GoalSuccessRateEvaluator` in assertion mode. Shows how to derive evaluators from failure modes and validate them against human labels | 6a-6c | ~25 min |
+| [06 synthetic data.ipynb](06%20synthetic%20data.ipynb) | Dimension-driven synthetic data generation. Define failure hypotheses, derive dimensions, write seed tuples manually, then scale with two-step tuple-to-query generation | 7a, 7b, 7c | ~20 min |
+| [07 tool simulation.ipynb](07%20tool%20simulation.ipynb) | Using Strands `ToolSimulator` for LLM-powered tool responses, combining `ActorSimulator` + `ToolSimulator` for fully simulated end-to-end conversations | 8 | ~20 min |
+| [08 e2e pipeline.ipynb](08%20e2e%20pipeline.ipynb) | End-to-end multi-turn evaluation pipeline covering dimensions → simulation → custom binary evaluators → pass rate per failure mode | 9, 10, 11 | ~20 min |
 
 ## File Structure
 
 ```
-04-11-chatbot/
+Chatbot/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
 ├── img/
 │   └── deepeval_sim.png
-├── 04-11-01-intro-and-setup.ipynb
-├── 04-11-02-strands-simulation.ipynb
-├── 04-11-03-deepeval-simulation.ipynb
-├── 04-11-04-deepeval-metrics.ipynb
-├── 04-11-05-strands-evaluators.ipynb
-├── 04-11-06-synthetic-data.ipynb
-├── 04-11-07-tool-simulation.ipynb
-└── 04-11-08-e2e-pipeline.ipynb
+├── 01 intro and setup.ipynb
+├── 02 strands simulation.ipynb
+├── 03 deepeval simulation.ipynb
+├── 04 deepeval metrics.ipynb
+├── 05 strands evaluators.ipynb
+├── 06 synthetic data.ipynb
+├── 07 tool simulation.ipynb
+└── 08 e2e pipeline.ipynb
 ```
 
 ## Prerequisites
@@ -67,7 +67,7 @@ This module follows evaluation practices that have emerged as standard in the in
 
 1. Ensure your AWS credentials are configured: `aws configure`
 2. Install dependencies: `pip install -r requirements.txt`
-3. Start with `04-11-01-intro-and-setup.ipynb` and work through the notebooks in order
+3. Start with [01 intro and setup.ipynb](01%20intro%20and%20setup.ipynb) and work through the notebooks in order
 
 ## Resources
 

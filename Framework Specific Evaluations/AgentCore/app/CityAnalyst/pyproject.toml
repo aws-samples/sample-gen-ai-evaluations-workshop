@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "city-analyst-agent"
+version = "0.1.0"
+description = "Deterministic city-information agent for AgentCore evaluation workshops"
+requires-python = ">=3.10"
+dependencies = [
+    "aws-opentelemetry-distro",
+    "bedrock-agentcore>=1.21.0,<2",
+    "botocore[crt]>=1.43.35,<2",
+    "pydantic>=2.12,<3",
+    "strands-agents>=1.52.0,<2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+

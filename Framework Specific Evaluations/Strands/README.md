@@ -1,8 +1,8 @@
-# 05-03 Strands Agents Evaluations
+# Strands Agents Evaluations
 
 ## Overview
 
-This module demonstrates how to use the Strands Agents Evaluation SDK (`strands-agents-evals`) to evaluate agent performance. We use the same web search agent from Module 3 (Agentic Metrics) and evaluate it using Strands Evals' built-in evaluators.
+This module demonstrates how to use the Strands Agents Evaluation SDK (`strands-agents-evals`) to evaluate agent performance. We use the same web search agent from Foundational Module 04 (Agentic Metrics) and evaluate it using Strands Evals' built-in evaluators.
 
 ## What is Strands Evals?
 
@@ -44,7 +44,7 @@ Create domain-specific evaluators for specialized needs:
 
 ## Getting Started
 
-Navigate to `05-03-Strands-Evals.ipynb` which demonstrates:
+Open [01 Strands Evals.ipynb](01%20Strands%20Evals.ipynb), which demonstrates:
 1. Setting up a Strands agent with web search tools
 2. Creating test cases with the `Case` class
 3. Using `OutputEvaluator` for response quality assessment

@@ -1,12 +1,12 @@
-# 07 Understanding Failures
+# 03 Understanding Failures
 
 ## Overview
 
-Before you can build good evaluators, you need to know what problems to look for. This module teaches you how to systematically review agent traces, spot what's going wrong, and decide whether to fix problems directly or build automated checks. It answers the practical question that comes up between measuring quality (Module 02) and evaluating agent behavior (Module 03): **"What should I actually be measuring?"**
+Before you can build good evaluators, you need to know what problems to look for. This module teaches you how to systematically review agent traces, spot what's going wrong, and decide whether to fix problems directly or build automated checks. It answers the practical question that comes up between measuring quality (Module 02) and evaluating agent behavior (Module 04): **"What should I actually be measuring?"**
 
-Module 02 teaches you *how* to measure quality with techniques like LLM-as-a-Judge. Module 03 shows you *how* to evaluate agent behavior at scale. This module fills the gap between them — it gives you a hands-on process for figuring out *what* to measure in the first place. You'll read through real agent conversations, write down what went wrong, group similar problems together, and then take action: fix the easy ones immediately and turn the rest into evaluator criteria.
+Module 02 teaches you *how* to measure quality with techniques like LLM-as-a-Judge. Module 04 shows you *how* to evaluate agent behavior at scale. This module fills the gap between them — it gives you a hands-on process for figuring out *what* to measure in the first place. You'll read through real agent conversations, write down what went wrong, group similar problems together, and then take action: fix the easy ones immediately and turn the rest into evaluator criteria.
 
-The module uses traces from a restaurant booking agent — the same agent and data you'll work with in Module 03. This creates a continuous thread across the workshop: you discover the problems here, then build the metrics to track them there.
+The module uses traces from a restaurant booking agent — the same agent and data you'll work with in Module 04. This creates a continuous thread across the workshop: you discover the problems here, then build the metrics to track them there.
 
 ## Notebooks
 

@@ -1,12 +1,12 @@
 # Testing Amazon Bedrock Guardrails with Promptfoo
 
-This submodule walks through red teaming an [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) configuration built for the same **corporate email summarization application** from Module 04-12-01. Unlike testing the LLM application end-to-end (as in that module), here we test the guardrail service directly using the `ApplyGuardrail` API — isolating guardrail effectiveness from model behavior.
+This submodule walks through red teaming an [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) configuration built for the same **corporate email summarization application** from [01 LLM App Red Teaming](../01%20LLM%20App%20Red%20Teaming/). Unlike testing the LLM application end-to-end in that submodule, here we test the guardrail service directly using the `ApplyGuardrail` API — isolating guardrail effectiveness from model behavior.
 
 ## Key Concepts
 
 ### Why Test Guardrails in Isolation?
 
-In Module 04-12-01, we tested the full application: adversarial input went through the prompt template, into the model, and we graded the model's response. When an attack succeeded, we couldn't tell whether the model failed or whether a guardrail (if present) failed to catch it.
+In [01 LLM App Red Teaming](../01%20LLM%20App%20Red%20Teaming/), we tested the full application: adversarial input went through the prompt template, into the model, and we graded the model's response. When an attack succeeded, we couldn't tell whether the model failed or whether a guardrail (if present) failed to catch it.
 
 By testing the guardrail directly via the `ApplyGuardrail` API, we isolate one variable. If an adversarial input gets past the guardrail, we know the gap is in the guardrail configuration — not the model's safety training or the prompt design.
 
@@ -65,7 +65,7 @@ In guardrail red teaming, the pass/fail logic is inverted compared to LLM applic
 
 ## What You'll Do in the Notebook
 
-The accompanying Jupyter notebook (`04-12-02-testing-bedrock-guardrails.ipynb`) provides a hands-on walkthrough:
+The accompanying Jupyter notebook, [01 testing bedrock guardrails.ipynb](01%20testing%20bedrock%20guardrails.ipynb), provides a hands-on walkthrough:
 
 - Create an Amazon Bedrock Guardrail programmatically with content filters, topic policies, word filters, and PII detection
 - Build a custom Promptfoo Python provider that calls the `ApplyGuardrail` API

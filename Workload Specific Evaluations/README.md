@@ -78,6 +78,16 @@ Key topics: evaluation pyramid (cost vs. depth tradeoffs), static trajectory ana
 
 ---
 
+### [MCP Tool Calling](MCP%20Tool%20Calling/)
+
+**Evaluate agents that call tools via the Model Context Protocol (MCP)**
+
+Goes beyond generic tool-calling evaluation to test the behaviors unique to MCP: schema-driven tool discovery from a `tools/list` response, argument construction validated against JSON Schema (types, enums, numeric `minimum`/`maximum` bounds, string `format`), structured error-envelope interpretation with appropriate recovery actions, and permission-scoped tool access. Uses Amazon Bedrock (Claude) as the evaluation target with synthetic fixtures — no live MCP server required.
+
+Key topics: MCP `tools/list` schema discovery, JSON Schema argument validation (jsonschema FormatChecker), structured error envelopes (`{ok, error{code}}`), recovery-action mapping, permission scoping, binary pass/fail checks.
+
+---
+
 ### [Chatbot](Chatbot/)
 
 **Evaluate multi-turn conversational AI systems**
@@ -105,6 +115,24 @@ Key topics: Promptfoo red teaming pipeline (plugins → strategies → graders),
 Evaluates whether agents in a multi-agent system operate on the same current facts and constraints, and whether updates propagate correctly. Covers four orchestration patterns (hub-spoke with local memory, hub-spoke with AgentCore Memory, peer-to-peer dynamic swarm, peer-to-peer sequential pipeline) with metrics for context freshness, handoff completeness, state consistency, memory write accuracy, and coordination latency.
 
 Key topics: semantic metrics (LLM-as-Judge), static metrics (latency, compression ratio), embedding metrics (peer alignment), TurnRecord/AgentRecord instrumentation, MetricsCollector, hub-spoke vs. peer-to-peer patterns.
+
+---
+
+### [Capacity Management](Capacity%20Management/)
+
+**Evaluate a model portfolio and route around quota limits**
+
+For workloads too large to serve from a single model, model selection becomes a portfolio problem
+and evaluation decides who is allowed in. Measures BANKING77 intent classification across five
+models from three providers, optimizes the prompt for each of them in one Advanced Prompt
+Optimization job steered by a custom Lambda evaluator, then routes a workload through a
+token-bucket rate limiter that spends quota from whichever admitted model has it. Builds toward
+quality-weighted capacity: the aggregate quota of every model that passes your quality bar.
+
+Key topics: token bucket rate limiting, simulated per-model quotas, priority-ordered routing with
+queueing, Advanced Prompt Optimization (input preparation, custom Lambda metric, reading results),
+per-model prompt maps, output-parser sensitivity, quality bar plus cost ceiling admission, blended
+cost as a function of load.
 
 ---
 

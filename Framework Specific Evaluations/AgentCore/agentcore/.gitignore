@@ -1,0 +1,13 @@
+# Secrets
+.env.local
+
+# CDK build artifacts
+cdk/cdk.out/
+cdk/node_modules/
+
+# CLI-generated local state and artifacts
+.cache/
+.cli/
+aws-targets.json
+*.zip
+*/staging/

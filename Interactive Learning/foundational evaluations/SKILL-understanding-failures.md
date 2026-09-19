@@ -552,4 +552,4 @@ Given a set of agent traces from a **different domain** (e.g., a customer suppor
 - Module 04 (Agentic Metrics): These same restaurant booking traces are used for agentic evaluation — the problem categories you built here directly inform what metrics to track
 
 **Next steps:**
-- For a cross-module challenge integrating failure discovery with evaluator design and operational monitoring, see [CHALLENGE-capstone.md](../CHALLENGE-capstone.md)
+- For a cross-module challenge integrating failure discovery with evaluator design and operational monitoring, see [CHALLENGE-capstone.md](../workload%20evals/CHALLENGE-capstone.md)

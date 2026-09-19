@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# state file written by scripts/run_advpo_job.py when running a real job
+scripts/.advpo_state.json
+.ipynb_checkpoints/
