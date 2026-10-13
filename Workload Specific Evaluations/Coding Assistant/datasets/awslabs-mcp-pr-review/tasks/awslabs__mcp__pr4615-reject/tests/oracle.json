@@ -1,0 +1,95 @@
+{
+  "expected_verdict": "block",
+  "blocking_severity": "high",
+  "findings": [
+    {
+      "id": 0,
+      "statement": "The new statement-start mutating-keyword scan runs on sqlparse output that does not strip a MySQL '#' comment unless a space follows '#', so a prefix like '#x\\n' hides the leading verb: '#x\\nDO GET_LOCK(...)', '#c\\nSHUTDOWN' and '#c\\nSTART REPLICA' are all allowed in read-only mode. The CWE-184 bypass the PR set out to close is still open.",
+      "severity": "high",
+      "reference_only": false,
+      "blocking": true,
+      "locations": [
+        {
+          "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+          "line_start": 236,
+          "line_end": 266
+        },
+        {
+          "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+          "line_start": 109,
+          "line_end": 145
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "statement": "Blocking DO GET_LOCK while SELECT GET_LOCK, RELEASE_LOCK, replication-wait functions and sys_exec/sys_eval still pass makes the guard asymmetric: the read-shaped twin of the targeted threat bypasses it.",
+      "severity": "medium",
+      "reference_only": false,
+      "blocking": false,
+      "locations": [
+        {
+          "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+          "line_start": 113,
+          "line_end": 113
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "statement": "The statement-start test matrix varies only the keyword, never comment/whitespace obfuscation for a fixed keyword, so it cannot catch the '#'-comment bypass; add '#', '#x', '# ' and '#'-after-';' cases.",
+      "severity": "medium",
+      "reference_only": false,
+      "blocking": false,
+      "locations": [
+        {
+          "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+          "line_start": 1145,
+          "line_end": 1145
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "statement": "USE <db>, CACHE INDEX and LOAD INDEX INTO CACHE are statement-leading state changers that still pass the read-only gate (SET is blocked, USE is not).",
+      "severity": "low",
+      "reference_only": true,
+      "blocking": false,
+      "locations": [
+        {
+          "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+          "line_start": 109,
+          "line_end": 109
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "statement": "All new tests call detect_mutating_keywords directly; none proves run_query rejects a new keyword end-to-end on the read-only path, where the security guarantee actually lives.",
+      "severity": "low",
+      "reference_only": true,
+      "blocking": false,
+      "locations": [
+        {
+          "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+          "line_start": 897,
+          "line_end": 897
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "statement": "A ';' inside a string literal trips the anchored statement-start scan (e.g. WHERE note = 'do it; commit later' reports COMMIT), so the no-false-positive guarantee silently depends on the stacked-queries rule and the logged rejection reason is wrong.",
+      "severity": "low",
+      "reference_only": true,
+      "blocking": false,
+      "locations": [
+        {
+          "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+          "line_start": 141,
+          "line_end": 141
+        }
+      ]
+    }
+  ]
+}

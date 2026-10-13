@@ -1,0 +1,47 @@
+version = "v1"
+default = "medium"
+
+# Servers whose tools run user-supplied queries/code against customer databases or accounts.
+[[rule]]
+prefix = "src/aurora-dsql-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = "src/mysql-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = "src/postgres-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = "src/redshift-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = "src/iam-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = "src/aws-api-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = "src/openapi-mcp-server/"
+risk = "high"
+
+[[rule]]
+prefix = ".github/workflows/"
+risk = "high"
+
+[[rule]]
+prefix = "docs/"
+risk = "low"
+
+[[rule]]
+prefix = "docusaurus/"
+risk = "low"
+
+[[rule]]
+prefix = "samples/"
+risk = "low"

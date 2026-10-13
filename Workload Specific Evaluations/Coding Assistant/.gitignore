@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Harbor run output (made by the notebooks). The leading / keeps datasets/*/tasks/ tracked.
+/tasks/
+/jobs/
+
+# Local settings (AWS profile, Region). Copy .env.example to .env.
+.env
+
+# Notes from coding agent sessions
+.agents/

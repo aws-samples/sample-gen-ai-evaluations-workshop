@@ -1,0 +1,4 @@
+harbor>=0.24.0
+pandas
+boto3
+python-dotenv

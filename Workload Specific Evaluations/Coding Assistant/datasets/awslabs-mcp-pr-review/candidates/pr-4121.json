@@ -1,0 +1,67 @@
+{
+  "repo": "awslabs/mcp",
+  "pr_number": 4121,
+  "pr_url": "https://github.com/awslabs/mcp/pull/4121",
+  "iterations": [
+    {
+      "tip_sha": "633c5f19eaa1426cef44bc7eecdf8ae98da12613",
+      "base_sha": "ef7c4563f38e3ae9877d518c7176b947b48a68b4",
+      "patch_path": "patches/pr-4121-iter0.patch",
+      "comment_ids": [
+        3605783475
+      ]
+    },
+    {
+      "tip_sha": "714eb28ecd08e23510dc6257341ddc0ee34c32d2",
+      "base_sha": "eb2b2eba2ada665799fae89f8dfc34f8e2a877fb",
+      "patch_path": "patches/pr-4121-iter1.patch",
+      "comment_ids": []
+    }
+  ],
+  "review_verdicts": [
+    {
+      "state": "COMMENTED",
+      "author": "srhsrhsrhsrh",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-07-17T20:00:30Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "srhsrhsrhsrh",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-07-17T20:13:46Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "patrick-yu-amzn",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-07-17T22:53:56Z"
+    }
+  ],
+  "comments": [
+    {
+      "id": 3605783475,
+      "body": "Thanks for the fix. For codecov to pass, could you patch `create_urllib3_context` to mock the other branch? ",
+      "path": "src/eks-mcp-server/awslabs/eks_mcp_server/k8s_apis.py",
+      "line_start": 143,
+      "line_end": 143,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-07-17T19:53:39Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1
+      ],
+      "classification": "nit",
+      "classification_rationale": "A request for test coverage of the second branch (a context without verify_flags), for codecov. It names no defect in the change, and iteration 1 adds test_init_accepts_ssl_context_without_verify_flags. Two reviewers then approved."
+    }
+  ],
+  "findings": [],
+  "change_risk": {
+    "risk_structural": "medium",
+    "risk_structural_rule": "default → medium",
+    "risk_classified": "high",
+    "risk_classified_rationale": "The change edits TLS certificate verification of the Kubernetes client that the server uses to operate customer EKS clusters. An error here could disable server authentication. The change keeps CERT_REQUIRED and the EKS CA, and removes only VERIFY_X509_STRICT."
+  },
+  "rubric_version": "v1"
+}
