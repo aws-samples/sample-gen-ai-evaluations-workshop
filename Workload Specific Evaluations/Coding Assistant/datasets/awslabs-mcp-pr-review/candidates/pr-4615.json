@@ -1,0 +1,634 @@
+{
+  "repo": "awslabs/mcp",
+  "pr_number": 4615,
+  "pr_url": "https://github.com/awslabs/mcp/pull/4615",
+  "iterations": [
+    {
+      "tip_sha": "b291ca9fa57f5305e10376658b9a79d01a23bb2f",
+      "base_sha": "27e3e60edb78d541a7a034d5c3d38f181a79b397",
+      "patch_path": "patches/pr-4615-iter0.patch",
+      "comment_ids": [
+        3990975531,
+        3990975543,
+        3990975552,
+        3990975555,
+        3990975564,
+        3990975569,
+        3990975576,
+        3990975583,
+        3990975591,
+        3990975597,
+        3990975606,
+        3991591483,
+        3991594470,
+        3991599495,
+        3991602428,
+        3991604826,
+        3991607271,
+        3991614599,
+        3991625926,
+        3991629369,
+        3991632784,
+        3991641333
+      ]
+    },
+    {
+      "tip_sha": "4d45a90453d263ab56a0661e30768e79c403549c",
+      "base_sha": "27e3e60edb78d541a7a034d5c3d38f181a79b397",
+      "patch_path": "patches/pr-4615-iter1.patch",
+      "comment_ids": [
+        3991778983,
+        3992094793
+      ]
+    },
+    {
+      "tip_sha": "263ecc1881d246bcdda14caeaa8b5c54a6145c6d",
+      "base_sha": "f6aec97d0aa3b9caae0cd131dda4a63be5709f64",
+      "patch_path": "patches/pr-4615-iter2.patch",
+      "comment_ids": []
+    }
+  ],
+  "review_verdicts": [
+    {
+      "state": "DISMISSED",
+      "author": "manaswini1920",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-10T20:58:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "kennthhz",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T15:57:49Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "kennthhz",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T15:59:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:08:01Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:08:18Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:08:48Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:09:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:09:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:09:33Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:10:14Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:11:21Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:11:43Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:12:02Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:12:50Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "kennthhz",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T17:27:57Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "happycupofjava",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T18:08:35Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "kennthhz",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T18:13:33Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "manaswini1920",
+      "author_role": "CONTRIBUTOR",
+      "submitted_at": "2026-09-11T18:15:19Z"
+    }
+  ],
+  "comments": [
+    {
+      "id": 3990975531,
+      "body": "**🔴 BLOCKER — `#`-line-comment defeats every new statement-start keyword**\n\nThis second scan runs on `sqlparse.format(strip_comments=True)` output, but sqlparse 0.6.0 does **not** strip a MySQL `#` comment unless a space follows the `#`. Since `STATEMENT_START_MUTATING_PATTERN` is anchored to `^`/`;`, a 2-char `#x\\n` prefix hides the leading verb. These are single statements, so the stacked-queries rule does not mask them:\n\n```\n\"#x\\nDO GET_LOCK('x',60)\"  -> mut=[]  ALLOWED   (this PR's flagship threat)\n\"#comment\\nSHUTDOWN\"       -> mut=[]  ALLOWED   (read-only session shuts down the server)\n\"#c\\nSTART REPLICA\"        -> mut=[]  ALLOWED\n\"# \\nDO GET_LOCK('x',60)\"  -> mut=['DO']        (only the space-after-# form is caught)\n```\n\nOn the RDS Data API read-only path this function is the sole gate, so the CWE-184 bypass the PR targets is still open. Please strip `#[^\\n]*` explicitly before the anchored scan (or use a MySQL-aware strip) and add regression tests for `#`, `#x`, `# `, and `#`-after-`;`. Note the docstring above (line ~238) also claims `# ...` comments are \"treated as whitespace\" — that claim is false for the no-space form and needs updating.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 265,
+      "line_end": 265,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:49Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0
+      ],
+      "classification": "defect",
+      "classification_rationale": "A 2-char '#x\\n' prefix hides the leading verb from the read-only gate, so DO GET_LOCK / SHUTDOWN pass on the sole gate of the RDS Data API path; reviewer marked it a blocker and requested changes."
+    },
+    {
+      "id": 3990975543,
+      "body": "**🟠 MEDIUM — blocking `DO GET_LOCK` but not `SELECT GET_LOCK` is inconsistent**\n\nThe read-shaped twin of the exact threat this entry targets passes the gate. Verified PASS through both `detect_mutating_keywords` and `check_sql_injection_risk`: `SELECT GET_LOCK(...)`, `RELEASE_LOCK`, `RELEASE_ALL_LOCKS`, `MASTER_POS_WAIT`/`SOURCE_POS_WAIT`, `WAIT_FOR_EXECUTED_GTID_SET`, `WAIT_UNTIL_SQL_THREAD_AFTER_GTIDS`, `LAST_INSERT_ID(x)`, `sys_exec`/`sys_eval`. A text gate can't fully contain this, but either add the lock/replication-wait family to `SUSPICIOUS_PATTERNS` so `DO GET_LOCK` and `SELECT GET_LOCK` are symmetric, or scope `SELECT`-wrapped side-effecting functions explicitly as a least-privilege concern so the `DO` entry doesn't over-promise.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 113,
+      "line_end": 113,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:49Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "defect",
+      "classification_rationale": "SELECT GET_LOCK and replication-wait functions pass while DO GET_LOCK is blocked, so the guard's promised protection is incomplete; substantive security gap, fixed by the author."
+    },
+    {
+      "id": 3990975552,
+      "body": "**🟡 LOW — a `;` inside a string literal trips this anchor**\n\nString literals aren't comment-stripped, so `WHERE note = 'do it; commit later'` -> `mut=['COMMIT']`. It's masked today by the stacked-queries rule (so no live false positive), but the \"no false positive\" guarantee is now coupled to that injection rule staying at least as strict, and the logged rejection reason is wrong. Consider noting the coupling here, or running this scan on a string-literal-stripped copy.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 141,
+      "line_end": 141,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:49Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "defect",
+      "classification_rationale": "A ';' inside a string literal trips the anchored scan, producing a wrong rejection reason that is only masked by the stacked-queries rule; real but low-impact correctness coupling."
+    },
+    {
+      "id": 3990975555,
+      "body": "**🟡 LOW — `REPLACE` double-reporting**\n\nWith `REPLACE INTO` in `MUTATING_KEYWORDS` and bare `REPLACE` here, both scans fire on `REPLACE INTO t VALUES(1)` -> `['REPLACE INTO','REPLACE']`. Harmless, but note the `test_..._sets_are_disjoint` test gives a false sense of clean partitioning: the sets are string-disjoint yet overlap in behavior on this token.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 112,
+      "line_end": 112,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:49Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "nit",
+      "classification_rationale": "Reviewer states the REPLACE double-reporting is harmless; a reporting nicety, not a blocking problem."
+    },
+    {
+      "id": 3990975564,
+      "body": "**🟡 LOW — completeness & naming of this set**\n\n1. **Completeness:** `USE <db>`, `CACHE INDEX`, and `LOAD INDEX INTO CACHE` are statement-leading state changers that still pass (`mut=[]`). Note the inconsistency that `SET` (session state) is blocked while `USE` (also session state) is not.\n2. **Naming:** several members (`DO 1`, `BEGIN`, `COMMIT`) mutate no data — they are transaction-control / no-ops. \"Mutating\" overstates it; consider \"non-read / state-affecting verbs\" or a clarifying comment.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 109,
+      "line_end": 109,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "defect",
+      "classification_rationale": "USE, CACHE INDEX and LOAD INDEX INTO CACHE are state-changing verbs that still pass the read-only gate; a completeness gap in a security allowlist (the naming half is a nit)."
+    },
+    {
+      "id": 3990975569,
+      "body": "**🟢 NIT — longest-first sort is inert here**\n\nNo keyword in this set is a prefix of another, and a statement has exactly one leading verb, so the ordering never matters (unlike `MUTATING_PATTERN`). Harmless, but the \"see MUTATING_PATTERN\" rationale implies a correctness need that doesn't exist for the anchored set.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 134,
+      "line_end": 134,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "nit",
+      "classification_rationale": "Reviewer says the longest-first sort is inert and harmless; comment-accuracy preference only."
+    },
+    {
+      "id": 3990975576,
+      "body": "**🟢 NIT — place under `### Security`, not `### Changed`**\n\nThe analogous 1.0.22 CWE-184 hardening is logged under `### Security`. This follow-up is also a CWE-184 security fix; put it under `### Security` for consistency.",
+      "path": "src/mysql-mcp-server/CHANGELOG.md",
+      "line_start": 48,
+      "line_end": 48,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "nit",
+      "classification_rationale": "CHANGELOG section placement (Security vs Changed) is a documentation-consistency preference."
+    },
+    {
+      "id": 3990975583,
+      "body": "**🟢 NIT — wording undersells the behavior**\n\nThe code blocks *any* leading `REPLACE` (also `REPLACE ... VALUES`), not just `REPLACE ... SET`. The broader behavior is correct; the changelog wording is narrower than the implementation.",
+      "path": "src/mysql-mcp-server/CHANGELOG.md",
+      "line_start": 55,
+      "line_end": 55,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "nit",
+      "classification_rationale": "CHANGELOG wording is narrower than the (correct) behaviour; documentation polish, not a defect."
+    },
+    {
+      "id": 3990975591,
+      "body": "**🟠 MEDIUM (test gap behind the blocker) — matrix never varies comment/whitespace obfuscation**\n\nThis matrix is thorough on the *keyword* dimension but never varies the *comment/whitespace* dimension for a fixed keyword, which is why the `#`-comment bypass (see `mutable_sql_detector.py` line 265) isn't caught. Please add cases for a leading `#`/`#x`/`# ` comment and `#` after `;`, mirroring the existing `--` and `/* */` cases.",
+      "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+      "line_start": 1145,
+      "line_end": 1145,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "defect",
+      "classification_rationale": "The test matrix never varies comment obfuscation, which is exactly why the '#' bypass shipped; a substantive test gap behind the blocker under the repo's testing convention."
+    },
+    {
+      "id": 3990975597,
+      "body": "**🟡 LOW — synthetic payloads aren't valid MySQL**\n\n`f'{keyword} some_expr()'` isn't valid MySQL for several verbs (e.g. `SHUTDOWN some_expr()`). Fine for exercising the regex, but it makes the matrix look like real-statement coverage when it isn't. Consider reusing `_STATEMENT_START_KEYWORD_PAYLOADS` here.",
+      "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+      "line_start": 1151,
+      "line_end": 1151,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "nit",
+      "classification_rationale": "Synthetic payloads exercise the regex correctly; making them valid MySQL is a test-realism preference."
+    },
+    {
+      "id": 3990975606,
+      "body": "**🟡 LOW — no server-level (run_query) test**\n\nAll tests exercise `detect_mutating_keywords` directly; none proves `run_query` actually rejects these end-to-end in read-only mode. Since the security guarantee lives at the server gate, please add at least one server-level test that a new keyword is rejected via the read-only path.",
+      "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+      "line_start": 897,
+      "line_end": 897,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T15:57:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "defect",
+      "classification_rationale": "No test proves run_query rejects the new keywords end-to-end in read-only mode, leaving the actual security gate untested; a real but low-severity test gap."
+    },
+    {
+      "id": 3991591483,
+      "body": "Fixed — added a shared #[^\\n]* strip before both scans (sqlparse leaves the no-space #x\\n form); added regression tests incl. server-level run_query.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 265,
+      "line_end": 265,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:08:01Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991594470,
+      "body": "Fixed — new SIDE_EFFECTING_FUNCTIONS set blocks GET_LOCK/RELEASE_LOCK/replication-waits/sys_exec/LAST_INSERT_ID(expr) in any form; no-arg LAST_INSERT_ID(), IS_FREE/USED_LOCK, and identifiers stay allowed.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 113,
+      "line_end": 113,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:08:18Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991599495,
+      "body": "Documented the coupling in a comment (harmless — the stacked-queries rule independently rejects it); regression test already pins it.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 141,
+      "line_end": 141,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:08:48Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991602428,
+      "body": "Clarified the disjoint-set test docstring: string-disjoint, not behaviour-disjoint; the REPLACE/REPLACE INTO overlap is intentional and deduped.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 112,
+      "line_end": 112,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:09:06Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991604826,
+      "body": "Added USE/CACHE INDEX/LOAD INDEX INTO CACHE (USE INDEX hint stays allowed); reworded the set to \"non-read / state-affecting verbs\".",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 109,
+      "line_end": 109,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:09:18Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991607271,
+      "body": "Done — moved under ### Security.",
+      "path": "src/mysql-mcp-server/CHANGELOG.md",
+      "line_start": 48,
+      "line_end": 48,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:09:32Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991614599,
+      "body": "Fixed — changelog now reads \"any statement-leading REPLACE (e.g. REPLACE ... SET, REPLACE ... VALUES)\" instead of just REPLACE ... SET.",
+      "path": "src/mysql-mcp-server/CHANGELOG.md",
+      "line_start": 55,
+      "line_end": 55,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:10:14Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991625926,
+      "body": "Fixed — added TestLeadingCommentObfuscationIsStripped, crossing #/#x/# /--//* *//;-prefix forms with several leading verbs (incl. #-after-;), mirroring the existing comment cases.",
+      "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+      "line_start": 1145,
+      "line_end": 1145,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:11:21Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991629369,
+      "body": "Fixed — the statement-start and lowercase matrix tests now reuse _STATEMENT_START_KEYWORD_PAYLOADS (real MySQL statements) instead of f'{keyword} some_expr()'.",
+      "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+      "line_start": 1151,
+      "line_end": 1151,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:11:42Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991632784,
+      "body": "Added run_query read-only tests asserting rejection + execute_query never called (incl. #-comment forms).",
+      "path": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py",
+      "line_start": 897,
+      "line_end": 897,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:12:02Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991641333,
+      "body": "Agreed — reworded the comment to say the sort is only for stable, hash-independent output, not correctness (no entry is a prefix of another and a statement has one leading verb).",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 134,
+      "line_end": 134,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:12:50Z",
+      "iteration_index": 0,
+      "in_diff_iterations": [
+        0,
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    },
+    {
+      "id": 3991778983,
+      "body": "**🔴 BLOCKER (new regression introduced by this fix) — the `#` strip is not string-literal aware**\n\n`MYSQL_HASH_COMMENT_PATTERN = re.compile(r'#[^\\n]*')` (line 307) runs *after* `sqlparse.format(...)` and blindly strips from **any** `#` — including one inside a string literal or backtick identifier — to end of line. Because MySQL treats `#` inside a quoted string as literal text (not a comment), this truncates the scanned SQL and hides everything after it on that line.\n\nThis regresses controls that worked correctly at the previous commit (`b291ca9f`):\n\n```\n                                                     b291ca9f        this commit\nSELECT id FROM t WHERE c = '#foo'; DROP TABLE t      DROP, inj=Y  →  mut=[], inj=n   BYPASS\nSELECT '#' ; DROP TABLE users                        DROP, inj=Y  →  mut=[], inj=n   BYPASS\nSELECT id FROM t WHERE c = '#x' OR SLEEP(5)          inj=Y        →  mut=[], inj=n   BYPASS\nSELECT `a#b`, GET_LOCK('x',1)                        (n/a)        →  mut=[], inj=n   BYPASS\n```\n\nThe gate ends up scanning only `\"SELECT id FROM t WHERE c = '\"` — the trailing `; DROP TABLE t` is gone. This defeats not just the new statement-start scan but also the pre-existing **anywhere keyword scan** (`DROP`/`DELETE`), the **stacked-queries** rule, **UNION-injection** detection, and the new **side-effecting-function** rule.\n\n**Severity:** this is broader than the original `#x\\n` bug it closes. It triggers on any single-line query containing `#` inside a string literal — ordinary data like `'#sale'`, hex colors `'#ffffff'`, or hashtags — all of which execute fully in MySQL. On the RDS Data API path `detect_mutating_keywords` is the sole gate. (Boundary: `#[^\\n]*` stops at `\\n`, so a mutation on a *new* line survives — but LLM/Data-API queries are typically single-line, which the caller controls.)\n\n**Fix:** make the `#` strip string-literal aware — only remove `#…EOL` when the `#` is not inside a `'…'` / `\"…\"` / `` `…` `` token (tokenize, or scan skipping quoted regions).\n\n**Test gap:** `test_hash_inside_string_literal_is_not_a_false_positive` only checks a benign `'#sale'` with no trailing statement, giving false confidence. Please add a false-*negative* regression: `SELECT '#foo'; DROP TABLE t` must still report `DROP` (and `check_sql_injection_risk` must still flag the stacked `;`).",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 307,
+      "line_end": 319,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T17:27:57Z",
+      "iteration_index": 1,
+      "in_diff_iterations": [
+        1,
+        2
+      ],
+      "classification": "defect",
+      "classification_rationale": "The iteration-1 '#' strip is not string-literal aware, so \"SELECT '#foo'; DROP TABLE t\" bypasses every scan; a new blocking regression (on a later iteration, outside the iteration-0 diff)."
+    },
+    {
+      "id": 3992094793,
+      "body": "Fixed — replaced the blind #[^\\n]* strip with a quote-aware scanner that only strips #…EOL outside '…'/\"…\"/`…` regions (honoring backslash + doubled-quote escapes), so '#foo'; DROP TABLE t is detected again while '#sale' data is preserved and the #x\\n bypass stays closed. Added regression tests.",
+      "path": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py",
+      "line_start": 307,
+      "line_end": 319,
+      "author_role": "CONTRIBUTOR",
+      "created_at": "2026-09-11T18:08:34Z",
+      "iteration_index": 1,
+      "in_diff_iterations": [
+        1,
+        2
+      ],
+      "classification": "approval",
+      "classification_rationale": "PR author's reply reporting a fix; carries no review finding."
+    }
+  ],
+  "findings": [
+    {
+      "comment_ids": [
+        3990975531
+      ],
+      "statement": "The new statement-start mutating-keyword scan runs on sqlparse output that does not strip a MySQL '#' comment unless a space follows '#', so a prefix like '#x\\n' hides the leading verb: '#x\\nDO GET_LOCK(...)', '#c\\nSHUTDOWN' and '#c\\nSTART REPLICA' are all allowed in read-only mode. The CWE-184 bypass the PR set out to close is still open.",
+      "severity": "high",
+      "severity_evidence": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py:265 — detect_mutating_keywords(\"#x\\nDO GET_LOCK('x',60)\") returns [] (allowed); on the RDS Data API path this function is the sole read-only gate.",
+      "severity_rationale": "Rubric overlay 'Security first': a bypass of a read-only guard on a tool that runs user-supplied SQL is a blocking defect.",
+      "reference_only": false
+    },
+    {
+      "comment_ids": [
+        3990975543
+      ],
+      "statement": "Blocking DO GET_LOCK while SELECT GET_LOCK, RELEASE_LOCK, replication-wait functions and sys_exec/sys_eval still pass makes the guard asymmetric: the read-shaped twin of the targeted threat bypasses it.",
+      "severity": "medium",
+      "severity_evidence": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py:113 — SELECT GET_LOCK(...) passes both detect_mutating_keywords and check_sql_injection_risk.",
+      "severity_rationale": "Rubric overlay 'Security first' (explicit allowlists, layered checks): an incomplete guard is a real defect, though a text gate cannot fully contain side-effecting functions, so not the blocker.",
+      "reference_only": false
+    },
+    {
+      "comment_ids": [
+        3990975591
+      ],
+      "statement": "The statement-start test matrix varies only the keyword, never comment/whitespace obfuscation for a fixed keyword, so it cannot catch the '#'-comment bypass; add '#', '#x', '# ' and '#'-after-';' cases.",
+      "severity": "medium",
+      "severity_evidence": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py:1145 — no case with a leading '#x' comment; the bypass at mutable_sql_detector.py:265 passes the full suite.",
+      "severity_rationale": "Rubric overlay 'Tests': tests that do not exercise the security-relevant dimension of the change are a substantive gap.",
+      "reference_only": false
+    },
+    {
+      "comment_ids": [
+        3990975564
+      ],
+      "statement": "USE <db>, CACHE INDEX and LOAD INDEX INTO CACHE are statement-leading state changers that still pass the read-only gate (SET is blocked, USE is not).",
+      "severity": "low",
+      "severity_evidence": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py:109 — 'USE other_db' yields mut=[].",
+      "severity_rationale": "Rubric overlay 'Security first' (explicit allowlists): an allowlist completeness gap, low because these verbs change session/cache state, not data.",
+      "reference_only": true
+    },
+    {
+      "comment_ids": [
+        3990975606
+      ],
+      "statement": "All new tests call detect_mutating_keywords directly; none proves run_query rejects a new keyword end-to-end on the read-only path, where the security guarantee actually lives.",
+      "severity": "low",
+      "severity_evidence": "src/mysql-mcp-server/tests/test_mutable_sql_detector.py:897 — no run_query-level read-only rejection test.",
+      "severity_rationale": "Rubric overlay 'Tests': missing integration coverage of the gate is worth flagging but not blocking.",
+      "reference_only": true
+    },
+    {
+      "comment_ids": [
+        3990975552
+      ],
+      "statement": "A ';' inside a string literal trips the anchored statement-start scan (e.g. WHERE note = 'do it; commit later' reports COMMIT), so the no-false-positive guarantee silently depends on the stacked-queries rule and the logged rejection reason is wrong.",
+      "severity": "low",
+      "severity_evidence": "src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py:141 — string literals are not stripped before the ';'-anchored scan.",
+      "severity_rationale": "Rubric base (correctness): a latent coupling with no live false positive today, so low.",
+      "reference_only": true
+    }
+  ],
+  "change_risk": {
+    "risk_structural": "high",
+    "risk_structural_rule": "src/mysql-mcp-server/ → high",
+    "risk_classified": "high",
+    "risk_classified_rationale": "The change edits the read-only SQL guard that is the sole gate against mutating statements on the RDS Data API path of a server that runs model-supplied SQL against customer databases."
+  },
+  "rubric_version": "v1"
+}

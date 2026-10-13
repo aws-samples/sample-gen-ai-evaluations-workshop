@@ -1,0 +1,49 @@
+schema_version = "1.4"
+
+[task]
+name = "awslabs/mcp__pr4121-approve"
+version = "1.0.0"
+description = "Review the change on this pull-request iteration and report the defects a competent reviewer should catch."
+keywords = ["pr-review", "eval-harvest"]
+
+[agent]
+timeout_sec = 1800.0
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "separate"
+
+# The judge in score.py calls Amazon Bedrock with the AWS credentials of the host shell.
+[verifier.env]
+AWS_ACCESS_KEY_ID = "${AWS_ACCESS_KEY_ID:-}"
+AWS_SECRET_ACCESS_KEY = "${AWS_SECRET_ACCESS_KEY:-}"
+AWS_SESSION_TOKEN = "${AWS_SESSION_TOKEN:-}"
+AWS_REGION = "${AWS_REGION:-us-east-1}"
+
+[verifier.environment]
+network_mode = "public"
+os = "linux"
+
+# The agent can reach only the Bedrock endpoint that Codex uses. It cannot reach GitHub.
+[environment]
+network_mode = "allowlist"
+os = "linux"
+allowed_hosts = ["bedrock-mantle.us-east-1.api.aws"]
+
+[metadata.origin]
+repo = "awslabs/mcp"
+pr_numbers = [4121]
+base_commit = "eb2b2eba2ada665799fae89f8dfc34f8e2a877fb"
+base_commit_date = ""
+merged_at = ""
+
+[metadata.harvest]
+kind = "approve"
+expected_verdict = "approve"
+blocking_severity = "high"
+finding_severities = []
+change_risk_structural = "medium"
+change_risk_classified = "high"
+change_risk_disagreement = true
+rubric_version = "v1"
+overrides = []
