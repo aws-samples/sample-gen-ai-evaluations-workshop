@@ -13,8 +13,11 @@ timeout_sec = 1800.0
 timeout_sec = 1800.0
 environment_mode = "separate"
 
-# The judge in score.py calls Amazon Bedrock with the AWS credentials of the host shell.
+# The judge in score.py calls Amazon Bedrock with the AWS credentials of the host shell. The judge
+# model comes from JUDGE_MODEL_ID in model_config.py (the notebook puts it in the environment). The
+# default is used when the variable is not set, for example when you run the task in a terminal.
 [verifier.env]
+JUDGE_MODEL_ID = "${JUDGE_MODEL_ID:-us.anthropic.claude-haiku-5-5}"
 AWS_ACCESS_KEY_ID = "${AWS_ACCESS_KEY_ID:-}"
 AWS_SECRET_ACCESS_KEY = "${AWS_SECRET_ACCESS_KEY:-}"
 AWS_SESSION_TOKEN = "${AWS_SESSION_TOKEN:-}"

@@ -6,8 +6,9 @@
 Produces the reward object's *shape* (ADR-5) at reduced sophistication: deterministic
 path+line narrowing, then a **greedy** one-to-one match, then an LLM judge for semantic equivalence
 on the narrowed candidates, then a reward object with coverage and precision kept separate and
-per-severity counts. It is stdlib-only and pinned: the judge model comes from ``judge.toml`` and the
-reward-kit override variables are scrubbed by ``test.sh`` before this runs.
+per-severity counts. It is stdlib-only. The judge model is ``JUDGE_MODEL_ID`` from the verifier
+environment, or the default in ``judge.toml``; it is recorded in ``judge.json``. The reward-kit
+override variables are scrubbed by ``test.sh`` before this runs.
 
 Two honesty properties are deliberate:
 
@@ -64,6 +65,9 @@ REQUIRED_ENDPOINT_SCHEME = "https://"
 _ORACLE_PATH = Path("/tests/oracle.json")
 _JUDGE_CONFIG_PATH = Path("/tests/judge.toml")
 _REWARD_PATH = Path("/logs/verifier/reward.json")
+_JUDGE_RECORD_PATH = Path("/logs/verifier/judge.json")
+#: The temperature that the judge sent: the configured value, or None if the model rejected it.
+_TEMPERATURE_SENT: list[float | None] = [0.0]
 #: Where the evaluated agent wrote its findings; overridable so the oracle solution and tests can
 #: point it at a fixture.
 #:
@@ -170,8 +174,8 @@ class LiveJudge:
     *inside* the verifier MicroVM, which the platform launches under a Bedrock-capable IAM execution role
     (``lambda_microvms`` passes ``execution_role_arn``). ``boto3`` discovers those role credentials the
     way it discovers any container/instance role — there is no API key, and none should exist. The
-    model is pinned by ``judge.toml`` and the override variables are scrubbed by ``test.sh``, so the pin
-    holds; ``temperature = 0`` is the determinism lever (Bedrock ``Converse`` has no ``seed``).
+    model is ``JUDGE_MODEL_ID``, or the default in ``judge.toml``; ``temperature = 0`` is the determinism
+    lever (Bedrock ``Converse`` has no ``seed``).
     """
 
     model: str
@@ -182,7 +186,7 @@ class LiveJudge:
 
     @classmethod
     def from_config(cls, path: Path) -> LiveJudge:
-        """Read the pinned judge config from ``judge.toml`` and resolve the Bedrock region from the env."""
+        """Read the judge config from ``judge.toml``; ``JUDGE_MODEL_ID`` in the env replaces its model."""
         config: Any = tomllib.loads(path.read_text(encoding="utf-8"))
         judge = config.get("judge", {})
         region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or ""
@@ -192,7 +196,7 @@ class LiveJudge:
                 "environment (the MicroVM platform sets it for the execution role)"
             )
         return cls(
-            model=str(judge.get("model", "")),
+            model=os.environ.get("JUDGE_MODEL_ID") or str(judge.get("model", "")),
             temperature=float(judge.get("temperature", 0.0)),
             seed=int(judge.get("seed", 0)),
             region=region,
@@ -226,13 +230,27 @@ class LiveJudge:
             f"Reference finding: {oracle_finding.statement}\n"
             f"Agent finding: {agent_finding.statement}\n"
         )
+        from botocore.exceptions import ClientError
+
         client = boto3.client("bedrock-runtime", region_name=self.region, endpoint_url=self.endpoint)
-        response: Any = client.converse(
-            modelId=self.model,
-            messages=[{"role": "user", "content": [{"text": prompt}]}],
-            inferenceConfig={"temperature": self.temperature, "maxTokens": 5},
-        )
-        answer = response["output"]["message"]["content"][0]["text"]
+        messages = [{"role": "user", "content": [{"text": prompt}]}]
+        # Room for the answer, and for the reasoning that some models (for example Claude Haiku 5.5) do
+        # before they answer.
+        config: dict[str, Any] = {"maxTokens": 2048}
+        if _TEMPERATURE_SENT[0] is not None:
+            config["temperature"] = self.temperature
+        try:
+            response: Any = client.converse(modelId=self.model, messages=messages, inferenceConfig=config)
+        except ClientError as error:
+            # Some models (for example Claude Haiku 5.5) reject the temperature parameter. Then use the
+            # model's default, and record it in judge.json.
+            if "temperature" not in config or "temperature" not in str(error):
+                raise
+            _TEMPERATURE_SENT[0] = None
+            config.pop("temperature")
+            response = client.converse(modelId=self.model, messages=messages, inferenceConfig=config)
+        # The answer is the first text block. A reasoning block can come before it.
+        answer = next((block["text"] for block in response["output"]["message"]["content"] if "text" in block), "")
         return str(answer).strip().lower().startswith("y")
 
 
@@ -404,8 +422,14 @@ def main() -> None:
     oracle = load_oracle(_ORACLE_PATH)
     findings_path = Path(os.environ.get(_AGENT_FINDINGS_ENV, str(_DEFAULT_AGENT_FINDINGS)))
     agent = load_agent_findings(findings_path)
-    reward = Score.compute_reward(oracle, agent, select_judge())
+    judge = select_judge()
+    _TEMPERATURE_SENT[0] = getattr(judge, "temperature", None)
     _REWARD_PATH.parent.mkdir(parents=True, exist_ok=True)
+    reward = Score.compute_reward(oracle, agent, judge)
+    # Record the model that judged this trial (it can come from JUDGE_MODEL_ID) and the temperature
+    # that it got (None if the model rejected the parameter).
+    record = {"model": getattr(judge, "model", "recorded"), "temperature": _TEMPERATURE_SENT[0]}
+    _JUDGE_RECORD_PATH.write_text(json.dumps(record), encoding="utf-8")
     _REWARD_PATH.write_text(json.dumps(reward, sort_keys=True), encoding="utf-8")
 
 

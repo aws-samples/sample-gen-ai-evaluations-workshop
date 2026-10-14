@@ -1,0 +1,65 @@
+schema_version = "1.4"
+
+[task]
+name = "strands-agents/evals__pr338-fix"
+version = "1.0.0"
+description = "Fix the bug in the issue report. Hidden tests, a validation agent, a rubric, and a taste judge grade the fix."
+keywords = ["coding-agent", "bug-fix", "strands-evals", "python"]
+
+[agent]
+timeout_sec = 3600.0
+
+# The verifier runs in the agent's container (Harbor's default shared mode) after the agent stops. Its
+# phase gets a different network policy: only the Bedrock runtime endpoint, for the validation agent and
+# the judges. It gets the AWS credentials of the host shell; the agent never sees them.
+[verifier]
+timeout_sec = 2400.0
+network_mode = "allowlist"
+allowed_hosts = ["bedrock-runtime.us-east-1.amazonaws.com"]
+
+[verifier.env]
+# The model of the validation agent and the judges: VERIFIER_MODEL_ID from model_config.py (the notebook
+# puts it in the environment), or this default when the variable is not set.
+VERIFIER_MODEL_ID = "${VERIFIER_MODEL_ID:-us.anthropic.claude-haiku-5-5}"
+AWS_ACCESS_KEY_ID = "${AWS_ACCESS_KEY_ID:-}"
+AWS_SECRET_ACCESS_KEY = "${AWS_SECRET_ACCESS_KEY:-}"
+AWS_SESSION_TOKEN = "${AWS_SESSION_TOKEN:-}"
+AWS_REGION = "${AWS_REGION:-us-east-1}"
+AWS_DEFAULT_REGION = "${AWS_REGION:-us-east-1}"
+
+# The agent can reach only the Bedrock endpoint that Codex uses. It cannot reach GitHub or a package
+# index.
+[environment]
+network_mode = "allowlist"
+os = "linux"
+allowed_hosts = ["bedrock-mantle.us-east-1.api.aws"]
+build_timeout_sec = 1800.0
+cpus = 2
+memory_mb = 4096
+
+[metadata.origin]
+repo = "strands-agents/evals"
+pr_numbers = [338]
+issue_numbers = [337]
+base_commit = "0bf12520908fcf02ca39acaf11cd302587988787"
+merge_commit = "cc0a39165677f2918a110bd97433d055bc4306aa"
+base_commit_date = "2026-07-29"
+merged_at = "2026-07-31"
+
+[metadata.verifier]
+hidden_tests = "tests/verify/test_prior_tool_results_verify.py"
+fail_to_pass = 7
+pass_to_pass = 6
+validation_spec = "tests/validate/validation_spec.toml"
+rubric = "tests/judge/rubric.toml"
+reward = "tasteful solve: verifiers and validation pass, rubric > 0.5, bloat < 2, taste > 2 (tests/lib/aggregate.py)"
+
+[metadata.narrative]
+description = """TraceExtractor._extract_tool_level builds session_history once for each trace. Every tool span in a
+trace gets the same snapshot: the user prompt and the tool results of earlier traces, but no results
+of earlier tool calls in the same trace. Tool-level judges then see arguments that came from an
+earlier result as hallucinated."""
+solution = """Merged fix: for each tool span, add the executions of the other tool spans in the same trace that
+ended at or before its start (naive times read as UTC; list position breaks ties). Parallel calls
+that overlap do not see each other. The hidden tests check only which executions are in
+session_history, not where or how they are grouped."""

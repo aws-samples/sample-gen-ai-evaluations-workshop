@@ -1,0 +1,32 @@
+# The settings of each LLM stage of the reward stack. All run on Amazon Bedrock in the Region of the
+# verifier (AWS_REGION). The `model` values are defaults: VERIFIER_MODEL_ID in the verifier environment
+# (task.toml passes it from model_config.py in the workshop) replaces the model of every stage. The
+# model that ran is recorded in reward_details.json. `temperature` is sent only if the model accepts it
+# (Claude Haiku 5.5 rejects it); each stage records the temperature that it sent (null if none).
+
+[validation_agent]
+model = "us.anthropic.claude-haiku-5-5"
+max_turns = 50
+max_tokens = 16000
+temperature = 0
+
+[validation_judge]
+model = "us.anthropic.claude-haiku-5-5"
+max_turns = 20
+temperature = 0
+
+[rubric_judge]
+model = "us.anthropic.claude-haiku-5-5"
+max_turns = 16
+temperature = 0
+
+[taste_judge]
+model = "us.anthropic.claude-haiku-5-5"
+max_turns = 30
+temperature = 0
+
+# Thresholds of a tasteful solve (Senior SWE-Bench): rubric > 0.5, bloat < 2x, taste scores > 2 of 5.
+[gates]
+rubric_min = 0.5
+bloat_max = 2.0
+taste_min = 2.0
