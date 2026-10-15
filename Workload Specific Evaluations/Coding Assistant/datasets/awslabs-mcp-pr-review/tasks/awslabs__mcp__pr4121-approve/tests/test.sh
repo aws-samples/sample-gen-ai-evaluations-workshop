@@ -9,9 +9,9 @@ set -u
 
 mkdir -p /logs/verifier
 
-# Scrub the reward-kit override variables so the judge model pinned in judge.toml is the one that
-# runs: REWARDKIT_JUDGE/REWARDKIT_MODEL silently override a task-pinned judge otherwise, and a
-# judge that is not pinned is not pinned (finding_matching.py:122, ADR-5).
+# Scrub the reward-kit override variables: REWARDKIT_JUDGE/REWARDKIT_MODEL silently override the
+# task's judge otherwise (finding_matching.py:122, ADR-5). The judge model is JUDGE_MODEL_ID (from
+# task.toml), or the default in judge.toml. score.py records it in /logs/verifier/judge.json.
 unset REWARDKIT_JUDGE REWARDKIT_MODEL REWARDKIT_TEMPERATURE OPENAI_API_BASE OPENAI_BASE_URL OPENAI_MODEL
 
 score_status=0

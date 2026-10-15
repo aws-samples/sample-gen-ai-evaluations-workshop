@@ -1,0 +1,32 @@
+# Task rubric: scored by an LLM judge, 0 or 1 each. It does not gate a solve alone: the rubric score must be
+# above 0.5. Requirements that the tests cannot check at run time, or that are preferences, go here.
+
+[[criteria]]
+id = "root_is_earliest_agent"
+kind = "fail_to_pass"
+text = "In a flat trace where several agents have no parent, the root agent is the one that started first, not the one that is first in the span list."
+
+[[criteria]]
+id = "one_rule_for_root"
+kind = "fail_to_pass"
+text = "The extractor (user prompt and tools of tool-level inputs) and the assignment of tool spans that no agent owns use the same rule to find the root, so they cannot disagree."
+
+[[criteria]]
+id = "mixed_timezones"
+kind = "fail_to_pass"
+text = "Start times that mix naive and timezone-aware datetimes are compared without a TypeError; a naive time is read as UTC, as elsewhere in the module."
+
+[[criteria]]
+id = "preferences_kept"
+kind = "pass_to_pass"
+text = "A parentless agent with a user prompt or a response is still preferred over a parentless agent without content, and a parentless agent over an agent with a parent."
+
+[[criteria]]
+id = "nested_owner_kept"
+kind = "pass_to_pass"
+text = "A tool span that a sub-agent owns through parent_span_id keeps that owner."
+
+[[criteria]]
+id = "no_interface_change"
+kind = "pass_to_pass"
+text = "No public type, field, or function signature changes."

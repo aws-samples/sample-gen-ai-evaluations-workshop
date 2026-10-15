@@ -1,0 +1,65 @@
+schema_version = "1.4"
+
+[task]
+name = "strands-agents/evals__pr371-fix"
+version = "1.0.0"
+description = "Fix the bug in the issue report. Hidden tests, a validation agent, a rubric, and a taste judge grade the fix."
+keywords = ["coding-agent", "bug-fix", "strands-evals", "python"]
+
+[agent]
+timeout_sec = 3600.0
+
+# The verifier runs in the agent's container (Harbor's default shared mode) after the agent stops. Its
+# phase gets a different network policy: only the Bedrock runtime endpoint, for the validation agent and
+# the judges. It gets the AWS credentials of the host shell; the agent never sees them.
+[verifier]
+timeout_sec = 2400.0
+network_mode = "allowlist"
+allowed_hosts = ["bedrock-runtime.us-east-1.amazonaws.com"]
+
+[verifier.env]
+# The model of the validation agent and the judges: VERIFIER_MODEL_ID from model_config.py (the notebook
+# puts it in the environment), or this default when the variable is not set.
+VERIFIER_MODEL_ID = "${VERIFIER_MODEL_ID:-us.anthropic.claude-haiku-5-5}"
+AWS_ACCESS_KEY_ID = "${AWS_ACCESS_KEY_ID:-}"
+AWS_SECRET_ACCESS_KEY = "${AWS_SECRET_ACCESS_KEY:-}"
+AWS_SESSION_TOKEN = "${AWS_SESSION_TOKEN:-}"
+AWS_REGION = "${AWS_REGION:-us-east-1}"
+AWS_DEFAULT_REGION = "${AWS_REGION:-us-east-1}"
+
+# The agent can reach only the Bedrock endpoint that Codex uses. It cannot reach GitHub or a package
+# index.
+[environment]
+network_mode = "allowlist"
+os = "linux"
+allowed_hosts = ["bedrock-mantle.us-east-1.api.aws"]
+build_timeout_sec = 1800.0
+cpus = 2
+memory_mb = 4096
+
+[metadata.origin]
+repo = "strands-agents/evals"
+pr_numbers = [371]
+issue_numbers = [370]
+base_commit = "2127840b491b74aaba45e1f691d41dcb1327c98f"
+merge_commit = "70bcc5f6d51909de882e20d003cdd5a9fbf1caa3"
+base_commit_date = "2026-08-14"
+merged_at = "2026-08-17"
+
+[metadata.verifier]
+hidden_tests = "tests/verify/test_root_agent_verify.py"
+fail_to_pass = 6
+pass_to_pass = 5
+validation_spec = "tests/validate/validation_spec.toml"
+rubric = "tests/judge/rubric.toml"
+reward = "tasteful solve: verifiers and validation pass, rubric > 0.5, bloat < 2, taste > 2 (tests/lib/aggregate.py)"
+
+[metadata.narrative]
+description = """In a flat multi-agent trace (every AgentInvocationSpan is parentless), _find_root_agent_span in
+types/trace.py returns the first parentless span with content in list order. That is often a
+sub-agent. TraceExtractor._extract_tool_level seeds session_history from the root's user_prompt and
+uses the root's tools, and Trace assigns tool spans without an owner to the root, so every tool call
+is judged against the sub-agent's narrower request."""
+solution = """Merged fix: keep the three tiers (parentless with content, then parentless, then all agents), and in
+the chosen tier pick the span with the earliest start_time (naive times read as UTC). Any fix that
+picks the earliest coordinator passes; the hidden tests use only TraceExtractor and Trace."""
