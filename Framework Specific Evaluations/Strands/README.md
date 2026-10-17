@@ -55,8 +55,20 @@ Open [01 Strands Evals.ipynb](01%20Strands%20Evals.ipynb), which demonstrates:
 ## Prerequisites
 
 ```bash
-pip install strands-agents strands-agents-tools strands-agents-evals
-pip install ddgs
+python -m pip install strands-agents strands-agents-tools "strands-agents-evals>=1.4,<2"
+python -m pip install ddgs pandas nest-asyncio beautifulsoup4 requests typing-extensions
+```
+
+When running the notebook, execute its dependency installation cell before the imports. The cell uses `%pip` to install packages into the selected notebook kernel.
+
+The examples use the single `EvaluationReport` return value supported by Strands Evals 1.4. They were validated with Python 3.12 and `strands-agents-evals` 1.4.0.
+
+Run the notebook from this directory so it can import `report_display.py`. This workshop helper shows a summary table and full evaluator explanations, with expandable responses and tool-call evidence. To inspect an existing result without repeating model calls, run:
+
+```python
+from report_display import display_evaluation_report
+
+display_evaluation_report(trajectory_report)
 ```
 
 Before executing this notebook, ensure access to Global Claude 4.5 Haiku in your configured AWS region, or change the notebook to your model of choice.  
