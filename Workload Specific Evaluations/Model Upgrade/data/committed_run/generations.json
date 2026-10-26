@@ -1,0 +1,207 @@
+{
+  "_comment": "Committed hill-climbing run on the TARGET model (GPT-6 Luna). Each generation: candidates_per_generation prompts proposed by the optimizer informed by the prior best's judge reasoning, each scored over the gold slice. Accuracy climbs then plateaus; the stop rule fires when the generation's best gain < min_accuracy_gain_to_continue (0.02). Illustrative \u2014 regenerate with scripts/run_optimization.py.",
+  "target_model_label": "GPT-6 Luna (Amazon Bedrock)",
+  "gateway_model": "bedrock/us.openai.gpt-6-luna",
+  "judge_model": "amazon.nova-micro-v1:0",
+  "min_accuracy_gain_to_continue": 0.02,
+  "baseline_accuracy": 0.7,
+  "generations": [
+    {
+      "index": 1,
+      "candidates": [
+        {
+          "prompt_label": "g1-c1: add explicit 'echo back flight number, passenger, and dates, and wait for a yes' confirmation step",
+          "accuracy": 0.8,
+          "criterion_pass_rates": {
+            "goal_success": 0.8,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 0.9
+          },
+          "latency_p50_s": 6.1,
+          "latency_p95_s": 10.2,
+          "cost_usd_per_session": 0.0142,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "goal_success: passed 8/10; two failures resolved a relative date ('next week') without echoing the computed YYYY-MM-DD back to the user before booking.",
+            "F7_date_format: one booking used a date one day off from the user's stated 'next Friday'."
+          ]
+        },
+        {
+          "prompt_label": "g1-c2: add 'only ever offer flights returned by search_flights; never state a flight number you did not see in a tool result'",
+          "accuracy": 0.78,
+          "criterion_pass_rates": {
+            "goal_success": 0.78,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 0.8
+          },
+          "latency_p50_s": 6.0,
+          "latency_p95_s": 9.9,
+          "cost_usd_per_session": 0.0138,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "F1_no_invented_flights: fully fixed (10/10).",
+            "goal_success: still loses points on multi-part requests where only one part (price OR availability) was answered."
+          ]
+        },
+        {
+          "prompt_label": "g1-c3: add a 'scope guard' line restating flights+hotels only and to decline anything else",
+          "accuracy": 0.72,
+          "criterion_pass_rates": {
+            "goal_success": 0.72,
+            "F1_no_invented_flights": 0.9,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 0.7
+          },
+          "latency_p50_s": 5.9,
+          "latency_p95_s": 9.7,
+          "cost_usd_per_session": 0.0136,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "F6_no_off_topic: already at ceiling; this change added little.",
+            "F7_date_format: unchanged; relative-date handling is still the weakest criterion."
+          ]
+        }
+      ],
+      "best_index": 0,
+      "best_accuracy": 0.8,
+      "gain_over_incumbent": 0.1
+    },
+    {
+      "index": 2,
+      "candidates": [
+        {
+          "prompt_label": "g2-c1: incumbent + 'when a date is relative, compute the absolute YYYY-MM-DD, state it explicitly, and confirm it before any booking tool call'",
+          "accuracy": 0.9,
+          "criterion_pass_rates": {
+            "goal_success": 0.9,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 1.0
+          },
+          "latency_p50_s": 6.3,
+          "latency_p95_s": 10.6,
+          "cost_usd_per_session": 0.0148,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "F7_date_format: fully fixed (10/10) \u2014 relative dates are now resolved and confirmed.",
+            "goal_success: 9/10; the one miss answered price but not availability on a compound hotel request."
+          ]
+        },
+        {
+          "prompt_label": "g2-c2: incumbent + 'for compound requests, enumerate each sub-request and address every part'",
+          "accuracy": 0.86,
+          "criterion_pass_rates": {
+            "goal_success": 0.86,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 0.9
+          },
+          "latency_p50_s": 6.4,
+          "latency_p95_s": 10.9,
+          "cost_usd_per_session": 0.0151,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "goal_success: compound-request handling improved; partial-resolution failure gone.",
+            "F7_date_format: one relative-date miss remains (this candidate did not add the date-echo rule)."
+          ]
+        },
+        {
+          "prompt_label": "g2-c3: incumbent + both the date-echo rule and a terse style instruction",
+          "accuracy": 0.88,
+          "criterion_pass_rates": {
+            "goal_success": 0.88,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 1.0
+          },
+          "latency_p50_s": 5.7,
+          "latency_p95_s": 9.3,
+          "cost_usd_per_session": 0.0121,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "F7_date_format: fixed.",
+            "goal_success: 8.8/10; terseness occasionally dropped the explicit confirmation echo, costing one case.",
+            "latency/cost: terse style cut tokens \u2014 lowest cost and latency this generation."
+          ]
+        }
+      ],
+      "best_index": 0,
+      "best_accuracy": 0.9,
+      "gain_over_incumbent": 0.1
+    },
+    {
+      "index": 3,
+      "candidates": [
+        {
+          "prompt_label": "g3-c1: gen2 winner + compound-enumeration rule merged in",
+          "accuracy": 0.91,
+          "criterion_pass_rates": {
+            "goal_success": 0.91,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 1.0
+          },
+          "latency_p50_s": 6.5,
+          "latency_p95_s": 11.0,
+          "cost_usd_per_session": 0.015,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "goal_success: 9.1/10 \u2014 marginal gain over gen2 best; remaining misses are judge-borderline, not clear failures.",
+            "No criterion is clearly below ceiling anymore."
+          ]
+        },
+        {
+          "prompt_label": "g3-c2: gen2 winner + stronger 'never proceed without an explicit yes' wording",
+          "accuracy": 0.9,
+          "criterion_pass_rates": {
+            "goal_success": 0.9,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 1.0
+          },
+          "latency_p50_s": 6.6,
+          "latency_p95_s": 11.2,
+          "cost_usd_per_session": 0.0153,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "goal_success: no change over gen2 best; extra confirmation wording added turns without improving outcomes.",
+            "latency/cost: slightly worse from the added turn."
+          ]
+        },
+        {
+          "prompt_label": "g3-c3: gen2 winner + examples of good confirmations (few-shot in system prompt)",
+          "accuracy": 0.9,
+          "criterion_pass_rates": {
+            "goal_success": 0.9,
+            "F1_no_invented_flights": 1.0,
+            "F6_no_off_topic": 1.0,
+            "F7_date_format": 1.0
+          },
+          "latency_p50_s": 6.9,
+          "latency_p95_s": 11.8,
+          "cost_usd_per_session": 0.0169,
+          "n_sessions": 10,
+          "judge_reasoning": [
+            "goal_success: no gain; few-shot examples raised input tokens (highest cost this generation) without moving accuracy.",
+            "Signal that the task has plateaued on this gold set."
+          ]
+        }
+      ],
+      "best_index": 0,
+      "best_accuracy": 0.91,
+      "gain_over_incumbent": 0.01
+    }
+  ],
+  "stopped_reason": "accuracy gain +0.010 < threshold 0.020 at generation 3",
+  "winner": {
+    "prompt_label": "g2-c1 (carried as incumbent through gen3): date-echo + confirm-before-book",
+    "prompt": "You are a helpful travel booking assistant. You help users search for flights and hotels, make bookings, view existing reservations, and cancel bookings. Only ever offer flights and hotels returned by the search tools; never state a flight number, airline, price, or hotel you did not see in a tool result. For every booking: echo back the flight/hotel, passenger or guest name, and the exact dates, and wait for the user's explicit 'yes' before calling a booking tool. When a date is relative (for example 'next Friday' or 'next week'), compute the absolute YYYY-MM-DD date, state it explicitly, and confirm it before booking. For compound requests, enumerate each sub-request and address every part. Only assist with flights and hotels; politely decline anything else.",
+    "accuracy": 0.9,
+    "baseline_accuracy": 0.7,
+    "accuracy_gain": 0.2,
+    "latency_p50_s": 6.3,
+    "cost_usd_per_session": 0.0148
+  }
+}

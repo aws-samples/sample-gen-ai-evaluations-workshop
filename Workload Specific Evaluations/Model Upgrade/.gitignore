@@ -1,0 +1,17 @@
+# Resolved gateway IDs / endpoints + teardown manifest (account-specific, not for commit)
+gateway/.resolved.json
+gateway/.teardown.json
+.venv/
+
+# Local run artifacts
+generated/
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
+
+# Never commit secrets
+.env
+
+# Build tooling (not learner-facing)
+_build_notebook.py
+NOTEBOOK_OUTLINE.md

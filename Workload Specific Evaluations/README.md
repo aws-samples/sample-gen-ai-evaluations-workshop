@@ -136,6 +136,29 @@ cost as a function of load.
 
 ---
 
+### [Model Upgrade](Model%20Upgrade/)
+
+**Migrate to a newer model with evaluation, and re-optimize the prompt for it**
+
+When a newer model ships, two questions decide the migration: does the upgrade hold or improve
+quality on your own gold data, and is the prompt you tuned for the old model still the right prompt
+for the new one. This module answers both. It reuses the travel-booking chatbot and gold scenarios
+from the Chatbot module as the workload, scores them the same way (session-level goal completion
+plus binary per-criterion rubrics), and runs a notebook-driven hill-climbing optimizer that an LLM
+drives — proposing candidate prompts informed by the judge's reasoning on where the current best
+loses points, climbing until accuracy plateaus. Agents run on AgentCore Runtime behind a single
+AgentCore Gateway (inference targets routing to Bedrock for the target model and OpenAI first-party
+for the source), scored by AgentCore custom evaluators. The example migrates GPT-4.1 (OpenAI) to the
+newest Bedrock Sonnet, and reports the prompt that scores highest on the target at the same or lower
+latency and cost.
+
+Key topics: evaluation-driven model migration, single AgentCore Gateway inference seam (model-based
+routing across Bedrock + OpenAI), per-session microVM fan-out on one Runtime, LLM-authored
+hill-climbing prompt optimization informed by judge reasoning, multi-turn accuracy/latency/cost
+scoring, when to use this instead of Bedrock Advanced Prompt Optimization.
+
+---
+
 ### [Coding Assistant](Coding%20Assistant/)
 
 Coming soon.

@@ -1,0 +1,17 @@
+{
+  "_comment": "Bedrock inference target for the Gateway, via the built-in `bedrock-runtime` CONNECTOR. This is the deprecation-safe path: bedrock-runtime is the native Amazon Bedrock InvokeModel endpoint (the older `bedrock-mantle` endpoint is being deprecated, so we do NOT use it). The connector auto-handles model discovery, model-id translation, and path rewriting, so no manual operations/modelMapping are needed. Default live path for the module's migration (GPT-5.6 Luna -> GPT-6 Luna, both OpenAI-on-Bedrock). Outbound auth is the gateway IAM role. setup_gateway.py fills gatewayIdentifier at create time.",
+  "gatewayIdentifier": "GATEWAY_ID",
+  "name": "bedrock",
+  "targetConfiguration": {
+    "inference": {
+      "connector": {
+        "source": {
+          "connectorId": "bedrock-runtime"
+        }
+      }
+    }
+  },
+  "credentialProviderConfigurations": [
+    { "credentialProviderType": "GATEWAY_IAM_ROLE" }
+  ]
+}

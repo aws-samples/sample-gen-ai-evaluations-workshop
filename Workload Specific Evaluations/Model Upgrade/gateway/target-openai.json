@@ -1,0 +1,34 @@
+{
+  "_comment": "EXAMPLE (not the live path): OpenAI FIRST-PARTY inference provider target. Use this when one end of your migration is a model on api.openai.com. The API key is NOT stored here — it goes in an AgentCore API_KEY credential provider in the token vault (setup_gateway.py reads OPENAI_API_KEY and creates it, then injects providerArn here). To use: set SOURCE_MODEL = mc.EXAMPLE_SOURCE_OPENAI_1P and provision this target. Replace ACCOUNT_ID or let setup_gateway.py resolve it.",
+  "gatewayIdentifier": "GATEWAY_ID",
+  "name": "openai",
+  "targetConfiguration": {
+    "inference": {
+      "provider": {
+        "endpoint": "https://api.openai.com",
+        "operations": [
+          {
+            "path": "/v1/chat/completions",
+            "models": [
+              { "model": "gpt-4.1" },
+              { "model": "gpt-4.1-mini" }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "credentialProviderConfigurations": [
+    {
+      "credentialProviderType": "API_KEY",
+      "credentialProvider": {
+        "apiKeyCredentialProvider": {
+          "providerArn": "arn:aws:bedrock-agentcore:us-east-1:ACCOUNT_ID:token-vault/default/apikeycredentialprovider/model-upgrade-openai-key",
+          "credentialLocation": "HEADER",
+          "credentialParameterName": "Authorization",
+          "credentialPrefix": "Bearer "
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "_comment": "Committed baseline: the CURRENT PRODUCTION PROMPT scored on both models over the gold slice, same judge, same scenarios. This is the 'does the raw model swap hold quality?' answer before any optimization. Illustrative committed run so the notebook renders offline; regenerate with scripts/run_optimization.py on your own data.",
+  "gold_slice_size": 10,
+  "judge_model": "amazon.nova-micro-v1:0",
+  "seed_prompt": "You are a helpful travel booking assistant. You help users search for flights and hotels, make bookings, view existing reservations, and cancel bookings. Always confirm details with the user before completing a booking. Use today's date as context when dates are not fully specified.",
+  "results": {
+    "source": {
+      "model_label": "GPT-5.6 Luna (Amazon Bedrock)",
+      "gateway_model": "bedrock/us.openai.gpt-5.6-luna",
+      "accuracy": 0.7,
+      "criterion_pass_rates": {
+        "goal_success": 0.7,
+        "F1_no_invented_flights": 0.9,
+        "F6_no_off_topic": 1.0,
+        "F7_date_format": 0.8
+      },
+      "latency_p50_s": 6.8,
+      "latency_p95_s": 11.4,
+      "cost_usd_per_session": 0.0121,
+      "n_sessions": 10
+    },
+    "target_unoptimized": {
+      "model_label": "GPT-6 Luna (Amazon Bedrock)",
+      "gateway_model": "bedrock/us.openai.gpt-6-luna",
+      "accuracy": 0.7,
+      "criterion_pass_rates": {
+        "goal_success": 0.7,
+        "F1_no_invented_flights": 0.9,
+        "F6_no_off_topic": 1.0,
+        "F7_date_format": 0.7
+      },
+      "latency_p50_s": 5.9,
+      "latency_p95_s": 9.8,
+      "cost_usd_per_session": 0.0139,
+      "n_sessions": 10
+    }
+  },
+  "takeaway": "On the UNCHANGED prompt the target matches the source on headline accuracy (0.70) at slightly lower latency but slightly higher cost. The raw swap holds quality but does not clearly win \u2014 which is exactly why the prompt must be re-optimized for the target model."
+}

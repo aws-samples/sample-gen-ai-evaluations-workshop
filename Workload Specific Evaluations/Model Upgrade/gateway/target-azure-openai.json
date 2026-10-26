@@ -1,0 +1,34 @@
+{
+  "_comment": "EXAMPLE (not the live path): AZURE OPENAI inference provider target. Use this when one end of your migration is a model deployed in Azure OpenAI. Azure differs from OpenAI first-party in three ways reflected below: (1) the endpoint is your resource's host, https://<your-resource>.openai.azure.com; (2) the model id is your Azure DEPLOYMENT NAME, not the base model name; (3) auth is an 'api-key' header, NOT 'Authorization: Bearer'. Azure also requires an api-version; set it on the operation path or via your deployment's default. The key goes in an AgentCore API_KEY credential provider (setup_gateway.py reads AZURE_OPENAI_API_KEY). To use: set SOURCE_MODEL = mc.EXAMPLE_SOURCE_AZURE_OPENAI, edit the endpoint + deployment name + api-version below, and provision this target.",
+  "gatewayIdentifier": "GATEWAY_ID",
+  "name": "azure",
+  "targetConfiguration": {
+    "inference": {
+      "provider": {
+        "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
+        "operations": [
+          {
+            "path": "/v1/chat/completions",
+            "providerPath": "/openai/deployments/YOUR-DEPLOYMENT-NAME/chat/completions?api-version=2024-10-21",
+            "models": [
+              { "model": "gpt-4.1" }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "credentialProviderConfigurations": [
+    {
+      "credentialProviderType": "API_KEY",
+      "credentialProvider": {
+        "apiKeyCredentialProvider": {
+          "providerArn": "arn:aws:bedrock-agentcore:us-east-1:ACCOUNT_ID:token-vault/default/apikeycredentialprovider/model-upgrade-azure-openai-key",
+          "credentialLocation": "HEADER",
+          "credentialParameterName": "api-key",
+          "credentialPrefix": ""
+        }
+      }
+    }
+  ]
+}
