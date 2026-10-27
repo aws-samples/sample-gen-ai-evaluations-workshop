@@ -132,8 +132,28 @@ it down (`--keep` leaves it up). Running it surfaced two more findings baked int
 
 What the smoke test proves live today: Runtime deploys to `READY`, a live `agentcore invoke`
 returns a correct multi-turn travel-agent response, and a custom AgentCore evaluator is
-created and deployed. Wiring the `eval ondemand` session query so it reliably returns scored
-sessions is the one piece still being finalized against the CLI's session-selection surface.
+created and deployed.
+
+### Iterate evaluators locally — no deploy
+
+You do **not** need a CloudFormation deploy to develop or debug an evaluator. The slow,
+flaky part of a live run is span *ingestion*: `eval ondemand` collects spans from the
+CloudWatch log group `/aws/bedrock-agentcore/runtimes/{agent_id}-DEFAULT` over a lookback
+window, and ingestion lags the agent turn by a couple of minutes — which is why a grade run
+fired too early returns `sessionsEvaluated: 0` (an empty `results: []`, not an evaluator
+error). Budget an ingestion wait and confirm `sessionsEvaluated > 0`.
+
+The evaluator itself is just a Python function: `EvaluatorInput.session_spans` is a
+`List[Dict]`, and `custom_code_based_evaluator` wraps `func(EvaluatorInput, context) ->
+EvaluatorOutput`. So you can grade a session in milliseconds with no AWS by constructing (or
+loading) spans and calling the handler directly:
+
+```bash
+python scripts/local_eval_demo.py   # scores sessions in-memory; no deploy, no CloudWatch
+```
+
+Use the local demo to iterate on evaluator logic fast; run the full `e2e_smoke_test.py` only
+when you want to confirm the end-to-end Runtime → Observability → Evaluations plumbing.
 
 ### Fan-out is sessions, not instances
 
