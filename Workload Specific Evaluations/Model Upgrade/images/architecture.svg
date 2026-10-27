@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1180" height="620" viewBox="0 0 1180 620" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 z" fill="#5a6b7b"/>
+    </marker>
+    <marker id="arrowloop" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 z" fill="#e6792b"/>
+    </marker>
+  </defs>
+
+  <rect width="1180" height="620" fill="#ffffff"/>
+  <text x="590" y="38" text-anchor="middle" font-size="24" font-weight="bold" fill="#16212b">Model Upgrade: evaluation-driven migration &amp; prompt hill-climbing</text>
+  <text x="590" y="62" text-anchor="middle" font-size="14" fill="#5a6b7b">Agents on AgentCore Runtime · one AgentCore Gateway inference seam · AgentCore Evaluations · notebook-driven hill climb</text>
+
+  <!-- 1. Notebook / hill-climb orchestrator -->
+  <g>
+    <rect x="40" y="120" width="230" height="200" rx="10" fill="#f2f6fa" stroke="#8aa0b4" stroke-width="1.5"/>
+    <text x="155" y="146" text-anchor="middle" font-size="15" font-weight="bold" fill="#16212b">Notebook</text>
+    <text x="155" y="166" text-anchor="middle" font-size="12" fill="#5a6b7b">hill-climb orchestrator</text>
+    <g font-size="11.5" fill="#33434f">
+      <text x="60" y="196">1 · seed prompt</text>
+      <text x="60" y="218">2 · LLM proposes K candidates</text>
+      <text x="60" y="240">    (fed judge reasoning)</text>
+      <text x="60" y="262">3 · fan out &amp; score</text>
+      <text x="60" y="284">4 · keep best · stop on plateau</text>
+    </g>
+    <rect x="60" y="296" width="190" height="14" rx="3" fill="#e9eef3" stroke="#c7d2db"/>
+    <text x="155" y="306" text-anchor="middle" font-size="10" fill="#5a6b7b">accuracy · latency · cost</text>
+  </g>
+
+  <!-- 2. AgentCore Runtime (N sessions) -->
+  <g>
+    <rect x="330" y="110" width="250" height="220" rx="10" fill="#edf7f5" stroke="#01a88d" stroke-width="1.5"/>
+    <image href="icons/agentcore.svg" x="350" y="124" width="46" height="46"/>
+    <text x="470" y="140" text-anchor="middle" font-size="14" font-weight="bold" fill="#16212b">AgentCore Runtime</text>
+    <text x="470" y="158" text-anchor="middle" font-size="11.5" fill="#5a6b7b">one deployed agent</text>
+    <!-- session microVMs -->
+    <g>
+      <rect x="352" y="186" width="206" height="30" rx="5" fill="#ffffff" stroke="#01a88d"/>
+      <text x="455" y="205" text-anchor="middle" font-size="11" fill="#33434f">session 1 · microVM · scenarios</text>
+      <rect x="352" y="222" width="206" height="30" rx="5" fill="#ffffff" stroke="#01a88d"/>
+      <text x="455" y="241" text-anchor="middle" font-size="11" fill="#33434f">session 2 · microVM · scenarios</text>
+      <rect x="352" y="258" width="206" height="30" rx="5" fill="#ffffff" stroke="#01a88d"/>
+      <text x="455" y="277" text-anchor="middle" font-size="11" fill="#33434f">session N · microVM · scenarios</text>
+    </g>
+    <text x="470" y="312" text-anchor="middle" font-size="10.5" fill="#5a6b7b">fan-out = concurrent sessions (not instances)</text>
+  </g>
+
+  <!-- 3. AgentCore Gateway (single inference seam) -->
+  <g>
+    <rect x="640" y="150" width="210" height="140" rx="10" fill="#edf7f5" stroke="#01a88d" stroke-width="1.5"/>
+    <image href="icons/agentcore.svg" x="660" y="164" width="44" height="44"/>
+    <text x="756" y="180" text-anchor="middle" font-size="14" font-weight="bold" fill="#16212b">AgentCore</text>
+    <text x="756" y="197" text-anchor="middle" font-size="14" font-weight="bold" fill="#16212b">Gateway</text>
+    <text x="745" y="228" text-anchor="middle" font-size="11.5" fill="#5a6b7b">single inference seam</text>
+    <text x="745" y="246" text-anchor="middle" font-size="11" fill="#33434f">routes by the <tspan font-style="italic">model</tspan> field</text>
+    <text x="745" y="264" text-anchor="middle" font-size="10.5" fill="#5a6b7b">bedrock-runtime connector</text>
+    <text x="745" y="280" text-anchor="middle" font-size="10.5" fill="#5a6b7b">(deprecation-safe; not mantle)</text>
+  </g>
+
+  <!-- 4a. Bedrock target (default) -->
+  <g>
+    <rect x="910" y="96" width="230" height="118" rx="10" fill="#eef1fb" stroke="#4b63d8" stroke-width="1.5"/>
+    <image href="icons/bedrock.svg" x="928" y="110" width="42" height="42"/>
+    <text x="1055" y="124" text-anchor="middle" font-size="13" font-weight="bold" fill="#16212b">Amazon Bedrock</text>
+    <text x="1055" y="141" text-anchor="middle" font-size="10.5" fill="#5a6b7b">default live path</text>
+    <text x="930" y="176" font-size="11.5" fill="#33434f">source · GPT-5.6 Luna</text>
+    <text x="930" y="196" font-size="11.5" fill="#33434f">target · GPT-6 Luna</text>
+  </g>
+
+  <!-- 4b. OpenAI / Azure examples -->
+  <g>
+    <rect x="910" y="228" width="230" height="86" rx="10" fill="#f6f2ee" stroke="#b5894e" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="1025" y="250" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#16212b">OpenAI 1P / Azure OpenAI</text>
+    <text x="1025" y="269" text-anchor="middle" font-size="10.5" fill="#5a6b7b">example legs (fill in your key)</text>
+    <text x="1025" y="289" text-anchor="middle" font-size="10.5" fill="#5a6b7b">migrate to/from a non-Bedrock model</text>
+    <text x="1025" y="305" text-anchor="middle" font-size="10" fill="#9a7b52">API-key credential provider</text>
+  </g>
+
+  <!-- 5. CloudWatch Observability -->
+  <g>
+    <rect x="640" y="360" width="210" height="110" rx="10" fill="#f3eef7" stroke="#a84bd8" stroke-width="1.5"/>
+    <image href="icons/cloudwatch.svg" x="660" y="374" width="44" height="44"/>
+    <text x="760" y="392" text-anchor="middle" font-size="13" font-weight="bold" fill="#16212b">CloudWatch</text>
+    <text x="760" y="409" text-anchor="middle" font-size="11" fill="#5a6b7b">AgentCore Observability</text>
+    <text x="745" y="440" text-anchor="middle" font-size="11" fill="#33434f">session traces &amp; spans</text>
+    <text x="745" y="457" text-anchor="middle" font-size="10.5" fill="#5a6b7b">(ingested, then graded)</text>
+  </g>
+
+  <!-- 6. AgentCore Evaluations -->
+  <g>
+    <rect x="330" y="360" width="250" height="110" rx="10" fill="#edf7f5" stroke="#01a88d" stroke-width="1.5"/>
+    <image href="icons/agentcore.svg" x="350" y="374" width="44" height="44"/>
+    <text x="470" y="392" text-anchor="middle" font-size="13" font-weight="bold" fill="#16212b">AgentCore Evaluations</text>
+    <text x="470" y="409" text-anchor="middle" font-size="11" fill="#5a6b7b">custom evaluators · fixed judge</text>
+    <text x="455" y="438" text-anchor="middle" font-size="11" fill="#33434f">goal completion (accuracy)</text>
+    <text x="455" y="456" text-anchor="middle" font-size="11" fill="#33434f">binary rubrics + reasoning</text>
+  </g>
+
+  <!-- flow arrows -->
+  <!-- notebook -> runtime -->
+  <line x1="270" y1="210" x2="326" y2="210" stroke="#5a6b7b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="298" y="202" text-anchor="middle" font-size="10" fill="#5a6b7b">invoke</text>
+  <!-- runtime -> gateway -->
+  <line x1="580" y1="212" x2="636" y2="212" stroke="#5a6b7b" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- gateway -> bedrock -->
+  <line x1="850" y1="180" x2="906" y2="160" stroke="#5a6b7b" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- gateway -> openai/azure -->
+  <line x1="850" y1="250" x2="906" y2="262" stroke="#b5894e" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <!-- runtime -> cloudwatch (traces) -->
+  <line x1="470" y1="330" x2="700" y2="356" stroke="#a84bd8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="560" y="338" text-anchor="middle" font-size="10" fill="#a84bd8">traces</text>
+  <!-- cloudwatch -> evaluations -->
+  <line x1="640" y1="415" x2="584" y2="415" stroke="#5a6b7b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="612" y="408" text-anchor="middle" font-size="10" fill="#5a6b7b">score</text>
+  <!-- evaluations -> notebook (hill-climb loop) -->
+  <path d="M330,430 C150,430 60,420 155,326" fill="none" stroke="#e6792b" stroke-width="2.2" marker-end="url(#arrowloop)"/>
+  <text x="150" y="400" text-anchor="middle" font-size="10.5" fill="#e6792b" font-weight="bold">accuracy + judge reasoning</text>
+  <text x="150" y="414" text-anchor="middle" font-size="10.5" fill="#e6792b" font-weight="bold">→ next generation</text>
+
+  <text x="590" y="596" text-anchor="middle" font-size="11" fill="#8a99a6">Icons: AWS Architecture Icons (Amazon Bedrock, Amazon Bedrock AgentCore, Amazon CloudWatch).</text>
+</svg>

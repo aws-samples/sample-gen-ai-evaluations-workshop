@@ -1,5 +1,7 @@
 # Model Upgrade: Evaluation-Driven Migration and Prompt Optimization
 
+![Architecture: a notebook hill-climb orchestrator invokes agents on AgentCore Runtime (concurrent microVM sessions), which call a single AgentCore Gateway inference seam that routes by the model field to Amazon Bedrock (GPT-5.6 Luna source, GPT-6 Luna target) with OpenAI first-party and Azure OpenAI as example legs; session traces land in CloudWatch (AgentCore Observability), AgentCore Evaluations scores them, and accuracy plus judge reasoning feed back to the notebook for the next generation.](images/architecture.png)
+
 When a newer model becomes available, two questions decide whether you should move your
 workload to it:
 
@@ -113,6 +115,25 @@ python gateway/setup_gateway.py create --with-openai   # also add the OpenAI exa
 python gateway/setup_gateway.py status
 python gateway/setup_gateway.py teardown        # removes targets, gateway, role, cred provider
 ```
+
+### Live end-to-end smoke test
+
+`scripts/e2e_smoke_test.py` provisions a throwaway AgentCore project and exercises the
+**Runtime + Observability + Evaluations** path end to end against real resources, then tears
+it down (`--keep` leaves it up). Running it surfaced two more findings baked into the module:
+
+- **Pick the judge model carefully.** A `claude-sonnet-5` LLM-as-a-judge evaluator fails to
+  create because that model rejects the default `temperature` parameter
+  (`temperature is deprecated for this model`). The module's judge is **Nova Micro**
+  (`amazon.nova-micro-v1:0`), which creates and scores cleanly and is cheap.
+- **`eval ondemand` selects sessions from ingested Observability traces**, and trace
+  ingestion lags the agent turn by a couple of minutes — budget an ingestion wait before
+  grading, and confirm `sessionsEvaluated > 0` rather than trusting an empty `results: []`.
+
+What the smoke test proves live today: Runtime deploys to `READY`, a live `agentcore invoke`
+returns a correct multi-turn travel-agent response, and a custom AgentCore evaluator is
+created and deployed. Wiring the `eval ondemand` session query so it reliably returns scored
+sessions is the one piece still being finalized against the CLI's session-selection surface.
 
 ### Fan-out is sessions, not instances
 
