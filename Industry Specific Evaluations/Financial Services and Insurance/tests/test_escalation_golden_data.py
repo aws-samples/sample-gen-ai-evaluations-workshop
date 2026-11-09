@@ -247,13 +247,15 @@ def test_dispute_and_lost_card_handoffs_escalate_on_the_explicit_ask(handoff_cas
     A dispute, a card lock and a replacement card are routine servicing work, not
     requests above the agent's authority. Each case says why it escalates in its
     label_note, so a reader can tell 006 apart from esc-corpus-001 (a similar
-    dispute with no request for a person, labelled handled).
+    dispute with no request for a person, labelled handled). Each case also has a
+    customer_request fact, so 3.3 checks that the summary records the ask.
     """
     by_id = {case["id"]: case for case in handoff_cases}
     for case_id in ("esc-handoff-006", "esc-handoff-009"):
         case = by_id[case_id]
         assert case["expected_trigger"] == "explicit_ask", case_id
         assert case.get("label_note"), case_id
+        assert any(f["kind"] == "customer_request" for f in case["material_facts"]), case_id
     assert "esc-corpus-001" in by_id["esc-handoff-006"]["label_note"]
 
 
@@ -378,6 +380,10 @@ def _fact(handoff_cases, case_id, fact_text):
     ("esc-handoff-007", "customer asked for a manager contact today",
      "Customer wants contact today about the renewal.",
      "Customer asked for a manager to call today."),
+    # Needing a replacement card is not asking for a person.
+    ("esc-handoff-009", "customer asked for a person to handle the charge and the replacement card",
+     "Customer disputes the $640 hotel charge and needs a replacement card before Sunday.",
+     "Customer asked for a person to handle the $640 charge and the replacement card."),
 ])
 def test_request_facts_need_the_request_itself(handoff_cases, case_id, fact_text, without_fact, with_fact):
     """A summary that only shares a loose word with a request fact does not carry it."""

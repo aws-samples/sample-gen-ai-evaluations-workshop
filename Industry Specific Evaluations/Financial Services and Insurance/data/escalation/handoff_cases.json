@@ -281,7 +281,11 @@
        "evidence_terms": [["640"], ["hotel"]]},
       {"fact": "customer flies home on Sunday and needs a replacement card before then",
        "kind": "disclosure",
-       "evidence_terms": [["sunday"], ["replacement", "replace", "new card", "emergency card"]]}
+       "evidence_terms": [["sunday"], ["replacement", "replace", "new card", "emergency card"]]},
+      {"fact": "customer asked for a person to handle the charge and the replacement card",
+       "kind": "customer_request",
+       "evidence_terms": [["a person", "real person", "human", "someone", "representative", "a specialist",
+                           "payments specialist", "speak to", "talk to", "hand me", "handed to", "hand over"]]}
     ],
     "action_terms": {"lockCard": ["lock"]},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
