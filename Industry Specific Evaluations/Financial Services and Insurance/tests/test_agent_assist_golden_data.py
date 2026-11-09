@@ -8,6 +8,8 @@ shape every assist case must have for the Scenario 2 checkers to read it.
 """
 
 import json
+import re
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -47,6 +49,39 @@ def test_every_client_has_the_required_sources(client_records):
     for client_id, record in client_records.items():
         for source in ("client_summary", "allocation_table", "policy_summary", "nba_model", "compliance"):
             assert source in record, (client_id, source)
+
+
+ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+
+
+def _trading_days_between(start, end):
+    """Weekdays after ``start`` up to and including ``end`` (no holiday calendar)."""
+    return sum(1 for n in range(1, (end - start).days + 1) if (start + timedelta(days=n)).weekday() < 5)
+
+
+def test_record_dates_fall_on_weekdays(client_records):
+    """Every as_of date and every date in a source note is a weekday.
+
+    Records are priced, and transfers and deposits post, on business days. A
+    transfer or a summary dated on a Saturday would not happen in a real book.
+    """
+    for client_id, record in client_records.items():
+        for source_name, source in record.items():
+            if not isinstance(source, dict):
+                continue
+            texts = [source.get("as_of", ""), source.get("note", "")]
+            for year, month, day in (m for text in texts for m in ISO_DATE.findall(text)):
+                assert date(int(year), int(month), int(day)).weekday() < 5, \
+                    (client_id, source_name, f"{year}-{month}-{day}")
+
+
+def test_cli_203_table_trails_the_summary_by_two_trading_days(client_records):
+    """CLI-203's note says the allocation table trails the summary by two trading days; the dates agree."""
+    record = client_records["CLI-203"]
+    table = date.fromisoformat(record["allocation_table"]["as_of"])
+    summary = date.fromisoformat(record["client_summary"]["as_of"])
+    assert "two trading days" in record["allocation_table"]["note"]
+    assert _trading_days_between(table, summary) == 2, (table, summary)
 
 
 def test_cli_201_has_an_equities_line_on_both_records(client_records):

@@ -254,9 +254,9 @@ test_case = {
     "id": "assist-advisor-034",
     "client_id": "CLI-201",
     "screen_artifact": {                       # what the human is reading
-        "client_summary": {"as_of": "2026-03-14", "aum_usd": 15409881.20, "risk_profile": "moderate",
+        "client_summary": {"as_of": "2026-03-16", "aum_usd": 15409881.20, "risk_profile": "moderate",
                            "equities_usd": 9554126.34, "equities_pct": 62.0},
-        # Priced three days earlier. Equity prices rose in between, so the
+        # Priced three trading days earlier. Equity prices rose in between, so the
         # equities line is $235,724.24 (about 2.5%) lower than the summary.
         "allocation_table": {"as_of": "2026-03-11",
                              "lines": {"equities": {"market_value_usd": 9318402.10, "weight_pct": 61.4}},
