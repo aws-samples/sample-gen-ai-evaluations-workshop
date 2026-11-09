@@ -4,8 +4,9 @@
     "authenticated_customer_id": "CUST-001",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
-    "expected_queue": "payments_specialist",
-    "expected_category": "disputed_transaction",
+    "expected_queue": "vulnerable_customer_support",
+    "expected_category": "vulnerability",
+    "label_note": "Routes to vulnerable_customer_support because the customer says she is recently bereaved. A vulnerability outranks the product queue: the disputed charges and the card lock go to that queue as material facts, so routing the case to payments_specialist is a misroute. esc-handoff-008, a payment scam on an older customer who lives alone, is routed the same way.",
     "turns": [
       {"user": "There are two charges of $240.00 I didn't make on 2026-03-11."},
       {"user": "Lock the card please."},

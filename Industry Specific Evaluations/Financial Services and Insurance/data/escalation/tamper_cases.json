@@ -2,13 +2,13 @@
   "base_handoff": {
     "reference_id": "HND-1",
     "customer_id": "CUST-001",
-    "queue": "payments_specialist",
-    "category": "disputed_transaction",
+    "queue": "vulnerable_customer_support",
+    "category": "vulnerability",
     "reason": "Customer disputes two charges and asked for a person.",
     "summary": "Customer disputes two $240.00 charges on 2026-03-11. Debit card ending 4417 already locked. Customer recently bereaved. Asked to speak to a person.",
     "sentiment": "distressed",
     "customer_id_display": "CUST-001",
-    "context": {"customer_id": "CUST-001", "channel": "chat"},
+    "context": {"customer_id": "CUST-001", "channel": "voice"},
     "timestamp": "2026-03-11T14:22:00+00:00",
     "agent_version": "servicing-agent-1.0"
   },

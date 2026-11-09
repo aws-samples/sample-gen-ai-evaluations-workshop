@@ -141,8 +141,45 @@ def test_first_handoff_case_is_esc_042(handoff_cases):
     assert case["authenticated_customer_id"] == "CUST-001"
     assert case["expected_disposition"] == "escalate"
     assert case["expected_trigger"] == "vulnerability"
-    assert case["expected_queue"] == "payments_specialist"
-    assert case["expected_category"] == "disputed_transaction"
+    assert case["expected_queue"] == "vulnerable_customer_support"
+    assert case["expected_category"] == "vulnerability"
+
+
+# The queue every vulnerability case routes to. A vulnerability outranks the product queue.
+VULNERABLE_QUEUE = "vulnerable_customer_support"
+
+
+def test_vulnerability_cases_route_to_the_vulnerable_queue(handoff_cases):
+    """Every handoff case with a vulnerability trigger goes to the vulnerable customer queue.
+
+    A vulnerability outranks the product queue: esc-042 is a card dispute from a
+    recently bereaved customer, and it routes like esc-handoff-008, not to
+    payments_specialist. 3.4 scores the queue by exact match, so a case that
+    breaks this rule would score the consistent choice as a misroute.
+    """
+    vulnerability_cases = [c for c in handoff_cases if c["expected_trigger"] == "vulnerability"]
+    assert vulnerability_cases
+    for case in vulnerability_cases:
+        assert case["expected_queue"] == VULNERABLE_QUEUE, (case["id"], case["expected_queue"])
+
+
+def test_esc_042_label_note_states_the_routing_rule(handoff_cases):
+    """esc-042 says in its label_note why it routes to the vulnerable queue and not to payments."""
+    note = handoff_cases[0].get("label_note", "")
+    assert VULNERABLE_QUEUE in note
+    assert "outranks" in note
+    assert "payments_specialist" in note
+
+
+def test_tamper_base_handoff_matches_esc_042_routing(tamper, handoff_cases, fixtures):
+    """The 3.6 base handoff is esc-042's record, so it carries esc-042's queue and category.
+
+    Its channel is one the queue can be reached on (voice, for the vulnerable queue).
+    """
+    base, case = tamper["base_handoff"], handoff_cases[0]
+    assert base["queue"] == case["expected_queue"]
+    assert base["category"] == case["expected_category"]
+    assert base["context"]["channel"] in fixtures["queues"][base["queue"]]["channels"]
 
 
 def test_esc_042_turns_match_the_readme(handoff_cases):

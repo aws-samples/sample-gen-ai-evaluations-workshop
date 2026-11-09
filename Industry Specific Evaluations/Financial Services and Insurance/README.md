@@ -347,6 +347,10 @@ Define the material-facts list for each case in the golden set. It holds any dis
 
 **4. Routing correctness.** The queue and the case category are fixed choices that decide what happens next: who picks up the case, which service level applies and how the case is reported. Score an exact match on both, and report the misroute rate for each category.
 
+The golden set uses one rule when a case fits both a product queue and the vulnerable customer queue: a vulnerability outranks the product queue. A handoff case whose trigger is `vulnerability` goes to `vulnerable_customer_support`, even when the work is a product task. For example, in esc-042 a recently bereaved customer disputes two card charges. The case goes to the vulnerable customer queue, and the dispute and the card lock reach that queue as material facts. A record that routes esc-042 to `payments_specialist` counts as a misroute. The `label_note` on esc-042 in `handoff_cases.json` states the same rule.
+
+Known gap: the vulnerable customer queue takes voice only, so notebook 03 runs every case routed there on a voice session. esc-042 ran as a chat conversation before it moved to that queue, and now it runs on voice too. No case covers a vulnerable customer who starts in chat, where that queue cannot be reached, so the evaluation does not test what the agent should do then.
+
 **5. Delivery verification at the receiving end.** Do not grade escalation on what the tool returns. Check that the handoff arrived: the record exists, the queue was reachable and the customer's call or chat was actually placed in the queue. An escalation can fail without any error. For example, the channel was never connected to the target queue. Or the tool returns success, but nobody built the integration behind it. In both cases the customer is dropped and every log line looks normal. Every case in this scenario checks the state at the destination.
 
 **6. Trust boundary on transferred context.** Mark each transferred field as advisory (display only) or security-relevant, then test that marking. Replay escalations with tampered advisory fields: a changed sentiment, another customer's id in a transferred attribute, or a summary that claims an authorization that never happened. The receiving side is a second agent. It reads the handoff record and then answers the customer's questions with read tools. Assert that its entitlement decisions (what data the customer may see) do not change. It must take the customer's identity only from the session the server verified.
@@ -363,8 +367,8 @@ escalation_case = {
     "authenticated_customer_id": "CUST-001",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",          # the customer is recently bereaved
-    "expected_queue": "payments_specialist",
-    "expected_category": "disputed_transaction",
+    "expected_queue": "vulnerable_customer_support",   # a vulnerability outranks the product queue
+    "expected_category": "vulnerability",
     "material_facts": [                            # completeness is recall over this list
         "customer disputes two charges of $240.00 on 2026-03-11",
         "agent already locked card ending 4417",
