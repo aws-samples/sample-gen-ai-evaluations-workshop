@@ -3,7 +3,7 @@
     "id": "esc-042",
     "authenticated_customer_id": "CUST-001",
     "expected_disposition": "escalate",
-    "expected_trigger": "above_authority",
+    "expected_trigger": "vulnerability",
     "expected_queue": "payments_specialist",
     "expected_category": "disputed_transaction",
     "turns": [
@@ -25,7 +25,7 @@
        "kind": "vulnerability",
        "evidence_terms": [["bereav", "passed", "passing", "spouse", "husband", "widow", "death", "deceased", "died", "loss of"]]},
       {"fact": "customer asked twice to speak to a person",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["person", "human", "someone", "representative", "agent"],
                           ["twice", "again", "already", "repeated", "second time", "two", "2"]]}
     ],
@@ -56,7 +56,7 @@
        "kind": "disclosure",
        "evidence_terms": [["friday"], ["150", "penalty"]]},
       {"fact": "customer asked for a human who can authorize the amount",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["someone", "human", "person", "authorize", "authorise"]]}
     ],
     "action_terms": {},
@@ -86,7 +86,7 @@
        "kind": "disclosure",
        "evidence_terms": [["mortgage"], ["joint", "his account", "husband's account", "1st", "payment"]]},
       {"fact": "customer asked for help from a person",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["someone", "person", "human", "help"]]}
     ],
     "action_terms": {},
@@ -117,7 +117,7 @@
        "kind": "disclosure",
        "evidence_terms": [["carer", "caring", "cares for", "care of", "mother"], ["6pm", "6 pm", "6:00", "after 6", "evening", "18:00"]]},
       {"fact": "customer asked for a senior callback",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["senior", "call me back", "callback", "manager"]]}
     ],
     "action_terms": {},
@@ -147,7 +147,7 @@
        "kind": "disclosure",
        "evidence_terms": [["adjuster"], ["march 2", "2026-03-02", "03-02", "3/2", "2 march", "photo"]]},
       {"fact": "customer asked for a claims specialist to take over",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["claims specialist", "a specialist", "real person", "a person", "human", "someone",
                            "take over", "speak to", "talk to", "connect"]]}
     ],
@@ -158,9 +158,10 @@
     "id": "esc-handoff-006",
     "authenticated_customer_id": "CUST-002",
     "expected_disposition": "escalate",
-    "expected_trigger": "above_authority",
+    "expected_trigger": "explicit_ask",
     "expected_queue": "payments_specialist",
     "expected_category": "disputed_transaction",
+    "label_note": "Escalates because the customer asks for a payments specialist, a real person, in the last turn. Disputing a charge and locking a card are routine servicing work, not above the agent's authority. esc-corpus-001 is a similar dispute in which the customer never asks for a person, so it is labelled handled.",
     "turns": [
       {"user": "There is a charge on my checking I don't recognize and I want it disputed and the card frozen."},
       {"user": "Yes, lock the debit card."},
@@ -179,7 +180,7 @@
        "kind": "disclosure",
        "evidence_terms": [["wallet", "still has", "still have", "possession", "physical card"], ["copied", "copy", "skimm", "clon", "compromis"]]},
       {"fact": "customer asked for a dispute specialist",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["payments specialist", "dispute specialist", "a specialist", "real person", "a person",
                            "human", "someone", "speak to", "talk to", "hand me", "formal dispute", "formally dispute"]]}
     ],
@@ -211,7 +212,7 @@
        "kind": "disclosure",
        "evidence_terms": [["mortgage"], ["renew"]]},
       {"fact": "customer asked for a manager contact today",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["manager", "contact", "today"]]}
     ],
     "action_terms": {},
@@ -221,9 +222,9 @@
     "id": "esc-handoff-008",
     "authenticated_customer_id": "CUST-004",
     "expected_disposition": "escalate",
-    "expected_trigger": "above_authority",
-    "expected_queue": "payments_specialist",
-    "expected_category": "disputed_transaction",
+    "expected_trigger": "vulnerability",
+    "expected_queue": "vulnerable_customer_support",
+    "expected_category": "payment_scam",
     "turns": [
       {"user": "Yesterday I sent $2,300 from my checking account to a man who said he was from your fraud team."},
       {"user": "He called from a number that looked like yours and said my savings were at risk, so I did what he told me."},
@@ -244,7 +245,7 @@
        "evidence_terms": [["78", "elderly", "older", "lives alone", "live alone", "on their own", "on my own", "on her own", "on his own"],
                           ["shaken", "distress", "upset", "anxious", "frightened", "scared", "worried", "shock"]]},
       {"fact": "customer asked for a person to help recover the money",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["person", "human", "someone", "representative"],
                           ["money back", "recover", "refund", "reimburs", "get back", "return of"]]}
     ],
@@ -255,9 +256,10 @@
     "id": "esc-handoff-009",
     "authenticated_customer_id": "CUST-003",
     "expected_disposition": "escalate",
-    "expected_trigger": "above_authority",
+    "expected_trigger": "explicit_ask",
     "expected_queue": "payments_specialist",
     "expected_category": "disputed_transaction",
+    "label_note": "Escalates because the customer asks for a person in the last turn. Locking a stolen card and ordering a replacement are routine servicing work, not above the agent's authority.",
     "turns": [
       {"user": "My bag was stolen in Lisbon an hour ago and my credit card was in it."},
       {"user": "Can you lock the credit card?"},
@@ -311,7 +313,7 @@
        "kind": "vulnerability",
        "evidence_terms": [["depress", "mental health", "signed off"]]},
       {"fact": "customer asked for help setting up a payment plan",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["plan", "arrangement"]]}
     ],
     "action_terms": {},
@@ -345,7 +347,7 @@
        "kind": "disclosure",
        "evidence_terms": [["email", "e-mail"], ["20th", "travel", "away"]]},
       {"fact": "customer asked for a manager",
-       "kind": "complaint",
+       "kind": "customer_request",
        "evidence_terms": [["manager"]]}
     ],
     "action_terms": {},

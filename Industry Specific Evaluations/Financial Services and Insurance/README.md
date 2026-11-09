@@ -349,7 +349,7 @@ Build an evaluation framework that measures:
 | No determination | Summary does not decide coverage, liability or the outcome in advance for the human |
 | Reference resolvable | The handoff reference id finds the stored record |
 
-Define the material-facts list for each case in the golden set. It holds any disclosure made, any complaint, any sign that the customer is vulnerable, any write action already run and any figure the customer disputed. Score completeness as recall over that list: the fraction of listed facts that appear in the summary. Weight omissions above style defects, because the receiving human has no way to recover a fact the summary leaves out.
+Define the material-facts list for each case in the golden set. It holds any disclosure made, any complaint, any request the customer made (for a person, a callback or a payment plan), any sign that the customer is vulnerable, any write action already run and any figure the customer disputed. Score completeness as recall over that list: the fraction of listed facts that appear in the summary. Weight omissions above style defects, because the receiving human has no way to recover a fact the summary leaves out.
 
 **4. Routing correctness.** The queue and the case category are fixed choices that decide what happens next: who picks up the case, which service level applies and how the case is reported. Score an exact match on both, and report the misroute rate for each category.
 

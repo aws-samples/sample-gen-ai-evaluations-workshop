@@ -80,8 +80,7 @@ def test_corpus_ids_unique(corpus):
 
 def test_corpus_dispositions_are_valid(corpus):
     """Every disposition is handled or escalate; triggers are from the known set."""
-    valid_triggers = {"frustration", "complexity", "above_authority", "explicit_ask",
-                      "vulnerability", "complaint", None}
+    valid_triggers = VALID_TRIGGERS | {None}
     for case in corpus:
         assert case["expected_disposition"] in ("handled", "escalate"), case["id"]
         assert case["expected_trigger"] in valid_triggers, (case["id"], case["expected_trigger"])
@@ -141,7 +140,7 @@ def test_first_handoff_case_is_esc_042(handoff_cases):
     assert case["id"] == "esc-042"
     assert case["authenticated_customer_id"] == "CUST-001"
     assert case["expected_disposition"] == "escalate"
-    assert case["expected_trigger"] == "above_authority"
+    assert case["expected_trigger"] == "vulnerability"
     assert case["expected_queue"] == "payments_specialist"
     assert case["expected_category"] == "disputed_transaction"
 
@@ -158,7 +157,7 @@ def test_esc_042_turns_match_the_readme(handoff_cases):
 
 def test_every_material_fact_has_a_kind_and_evidence_terms(handoff_cases):
     """Each material fact is an object with a kind and non-empty evidence terms."""
-    valid_kinds = {"disclosure", "complaint", "vulnerability", "write_action", "disputed_figure"}
+    valid_kinds = {"disclosure", "complaint", "customer_request", "vulnerability", "write_action", "disputed_figure"}
     for case in handoff_cases:
         assert case["material_facts"], case["id"]
         for fact in case["material_facts"]:
@@ -178,6 +177,60 @@ def test_esc_042_material_facts_cover_the_readme_list(handoff_cases):
     assert "write_action" in kinds
     assert "vulnerability" in kinds
     assert len(case["material_facts"]) >= 4, len(case["material_facts"])
+
+
+# The escalation triggers a corpus or handoff case may name.
+VALID_TRIGGERS = {"frustration", "complexity", "above_authority", "explicit_ask", "vulnerability", "complaint"}
+
+
+def test_handoff_triggers_are_valid(handoff_cases):
+    """Every handoff case names one of the known escalation triggers."""
+    for case in handoff_cases:
+        assert case["expected_trigger"] in VALID_TRIGGERS, (case["id"], case["expected_trigger"])
+
+
+def test_requests_for_a_person_or_a_plan_are_customer_requests(handoff_cases):
+    """A fact that records what the customer asked for has kind customer_request, not complaint.
+
+    Asking for a person, a callback, a specialist or a payment plan is a request.
+    Counting it as a complaint would report a missed request as a missed complaint.
+    """
+    for case in handoff_cases:
+        for fact in case["material_facts"]:
+            if fact["fact"].startswith("customer asked"):
+                assert fact["kind"] == "customer_request", (case["id"], fact["fact"])
+    esc_042 = handoff_cases[0]
+    asked_twice = next(f for f in esc_042["material_facts"] if "asked twice" in f["fact"])
+    assert asked_twice["kind"] == "customer_request"
+
+
+def test_dispute_and_lost_card_handoffs_escalate_on_the_explicit_ask(handoff_cases):
+    """esc-handoff-006 and 009 escalate because the customer asks for a person.
+
+    A dispute, a card lock and a replacement card are routine servicing work, not
+    requests above the agent's authority. Each case says why it escalates in its
+    label_note, so a reader can tell 006 apart from esc-corpus-001 (a similar
+    dispute with no request for a person, labelled handled).
+    """
+    by_id = {case["id"]: case for case in handoff_cases}
+    for case_id in ("esc-handoff-006", "esc-handoff-009"):
+        case = by_id[case_id]
+        assert case["expected_trigger"] == "explicit_ask", case_id
+        assert case.get("label_note"), case_id
+    assert "esc-corpus-001" in by_id["esc-handoff-006"]["label_note"]
+
+
+def test_scam_on_an_older_customer_living_alone_is_a_vulnerability_case(handoff_cases, fixtures):
+    """esc-handoff-008, an impersonation scam on a 78-year-old who lives alone, goes to the vulnerable queue.
+
+    Its trigger is vulnerability and its category is payment_scam, which the
+    vulnerable customer support queue accepts.
+    """
+    case = next(c for c in handoff_cases if c["id"] == "esc-handoff-008")
+    assert case["expected_trigger"] == "vulnerability"
+    assert case["expected_queue"] == "vulnerable_customer_support"
+    assert case["expected_category"] == "payment_scam"
+    assert "payment_scam" in fixtures["queues"]["vulnerable_customer_support"]["categories"]
 
 
 def test_handoff_action_terms_reference_write_tools(handoff_cases):

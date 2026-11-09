@@ -807,6 +807,7 @@
         "voice"
       ],
       "categories": [
+        "payment_scam",
         "vulnerability"
       ]
     },
