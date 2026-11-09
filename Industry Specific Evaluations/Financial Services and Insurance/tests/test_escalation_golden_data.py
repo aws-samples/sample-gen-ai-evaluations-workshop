@@ -392,6 +392,46 @@ def test_request_facts_need_the_request_itself(handoff_cases, case_id, fact_text
     assert chk.fact_present(with_fact, terms), (case_id, with_fact)
 
 
+ESC_042_ASKED_TWICE = "customer asked twice to speak to a person"
+
+
+@pytest.mark.parametrize("summary", [
+    "Customer asked more than once for a human.",
+    "Customer asked for a real person two times.",
+    "Customer asked 2 times to speak to someone.",
+    "Customer asked several times for a person.",
+    "Customer asked multiple times to talk to a person.",
+    "Customer repeatedly asked for a person.",
+    "Customer asked again for a representative.",
+])
+def test_esc_042_asked_twice_accepts_fair_paraphrases(handoff_cases, summary):
+    """A summary may say "asked twice" in other words and still carry the fact."""
+    assert chk.fact_present(summary, _fact(handoff_cases, "esc-042", ESC_042_ASKED_TWICE)), summary
+
+
+@pytest.mark.parametrize("summary", [
+    "Customer disputes two $240 charges and wants a person to review them.",
+    "Customer disputes multiple $240 charges and wants a person to review them.",
+    "Customer reports several unauthorised charges and wants to speak to someone.",
+])
+def test_esc_042_asked_twice_is_not_carried_by_a_count_of_charges(handoff_cases, summary):
+    """A word that counts the charges ("two", "multiple", "several") is not a repeated request."""
+    assert not chk.fact_present(summary, _fact(handoff_cases, "esc-042", ESC_042_ASKED_TWICE)), summary
+
+
+def test_esc_042_recall_counts_a_paraphrased_repeat_request(handoff_cases):
+    """Recall over the authored narrative counts "more than once" and misses a summary without the repeat."""
+    fact = next(f for f in handoff_cases[0]["material_facts"] if f["fact"] == ESC_042_ASKED_TWICE)
+    with_repeat = {"reason": "Customer wants a person.",
+                   "summary": "Customer asked more than once to speak to a person."}
+    without_repeat = {"reason": "Customer wants a person.",
+                      "summary": "Customer wants a person to review the two $240 charges."}
+    assert chk.material_fact_recall(with_repeat, [fact])["recall"] == 1.0
+    result = chk.material_fact_recall(without_repeat, [fact])
+    assert result["recall"] == 0.0
+    assert result["missed"] == [ESC_042_ASKED_TWICE]
+
+
 # The handoff cases added so that no single case decides 3.3 recall. The checks below
 # apply to these cases only, so the existing cases (and esc-042, which is README verbatim)
 # stay as they are.

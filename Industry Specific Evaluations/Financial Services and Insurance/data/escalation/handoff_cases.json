@@ -28,7 +28,9 @@
       {"fact": "customer asked twice to speak to a person",
        "kind": "customer_request",
        "evidence_terms": [["person", "human", "someone", "representative"],
-                          ["twice", "again", "already", "repeated", "second time"]]}
+                          ["twice", "again", "already", "repeated", "second time", "more than once",
+                           "two times", "2 times", "multiple times", "multiple requests", "multiple occasions",
+                           "several times", "several requests", "several occasions"]]}
     ],
     "action_terms": {"lockCard": ["lock"]},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
