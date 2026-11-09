@@ -123,6 +123,8 @@ A case passes overall when the four checks that notebook 01 builds all pass: no 
 
 ### Evaluation Data
 
+The conversation example below is illustrative. Some of its fields, such as `assert_tool_args`, `guardrail`, `expected_tool` and `expected_write_count_for_session`, are not in the data; see `data/servicing/conversations.json` for the fields notebook 01 scores.
+
 ```python
 # Multi-turn case. Identity is handed to the agent out of band, never parsed from the dialogue.
 test_conversation = {
