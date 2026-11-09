@@ -2,7 +2,8 @@
 
 These guard the equities fix the notebook depends on (the CLI-201 screen artifact
 shows an equities line on both the client summary and the allocation table, and
-the two disagree by a subtle 1-5% because a purchase has not settled), and the
+the two disagree by a subtle 1-5% because equity prices rose between the two
+pricing dates), and the
 shape every assist case must have for the Scenario 2 checkers to read it.
 """
 
@@ -78,6 +79,36 @@ def test_allocation_table_lines_sum_to_the_table_total(client_records):
         lines = record["allocation_table"]["lines"]
         line_total = round(sum(line["market_value_usd"] for line in lines.values()), 2)
         assert abs(line_total - record["allocation_table"]["total_usd"]) <= 1.0, client_id
+
+
+def test_allocation_table_weights_match_market_values(client_records):
+    """Each line's weight_pct is its market value over the table total, to one decimal place.
+
+    The weights of each table also add up to 100.0, within 0.1 for rounding.
+    """
+    for client_id, record in client_records.items():
+        table = record["allocation_table"]
+        for name, line in table["lines"].items():
+            expected = round(100.0 * line["market_value_usd"] / table["total_usd"], 1)
+            assert line["weight_pct"] == expected, (client_id, name, line["weight_pct"], expected)
+        weight_sum = sum(line["weight_pct"] for line in table["lines"].values())
+        assert abs(weight_sum - 100.0) <= 0.1, (client_id, weight_sum)
+
+
+def test_client_summary_lines_sum_to_aum(client_records):
+    """Each summary's equities, fixed income and cash add up to its stated AUM."""
+    for client_id, record in client_records.items():
+        summary = record["client_summary"]
+        line_total = summary["equities_usd"] + summary["fixed_income_usd"] + summary["cash_usd"]
+        assert abs(line_total - summary["aum_usd"]) <= 1.0, (client_id, line_total, summary["aum_usd"])
+
+
+def test_client_summary_equities_pct_matches_aum(client_records):
+    """Each summary's equities_pct is its equities figure over AUM, to one decimal place."""
+    for client_id, record in client_records.items():
+        summary = record["client_summary"]
+        expected = round(100.0 * summary["equities_usd"] / summary["aum_usd"], 1)
+        assert summary["equities_pct"] == expected, (client_id, summary["equities_pct"], expected)
 
 
 def test_disagreement_and_agreement_clients_exist(client_records):

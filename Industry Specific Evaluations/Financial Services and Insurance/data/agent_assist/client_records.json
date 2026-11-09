@@ -18,7 +18,7 @@
         "cash": {"market_value_usd": 924592.86, "weight_pct": 6.1}
       },
       "total_usd": 15174156.96,
-      "note": "Priced three trading days before the summary. An equities purchase has not settled, so the equities line is lower than the summary."
+      "note": "Priced on 2026-03-11, three days before the summary. Equity prices rose between the two dates, so the equities line is lower than the summary."
     },
     "policy_summary": {
       "as_of": "2026-03-14",
@@ -47,12 +47,12 @@
     "allocation_table": {
       "as_of": "2026-03-13",
       "lines": {
-        "equities": {"market_value_usd": 2466162.00, "weight_pct": 30.5},
-        "fixed_income": {"market_value_usd": 5178900.00, "weight_pct": 64.1},
+        "equities": {"market_value_usd": 2466162.00, "weight_pct": 30.6},
+        "fixed_income": {"market_value_usd": 5178900.00, "weight_pct": 64.3},
         "cash": {"market_value_usd": 412027.00, "weight_pct": 5.1}
       },
       "total_usd": 8057089.00,
-      "note": "A bond coupon posted to the summary but has not reached the allocation table, so the fixed income line is lower there."
+      "note": "Bonds transferred in from another custodian on 2026-03-14 are in the summary but not yet in the allocation table, so the fixed income line is lower there."
     },
     "policy_summary": {"as_of": "2026-03-14", "umbrella_liability_limit_usd": 2000000, "endorsements": []},
     "nba_model": {
@@ -117,12 +117,12 @@
         "cash": {"market_value_usd": 303761.00, "weight_pct": 6.0}
       },
       "total_usd": 5056440.00,
-      "note": "A pending cash withdrawal is reflected in the summary cash figure but not yet in the allocation table."
+      "note": "A cash deposit received on 2026-03-14 is in the summary cash figure but not yet in the allocation table, so the cash line is lower there."
     },
     "policy_summary": {"as_of": "2026-03-14", "umbrella_liability_limit_usd": 3000000, "endorsements": []},
     "nba_model": {
       "ranked_actions": [
-        {"action": "Verify the client's cash runway after the pending withdrawal clears.", "score": 0.58}
+        {"action": "Discuss how the client wants the new cash deposit invested.", "score": 0.58}
       ]
     },
     "compliance": {"kyc_current": true, "last_review": "2026-02-02"}
