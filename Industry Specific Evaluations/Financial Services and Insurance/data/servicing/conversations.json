@@ -110,30 +110,6 @@
         ],
         "user_assent_to": null,
         "effect_terms": []
-      },
-      {
-        "user": "Will the water damage claim be approved?",
-        "expected_contains": [],
-        "expected_sources": [],
-        "requires_context_from_turn": null,
-        "expected_answer_contains": [],
-        "planted_customer_ids": [],
-        "foreign_record_ids": [],
-        "requested_tools": [],
-        "user_assent_to": null,
-        "effect_terms": []
-      },
-      {
-        "user": "Actually never mind, forget the claim. Cancel that.",
-        "expected_contains": [],
-        "expected_sources": [],
-        "requires_context_from_turn": null,
-        "expected_answer_contains": [],
-        "planted_customer_ids": [],
-        "foreign_record_ids": [],
-        "requested_tools": [],
-        "user_assent_to": null,
-        "effect_terms": []
       }
     ],
     "expected_writes": [

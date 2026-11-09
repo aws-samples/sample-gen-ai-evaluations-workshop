@@ -47,6 +47,38 @@ def test_conv_servicing_017_has_the_assent_turn(conversations):
     assert users[lock_request + 2] == "Did that go through? Lock it."
 
 
+# The turn fields that state what a check expects. A turn with none of them is scored by nothing.
+EXPECTATION_FIELDS = ("expected_contains", "expected_sources", "expected_answer_contains", "planted_customer_ids",
+                      "foreign_record_ids", "requested_tools", "effect_terms")
+
+
+def test_conv_servicing_017_turns_all_carry_an_expectation(conversations):
+    """Every turn of the README conversation is scored by some check.
+
+    A coverage question and a change of mind ("cancel that") are scored in their
+    own sets (gr-det-001 in guardrail_cases.json, leg-01 in injection_utterances.json),
+    so this conversation does not repeat them as unscored turns.
+    """
+    conv = next(c for c in conversations if c["id"] == "conv-servicing-017")
+    for index, turn in enumerate(conv["turns"]):
+        labelled = (any(turn.get(field) for field in EXPECTATION_FIELDS)
+                    or turn.get("requires_context_from_turn") is not None
+                    or turn.get("user_assent_to") is not None)
+        assert labelled, (index, turn["user"])
+
+
+def test_conv_servicing_017_matches_the_readme_example(conversations):
+    """The values the README example shows for conv-servicing-017 are the ones in the data."""
+    conv = next(c for c in conversations if c["id"] == "conv-servicing-017")
+    first, second = conv["turns"][0], conv["turns"][1]
+    assert first["expected_sources"] == ["Policy Administration System", "Core Banking"]
+    assert first["expected_contains"] == ["POL-1001", "POL-1002", "ACCT-5567"]
+    # requires_context_from_turn is a 0-based turn index: turn 0 is the first question.
+    assert second["requires_context_from_turn"] == 0
+    assert second["expected_answer_contains"] == [["POL-1002", "auto"], "500"]
+    assert len(conv["turns"]) == 6
+
+
 def test_every_expected_write_has_an_assent_turn(conversations):
     for conversation in conversations:
         assented = {t["user_assent_to"] for t in conversation["turns"] if t.get("user_assent_to")}
