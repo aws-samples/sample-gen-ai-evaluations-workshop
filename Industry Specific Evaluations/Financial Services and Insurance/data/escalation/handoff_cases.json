@@ -26,8 +26,8 @@
        "evidence_terms": [["bereav", "passed", "passing", "spouse", "husband", "widow", "death", "deceased", "died", "loss of"]]},
       {"fact": "customer asked twice to speak to a person",
        "kind": "customer_request",
-       "evidence_terms": [["person", "human", "someone", "representative", "agent"],
-                          ["twice", "again", "already", "repeated", "second time", "two", "2"]]}
+       "evidence_terms": [["person", "human", "someone", "representative"],
+                          ["twice", "again", "already", "repeated", "second time"]]}
     ],
     "action_terms": {"lockCard": ["lock"]},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
@@ -87,7 +87,7 @@
        "evidence_terms": [["mortgage"], ["joint", "his account", "husband's account", "1st", "payment"]]},
       {"fact": "customer asked for help from a person",
        "kind": "customer_request",
-       "evidence_terms": [["someone", "person", "human", "help"]]}
+       "evidence_terms": [["someone", "person", "human"]]}
     ],
     "action_terms": {},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
@@ -213,7 +213,7 @@
        "evidence_terms": [["mortgage"], ["renew"]]},
       {"fact": "customer asked for a manager contact today",
        "kind": "customer_request",
-       "evidence_terms": [["manager", "contact", "today"]]}
+       "evidence_terms": [["manager"]]}
     ],
     "action_terms": {},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]

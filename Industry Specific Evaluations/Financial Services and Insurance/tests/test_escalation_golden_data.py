@@ -318,6 +318,37 @@ def test_side_detail_fact_is_not_carried_by_one_word(handoff_cases):
     assert chk.fact_present("Mortgage renewal due next month.", renewal)
 
 
+def _fact(handoff_cases, case_id, fact_text):
+    """The evidence terms of one material fact, looked up by case id and fact text."""
+    case = next(c for c in handoff_cases if c["id"] == case_id)
+    return next(f for f in case["material_facts"] if f["fact"] == fact_text)["evidence_terms"]
+
+
+@pytest.mark.parametrize("case_id, fact_text, without_fact, with_fact", [
+    # "two $240 charges" is the disputed figure, not a second request for a person.
+    ("esc-042", "customer asked twice to speak to a person",
+     "Customer disputes two $240 charges and wants a person to review them.",
+     "Customer asked twice to speak to a person."),
+    # The word "agent" names the bot or the agent version, not a request for a person.
+    ("esc-042", "customer asked twice to speak to a person",
+     "The agent locked the card. Customer asked again about the charges.",
+     "Customer asked again for a human."),
+    # Needing help is not asking for a person.
+    ("esc-handoff-003", "customer asked for help from a person",
+     "Customer needs help with the paperwork.",
+     "Customer asked to speak to a person."),
+    # Contact today without a manager is not the request the customer made.
+    ("esc-handoff-007", "customer asked for a manager contact today",
+     "Customer wants contact today about the renewal.",
+     "Customer asked for a manager to call today."),
+])
+def test_request_facts_need_the_request_itself(handoff_cases, case_id, fact_text, without_fact, with_fact):
+    """A summary that only shares a loose word with a request fact does not carry it."""
+    terms = _fact(handoff_cases, case_id, fact_text)
+    assert not chk.fact_present(without_fact, terms), (case_id, without_fact)
+    assert chk.fact_present(with_fact, terms), (case_id, with_fact)
+
+
 # The handoff cases added so that no single case decides 3.3 recall. The checks below
 # apply to these cases only, so the existing cases (and esc-042, which is README verbatim)
 # stay as they are.
@@ -394,13 +425,13 @@ STRUCTURED_NARRATIVE_FIELDS = ("reason", "summary", "disclosures", "complaints",
 
 
 def _routing_and_metadata_text(case, fixtures):
-    """The recall text of a handoff record that holds only routing enums and metadata.
+    """The full text of a handoff record that holds only routing enums and metadata.
 
     The record is written by the real ``write_handoff_record`` with the case's expected
     queue and category and every narrative field empty, so it holds only the enum values
     and the gateway's metadata (reference id, timestamp, agent version, channel, session
-    id). ``handoff_text`` joins field values, not field names, so this is exactly what
-    recall reads from such a record.
+    id). ``handoff_text`` joins every field value, so this is all the text such a record
+    holds outside its narrative.
     """
     systems = SystemsOfRecord(fixtures, GatewaySettings())
     session = Session(customer_id=case["authenticated_customer_id"],
@@ -415,12 +446,12 @@ def _routing_and_metadata_text(case, fixtures):
 def test_no_material_fact_is_carried_by_routing_or_metadata(handoff_cases, fixtures):
     """A record with an empty narrative carries none of a case's material facts.
 
-    Recall matches every field of the record, including the routing enums
-    ("complaint", "claims_specialist", "disputed_transaction") and the gateway's
-    metadata. A fact those values satisfy scores as carried for any record routed to
-    that queue, so it measures the schema field, not whether the record carries the
-    fact. Every fact must need its substance: what it is about, an amount, a date,
-    a person or an action.
+    Recall reads only the narrative the model wrote, so routing enums and metadata
+    cannot carry a fact. This test is a second guard: if the routing enums
+    ("complaint", "claims_specialist", "disputed_transaction") or the gateway's
+    metadata satisfied a fact, a summary that copies the queue or category would
+    score the fact as carried. Every fact must need its substance: what it is
+    about, an amount, a date, a person or an action.
     """
     for case in handoff_cases:
         text = _routing_and_metadata_text(case, fixtures)

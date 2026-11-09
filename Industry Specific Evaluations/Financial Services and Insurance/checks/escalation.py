@@ -116,9 +116,9 @@ def build_padded_turns(base_turns, padding_pool, padding_count, revisit_turns) -
 def handoff_text(record: dict) -> str:
     """All string and list text in a handoff record, joined into one block for matching.
 
-    Used by the recall and disposition checks, which match the golden evidence
-    terms against every field of the record, including the routing enums and the
-    machine metadata. Do not pass this to a fabrication judge: see
+    Used by the disposition check, which matches action words against every field
+    of the record, including the routing enums and the machine metadata. Do not
+    use it for material-fact recall or pass it to a fabrication judge: see
     ``authored_summary_text``.
     """
     parts = []
@@ -141,7 +141,11 @@ AUTHORED_NARRATIVE_FIELDS = ("reason", "summary", "disclosures", "complaints",
 
 
 def authored_summary_text(record: dict | None) -> str:
-    """The model-authored narrative of a handoff record, joined for a fabrication judge.
+    """The model-authored narrative of a handoff record, joined for recall and a fabrication judge.
+
+    Material-fact recall reads only this text, so a fact counts as carried only
+    when the model wrote it. For example, the agent_version "servicing-agent-1.0"
+    must not satisfy a request to speak to a person through the word "agent".
 
     A fabrication judge checks that every fact in the summary appears in the
     conversation. Its evidence is the conversation turns, so it must see only the
@@ -177,10 +181,12 @@ def material_fact_recall(record: dict, material_facts) -> dict:
     """Recall of the material-facts list over a handoff record.
 
     Completeness is recall: how many of the facts that had to be carried forward
-    appear in the record. Omissions are weighted above style, so the missed
-    facts and their kinds are returned, not just a number.
+    appear in the record. Only the model-authored narrative is read (see
+    ``authored_summary_text``), so routing enums and gateway metadata cannot
+    carry a fact. Omissions are weighted above style, so the missed facts and
+    their kinds are returned, not just a number.
     """
-    text = handoff_text(record)
+    text = authored_summary_text(record)
     missed, missed_kinds = [], []
     present = 0
     for fact in material_facts:

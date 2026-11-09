@@ -196,6 +196,26 @@ def test_material_fact_recall_counts_present_facts():
     assert result["missed_kinds"] == ["complaint"]
 
 
+def test_material_fact_recall_reads_only_the_authored_narrative(fixtures):
+    # A record written by the real gateway carries metadata such as agent_version
+    # "servicing-agent-1.0". The word "agent" in that metadata must not count as the
+    # customer asking for a person: recall reads only the text the model wrote.
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session()
+    _escalate(systems, session, reason="Customer disputes charges.",
+              summary="Customer asked again about the charges.")
+    record = next(iter(systems.store.handoffs.values()))
+    assert "servicing-agent-1.0" in chk.handoff_text(record)
+    asked_again = [{"fact": "customer asked again for a person", "kind": "customer_request",
+                    "evidence_terms": [["person", "agent"], ["again"]]}]
+    result = chk.material_fact_recall(record, asked_again)
+    assert result["recall"] == 0.0
+    assert result["missed_kinds"] == ["customer_request"]
+    # The same fact is carried once the summary itself says it.
+    record["summary"] = "Customer asked again to speak to a person."
+    assert chk.material_fact_recall(record, asked_again)["recall"] == 1.0
+
+
 # ---------------------------------------------------------------------------
 # authored_summary_text
 # ---------------------------------------------------------------------------
