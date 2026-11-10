@@ -289,6 +289,31 @@ def test_states_no_records_false(text):
     assert states_no_records(text) is False
 
 
+@pytest.mark.parametrize("text", [
+    # Correct true-empty replies from the skeptic review. A word such as "issue" or
+    # "retrieve" in a reassurance is not a report of a retrieval problem.
+    "There's no issue, you have no open claims.",
+    "I was able to retrieve your file: you have no open claims.",
+    "You have zero open claims.",
+    "Your claims list is empty.",
+    "No problem! You have no open claims.",
+    "There's nothing open on your claims list.",
+])
+def test_states_no_records_true_for_plain_true_empty_replies(text):
+    assert states_no_records(text) is True
+
+
+@pytest.mark.parametrize("text", [
+    # Real failure phrasing stays a failure report, even next to a no-records sentence.
+    "There was a problem retrieving your claims, so it shows no claims right now.",
+    "I'm unable to retrieve your claims at the moment, and the list is empty.",
+    "I was not able to retrieve your file, so there are no claims to show.",
+    "Sorry, I had an issue loading your claims: you have zero claims showing.",
+])
+def test_states_no_records_false_when_the_sentence_reports_a_failure(text):
+    assert states_no_records(text) is False
+
+
 def test_empty_result_discrimination():
     outcomes = [
         {"pair_id": "claims", "expected_behavior": "state_no_records", "states_no_records": True, "reports_problem": None},

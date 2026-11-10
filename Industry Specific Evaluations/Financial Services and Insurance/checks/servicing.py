@@ -172,19 +172,28 @@ def contains_all(text: str, terms) -> bool:
 # ---------------------------------------------------------------------------
 
 # Sentences that assert the customer has no matching records.
+_RECORD_NOUN = r"(claims?|transactions?|polic(y|ies)|records?|accounts?)"
 _NO_RECORD_PATTERNS = [re.compile(p) for p in (
-    r"\b(have|has) no\b",
+    r"\b(have|has) (no|zero|nothing)\b",
     r"\b(don't|do not|doesn't|does not) (currently )?(have|hold|show) (any|an?)\b",
-    r"\bthere (are|is|were|was) no\b",
+    r"\bthere (are|is|were|was) (no|nothing)\b",
+    r"\bthere's (no|nothing)\b",
     r"\bthere (aren't|isn't) any\b",
     r"\b(couldn't|could not|did not|didn't) find (any|an?)\b",
     r"\bfound no\b",
-    r"\bno (\w+ )?(claims?|transactions?|polic(y|ies)|records?|accounts?)\b",
+    rf"\b(no|zero) (\w+ )?{_RECORD_NOUN}\b",
+    r"\b(list|history|record|file) (is|was|looks|appears) empty\b",
+    r"\bnothing (is |was )?(open|on file|pending|outstanding|listed|showing)\b",
 )]
-# Words that turn such a sentence into a report of a retrieval problem or a hedge.
+# Phrases that turn such a sentence into a report of a retrieval problem or a hedge.
+# A bare "issue", "problem" or "retrieve" is not one: "There's no issue, you have no
+# open claims" and "I was able to retrieve your file" are plain true-empty answers.
 _FAILURE_OR_HEDGE = re.compile(
-    r"\b(fail(ed|ure)?|error|problem|issue|unable|not able|wasn't able|was not able|try again|technical|"
-    r"retrieve|complete the|doesn't mean|does not mean|not necessarily)\b")
+    r"\b(fail(ed|ure|s)?|errors?|(a|an|some|any) (\w+ )?(problem|issue|glitch|fault)s?|"
+    r"(problem|issue|trouble|difficulty) (retrieving|accessing|loading|looking|getting|reaching)|"
+    r"unable to|not able to|wasn't able to|was not able to|"
+    r"(couldn't|could not|can't|cannot) (retrieve|access|load|look up|get|reach|complete|confirm)|"
+    r"try again|technical|doesn't mean|does not mean|not necessarily)\b")
 
 
 def states_no_records(text: str) -> bool:
