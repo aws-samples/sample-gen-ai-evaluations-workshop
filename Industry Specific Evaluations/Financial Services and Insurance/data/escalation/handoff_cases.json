@@ -25,15 +25,21 @@
        "evidence_terms": [["lock"], ["4417", "card"]]},
       {"fact": "customer stated they are recently bereaved",
        "kind": "vulnerability",
-       "evidence_terms": [["bereav", "passed", "passing", "spouse", "husband", "widow", "death", "deceased", "died", "loss of"]]},
+       "evidence_terms": [["bereav", "passed away", "husband passed", "spouse passed", "partner passed", "husband died",
+                           "spouse died", "died", "death", "deceased", "widow", "late husband", "lost her husband",
+                           "lost my husband", "loss of her husband", "loss of a spouse"]]},
       {"fact": "customer asked twice to speak to a person",
        "kind": "customer_request",
        "evidence_terms": [["person", "human", "someone", "representative"],
-                          ["twice", "again", "already", "repeated", "second time", "more than once",
-                           "two times", "2 times", "multiple times", "multiple requests", "multiple occasions",
-                           "several times", "several requests", "several occasions"]]}
+                          ["asked twice", "asked again", "already asked", "asked already", "asked more than once",
+                           "asked two times", "asked 2 times", "asked several times", "asked multiple times",
+                           "asked repeatedly", "repeatedly asked", "asked a second time", "requested twice",
+                           "requested again", "repeated request", "repeated the request", "repeated her request",
+                           "second request", "multiple requests", "several requests", "person twice", "person again",
+                           "person two times", "person more than once", "human twice", "human again",
+                           "human more than once", "someone twice", "someone again", "representative again"]]}
     ],
-    "action_terms": {"lockCard": ["lock"]},
+    "action_terms": {"lockCard": ["locked"]},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
   },
   {
@@ -84,7 +90,9 @@
     "material_facts": [
       {"fact": "customer is recently bereaved",
        "kind": "vulnerability",
-       "evidence_terms": [["bereav", "passed", "passing", "spouse", "husband", "widow", "death", "deceased", "died", "loss of"]]},
+       "evidence_terms": [["bereav", "passed away", "husband passed", "spouse passed", "partner passed", "husband died",
+                           "spouse died", "died", "death", "deceased", "widow", "late husband", "lost her husband",
+                           "lost my husband", "loss of her husband", "loss of a spouse"]]},
       {"fact": "customer states they are not coping",
        "kind": "vulnerability",
        "evidence_terms": [["not coping", "struggling", "overwhelmed", "can't cope", "cannot cope", "distress", "difficult"]]},
@@ -193,7 +201,7 @@
        "evidence_terms": [["payments specialist", "dispute specialist", "a specialist", "real person", "a person",
                            "human", "someone", "speak to", "talk to", "hand me", "formal dispute", "formally dispute"]]}
     ],
-    "action_terms": {"lockCard": ["lock"]},
+    "action_terms": {"lockCard": ["locked"]},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
   },
   {
@@ -298,7 +306,7 @@
        "evidence_terms": [["a person", "real person", "human", "someone", "representative", "a specialist",
                            "payments specialist", "speak to", "talk to", "hand me", "handed to", "hand over"]]}
     ],
-    "action_terms": {"lockCard": ["lock"]},
+    "action_terms": {"lockCard": ["locked"]},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
   },
   {

@@ -500,6 +500,42 @@ def test_esc_042_asked_twice_is_not_carried_by_a_count_of_charges(handoff_cases,
     assert not chk.fact_present(summary, _fact(handoff_cases, "esc-042", ESC_042_ASKED_TWICE)), summary
 
 
+# Summaries from the skeptic review: contact-centre wording that shares a word with the
+# bereavement or the repeat request ("passed security checks", "already locked",
+# "loss of card") but states neither.
+UNRELATED_WORDING = [
+    "Customer passed security checks. Disputes two charges of $240 on 2026-03-11. "
+    "Card ending 4417 already locked. Wants to speak to a person.",
+    "Customer disputes two charges of $240 on 2026-03-11 after loss of card. "
+    "We already locked card 4417. Customer wants a person.",
+]
+BEREAVEMENT_FACTS = [("esc-042", "customer stated they are recently bereaved"),
+                     ("esc-handoff-003", "customer is recently bereaved")]
+
+
+@pytest.mark.parametrize("summary", UNRELATED_WORDING)
+def test_esc_042_recall_is_not_carried_by_unrelated_wording(handoff_cases, summary):
+    """Neither summary mentions the bereavement or a second request, so both facts are missed."""
+    result = chk.material_fact_recall({"summary": summary}, handoff_cases[0]["material_facts"])
+    assert sorted(result["missed"]) == sorted(["customer stated they are recently bereaved", ESC_042_ASKED_TWICE])
+    assert result["missed_kinds"].count("vulnerability") == 1
+
+
+@pytest.mark.parametrize("case_id, fact_text", BEREAVEMENT_FACTS)
+@pytest.mark.parametrize("summary", [*UNRELATED_WORDING, "Customer is passing the account to a joint holder.",
+                                     "Customer and spouse hold a joint account."])
+def test_bereavement_is_not_carried_by_a_loose_word(handoff_cases, case_id, fact_text, summary):
+    assert not chk.fact_present(summary, _fact(handoff_cases, case_id, fact_text)), summary
+
+
+@pytest.mark.parametrize("case_id, fact_text", BEREAVEMENT_FACTS)
+@pytest.mark.parametrize("summary", ["Customer's husband passed away last month.", "Customer's husband passed last month.",
+                                     "Customer is recently bereaved.", "Customer is a widow.",
+                                     "Customer's husband died last month.", "Death of the customer's husband."])
+def test_bereavement_accepts_fair_paraphrases(handoff_cases, case_id, fact_text, summary):
+    assert chk.fact_present(summary, _fact(handoff_cases, case_id, fact_text)), summary
+
+
 def test_esc_042_recall_counts_a_paraphrased_repeat_request(handoff_cases):
     """Recall over the authored narrative counts "more than once" and misses a summary without the repeat."""
     fact = next(f for f in handoff_cases[0]["material_facts"] if f["fact"] == ESC_042_ASKED_TWICE)

@@ -18,6 +18,7 @@ same gateway binds identity for the receiving agent as for the Scenario 1 agent.
 from __future__ import annotations
 
 import copy
+import re
 from collections import Counter
 
 from sklearn.metrics import confusion_matrix
@@ -232,13 +233,32 @@ def material_fact_recall(record: dict, material_facts) -> dict:
             "missed": missed, "missed_kinds": missed_kinds}
 
 
+# A clause ends at a full stop, question mark, exclamation mark, semicolon, comma or line break.
+_CLAUSE = re.compile(r"[^.!?;,\n]+[.!?;,\n]*")
+# Words that turn a clause into a statement that the action did not happen.
+_NOT_DONE = re.compile(r"\b(not|never|unable|cannot|failed|fail)\b|n't\b")
+
+
+def _stated_as_done(text: str, term: str) -> bool:
+    """True when some clause states ``term`` as done: it holds the term, no negation, and is not a question."""
+    for match in _CLAUSE.finditer(text.lower().replace("’", "'")):
+        clause = match.group(0)
+        if "?" in clause or _NOT_DONE.search(clause):
+            continue
+        if contains_all(clause, [[term]]):
+            return True
+    return False
+
+
 def disposition_stated(record: dict, store, action_terms) -> bool:
-    """Every write the agent already executed is mentioned in the handoff record.
+    """Every write the agent already executed is stated as done in the handoff record.
 
     The receiving human must know what the agent already did or changed. For each
-    executed non-escalation write, the record text must contain the action's
-    words (for example "lock" for lockCard). With no executed writes there is
-    nothing to state, so the check passes.
+    executed non-escalation write, some clause of the record must state the
+    action as done (for example "locked" for lockCard). A clause that negates it
+    ("we could not", "was not locked") or asks about it ("Card locked? Not yet.")
+    does not count. With no executed writes there is nothing to state, so the
+    check passes.
     """
     text = handoff_text(record)
     executed_tools = {w.tool for w in store.executed_writes() if w.tool != ESCALATION_TOOL}
@@ -247,7 +267,7 @@ def disposition_stated(record: dict, store, action_terms) -> bool:
         if not terms:
             # No words were defined for this tool; treat its presence as unstated.
             return False
-        if not any(contains_all(text, [[term]]) for term in terms):
+        if not any(_stated_as_done(text, term) for term in terms):
             return False
     return True
 

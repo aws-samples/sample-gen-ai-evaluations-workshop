@@ -26,6 +26,11 @@ def fixtures():
     return json.loads(FIXTURE_PATH.read_text())
 
 
+@pytest.fixture
+def handoff_cases_data():
+    return json.loads((FIXTURE_PATH.parent / "escalation" / "handoff_cases.json").read_text())
+
+
 def _session(customer_id="CUST-001", channel="chat", session_id="s"):
     return Session(customer_id=customer_id, session_id=session_id, channel=channel)
 
@@ -340,6 +345,41 @@ def test_disposition_stated_false_when_write_omitted(fixtures):
     systems.execute(session, "lockCard", {"card": "debit"}, 1)
     record = {"summary": "The customer disputes two charges."}
     assert chk.disposition_stated(record, systems.store, {"lockCard": ["lock"]}) is False
+
+
+@pytest.mark.parametrize("summary", [
+    "Customer asked us to lock the card; we could not.",
+    "Card locked? Not yet.",
+    "The card was not locked.",
+    "We were unable to get the card locked.",
+])
+def test_disposition_stated_false_when_the_action_is_not_stated_as_done(fixtures, summary):
+    # The word "lock" or "locked" is present, but no clause says the card was locked.
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session()
+    systems.persist_message(session, "user", "Yes, lock it.")
+    systems.execute(session, "lockCard", {"card": "debit"}, 1)
+    assert chk.disposition_stated({"summary": summary}, systems.store, {"lockCard": ["locked"]}) is False
+
+
+@pytest.mark.parametrize("record", [
+    {"summary": "Card ending 4417 has been locked; dispute not yet filed."},
+    {"actions_already_taken": ["Locked debit card ending 4417"]},
+    {"summary": "Agent locked the debit card, but the dispute could not be filed."},
+])
+def test_disposition_stated_true_when_the_action_is_stated_as_done(fixtures, record):
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session()
+    systems.persist_message(session, "user", "Yes, lock it.")
+    systems.execute(session, "lockCard", {"card": "debit"}, 1)
+    assert chk.disposition_stated(record, systems.store, {"lockCard": ["locked"]}) is True
+
+
+def test_handoff_action_terms_are_past_tense(handoff_cases_data):
+    # "lock" is in "asked us to lock", so the data must name the done action.
+    for case in handoff_cases_data:
+        for tool, terms in case["action_terms"].items():
+            assert terms == ["locked"], (case["id"], tool, terms)
 
 
 def test_disposition_stated_true_when_no_writes(fixtures):
