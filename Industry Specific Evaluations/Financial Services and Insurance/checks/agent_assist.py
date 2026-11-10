@@ -285,22 +285,22 @@ def provenance_checks(card: dict, records: dict) -> dict:
 # 2.3 Timeliness: measured latency and turn placement
 # ---------------------------------------------------------------------------
 
-def card_latencies_ms(tool_calls: list, card_tool: str = CARD_TOOL) -> list:
+def card_latencies_ms(turns: list, tool_calls: list, card_tool: str = CARD_TOOL) -> list:
     """Measured delivery latency of each card, in milliseconds.
 
-    Latency is the wall-clock gap between the first recorded tool call of the
-    turn (the assistant beginning to work on the trigger) and the card being
-    pushed. These are real monotonic times captured by the gateway, so the
-    figures move run to run; the notebook reports them as measured, not fixed.
+    Latency is the wall-clock gap between the start of the turn (the trigger
+    utterance reaching the assistant, ``TurnRecord.started_monotonic``) and the
+    card being pushed. It includes the model's first call, which usually takes
+    most of the time, so a card pushed as the turn's first tool call is not
+    reported as 0 ms. These are real monotonic times, so the figures move run to
+    run; the notebook reports them as measured, not fixed.
     """
-    by_turn_start: dict = {}
-    for call in tool_calls:
-        by_turn_start.setdefault(call.turn_index, call.monotonic_time)
+    turn_start = {turn.turn_index: turn.started_monotonic for turn in turns}
     latencies = []
     for call in tool_calls:
         if call.tool != card_tool:
             continue
-        start = by_turn_start.get(call.turn_index, call.monotonic_time)
+        start = turn_start[call.turn_index]  # every recorded call belongs to a played turn
         latencies.append({"turn_index": call.turn_index, "seq": call.seq,
                           "latency_ms": max(0.0, (call.monotonic_time - start) * 1000.0)})
     return latencies

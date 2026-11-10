@@ -7,8 +7,11 @@ defined here, so the tests read cards the gateway actually recorded, not mocks.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
+from fsi_eval.converse_agent import TurnRecord
 from fsi_eval.systems_of_record import GatewaySettings, Session, SystemsOfRecord, ToolDefinition
 from checks import agent_assist as chk
 
@@ -337,12 +340,46 @@ def test_provenance_inference_declared_as_inference_passes(records):
 # card_latencies_ms, latency_percentile, turn_placement_ok
 # ---------------------------------------------------------------------------
 
+def _turn(turn_index, started):
+    """A TurnRecord that started at the given monotonic time (the other fields do not matter here)."""
+    return TurnRecord(turn_index=turn_index, user_text="", assistant_text="", raw_assistant_text="",
+                      tool_call_seqs=[], started_monotonic=started, finished_monotonic=started + 10.0,
+                      model_calls=1, stop_reason="end_turn", scripted=False)
+
+
+def _timed(calls, times):
+    """The recorded tool calls with their monotonic times set to known values."""
+    return [replace(call, monotonic_time=t) for call, t in zip(calls, times)]
+
+
 def test_card_latencies_from_measured_times():
-    # Two cards at known monotonic times after the trigger utterance arrives.
+    # Two cards, one per turn, recorded by the real gateway.
     store = _store_with_cards([{"text": "a"}, {"text": "b"}])
-    latencies = chk.card_latencies_ms(store.tool_calls)
+    turns = [_turn(0, store.tool_calls[0].monotonic_time), _turn(1, store.tool_calls[1].monotonic_time)]
+    latencies = chk.card_latencies_ms(turns, store.tool_calls)
     assert len(latencies) == 2
     assert all(entry["latency_ms"] >= 0 for entry in latencies)
+
+
+def test_card_latency_counts_the_model_call_before_a_first_call_card():
+    # The card is the turn's first tool call, 4.0 s after the turn started. The time
+    # the model spent before calling the tool is part of the latency, so it is 4000 ms, not 0.
+    store = _store_with_cards([{"text": "a"}])
+    calls = _timed(store.tool_calls, [104.0])
+    latencies = chk.card_latencies_ms([_turn(0, 100.0)], calls)
+    assert latencies == [{"turn_index": 0, "seq": 1, "latency_ms": pytest.approx(4000.0)}]
+
+
+def test_card_latency_is_measured_from_the_turn_start_not_the_first_tool_call():
+    # Another tool call at +3.0 s (the gateway records it even though it refuses it),
+    # then the card at +4.5 s: the card took 4500 ms from the turn start, not 1500 ms.
+    systems = SystemsOfRecord({"customers": {"CLI-201": {}}, "queues": {}}, tools=ASSIST_TOOLS)
+    session = Session(customer_id="CLI-201", session_id="s")
+    systems.execute(session, "readClientScreen", {}, 0)
+    systems.execute(session, "pushSuggestionCard", {"text": "a"}, 0)
+    calls = _timed(systems.store.tool_calls, [103.0, 104.5])
+    latencies = chk.card_latencies_ms([_turn(0, 100.0)], calls)
+    assert latencies == [{"turn_index": 0, "seq": 2, "latency_ms": pytest.approx(4500.0)}]
 
 
 def test_latency_percentile():
