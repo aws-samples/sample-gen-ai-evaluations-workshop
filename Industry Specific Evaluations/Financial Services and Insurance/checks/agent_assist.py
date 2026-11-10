@@ -94,25 +94,32 @@ def cards_rendered_by_console(cards: list, records: dict, drop_unresolvable: boo
 # 2.1 Screen consistency
 # ---------------------------------------------------------------------------
 
-def figure_matches(card_value: float, screen_value: float) -> bool:
+def figure_matches(card_value: float, screen_value: float, rounding: float = 0.0) -> bool:
     """True when a figure on a card matches a figure on the screen.
 
-    The tolerance is the larger of 50 cents and 0.1% of the screen value, so a
-    rounded display ("9.55M" against 9,554,126) matches but a 1-5% source
-    disagreement does not.
+    The tolerance is the largest of 50 cents, 0.1% of the screen value and
+    ``rounding``, so a rounded display ("9.55M" against 9,554,126) matches but a
+    1-5% source disagreement does not. ``rounding`` is half the last digit an
+    abbreviated card figure states: "$7M" stands for anything from 6.5M to 7.5M,
+    so it is 500,000; "$7.01M" is 5,000.
     """
     if card_value is None or screen_value is None:
         return False
-    tolerance = max(0.5, 0.001 * abs(screen_value))
+    tolerance = max(0.5, 0.001 * abs(screen_value), rounding)
     return abs(float(card_value) - float(screen_value)) <= tolerance
 
 
-# Numbers written in a card's text, read back as floats (strips "$" and commas).
-_MONEY = re.compile(r"\$?\s*([0-9][0-9,]*(?:\.[0-9]+)?)")
+# A number in a card's text, with an optional currency sign before it and an optional
+# scale suffix after it ("$7,012,500.00", "9.55M", "$7.0 million", "$950K").
+_AMOUNT = re.compile(
+    r"(?P<currency>\$\s*)?(?P<number>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
+    r"(?:\s*(?P<scale>[KMB]\b|(?i:k|mm|bn|thousand|million|billion)\b|m\b))?")
+# The multiplier for each scale suffix, keyed by its lower-case form.
+_SCALES = {"k": 1e3, "thousand": 1e3, "m": 1e6, "mm": 1e6, "million": 1e6, "b": 1e9, "bn": 1e9, "billion": 1e9}
 
 # Tokens that hold digits but are not figures: dates and percentages. They are blanked
 # out before figures are read, so "as of 2026-03-14" or "62% of AUM" is not taken as a
-# dollar amount. Every other number, with or without a currency sign, is still read.
+# dollar amount.
 _MONTH = (r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|"
           r"sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?")
 _NOT_FIGURES = re.compile(
@@ -125,21 +132,40 @@ _NOT_FIGURES = re.compile(
 
 
 def _figures_in_text(text: str) -> list:
-    """Figures mentioned in a card's text, as floats; dates and percentages are not figures."""
-    values = []
-    for match in _MONEY.finditer(_NOT_FIGURES.sub(" ", text or "")):
-        try:
-            values.append(float(match.group(1).replace(",", "")))
-        except ValueError:
+    """Dollar figures in a card's text, as ``(value, rounding)`` pairs.
+
+    A number is a dollar figure when it has a currency sign, a scale suffix
+    ("7.01M", "1.2 billion") or thousands separators ("9,318,402.10"). A bare
+    number such as a year ("March 2026") or a count ("2 trading days") is not.
+    The suffix is applied ("$7.01M" is 7,010,000), and ``rounding`` is half the
+    last stated digit of a suffixed figure, so a rounded card matches the exact
+    screen value. A lower-case "m" counts as millions only after a "$", because
+    on its own it is as likely to be minutes or metres. Dates and percentages
+    are blanked first.
+    """
+    figures = []
+    for match in _AMOUNT.finditer(_NOT_FIGURES.sub(" ", text or "")):
+        currency, number, scale = match.group("currency"), match.group("number"), match.group("scale")
+        if scale == "m" and not currency:
+            scale = None
+        if not (currency or scale or "," in number):
             continue
-    return values
+        value = float(number.replace(",", ""))
+        rounding = 0.0
+        if scale:
+            multiplier = _SCALES[scale.lower()]
+            decimals = len(number.partition(".")[2])
+            value *= multiplier
+            rounding = 0.5 * multiplier / 10 ** decimals
+        figures.append((value, rounding))
+    return figures
 
 
 def _card_figures(card: dict) -> list:
-    """Every figure a card commits to: an explicit ``figure_usd`` and any figures in its text."""
+    """Every figure a card commits to, as ``(value, rounding)``: ``figure_usd`` and the figures in its text."""
     figures = list(_figures_in_text(card.get("text", "")))
     if card.get("figure_usd") is not None:
-        figures.append(float(card["figure_usd"]))
+        figures.append((float(card["figure_usd"]), 0.0))
     return figures
 
 
@@ -207,13 +233,13 @@ def screen_consistency(case: dict, cards: list, records: dict) -> dict:
         figures = _card_figures(card)
         if not screen_values or not figures:
             continue
-        for figure in figures:
-            if not any(figure_matches(figure, value) for value in on_screen):
+        for figure, rounding in figures:
+            if not any(figure_matches(figure, value, rounding) for value in on_screen):
                 return {"contradiction": True, "false_flag": _is_flag_card(card),
                         "reason": f"card figure {figure} matches no dollar figure on the screen"}
-        if not any(figure_matches(figure, value) for figure in figures for value in screen_values):
+        if not any(figure_matches(figure, value, rounding) for figure, rounding in figures for value in screen_values):
             return {"contradiction": True, "false_flag": _is_flag_card(card),
-                    "reason": f"card figures {figures} include none of the figures this case names"}
+                    "reason": f"card figures {[f for f, _ in figures]} include none of the figures this case names"}
     return {"contradiction": False, "false_flag": flagged,
             "reason": "false flag on an agreement case" if flagged else "card matches the screen"}
 
@@ -241,12 +267,13 @@ def _committed_single_figure(card: dict, screen_values: list):
     # In text, a single quoted figure that matches one source is a commitment;
     # quoting several figures (one per source) to show the gap is not.
     text_figures = _figures_in_text(card.get("text", ""))
-    matching = [f for f in text_figures if any(figure_matches(f, screen) for screen in screen_values)]
-    distinct = {round(f, 2) for f in matching}
+    matching = [(f, rounding) for f, rounding in text_figures
+                if any(figure_matches(f, screen, rounding) for screen in screen_values)]
+    distinct = {(round(f, 2), rounding) for f, rounding in matching}
     if len(distinct) == 1 and len(screen_values) >= 2:
         # Only one of the disagreeing figures is quoted: the card picked a side.
-        value = next(iter(distinct))
-        matched_sources = sum(any(figure_matches(value, screen) for screen in [s]) for s in screen_values)
+        value, rounding = next(iter(distinct))
+        matched_sources = sum(figure_matches(value, screen, rounding) for screen in screen_values)
         if matched_sources < len(screen_values):
             return value
     return None

@@ -236,6 +236,43 @@ def test_screen_consistency_reads_a_bare_unsigned_figure(records):
     assert "9318402.1" in result["reason"]
 
 
+@pytest.mark.parametrize("text", [
+    # Correct cards from the skeptic review, on assist-advisor-040 (screen value 7,012,500.00).
+    "Equities: $7,012,500.00 (source: client summary).",
+    "Equities: $7,012,500.00, as of March 2026.",
+    "Equities: $7,012,500.00, priced 2 trading days ago.",
+    "Equities: $7.01M.",
+    "Equities: 7.01M, refreshed 3 days ago.",
+    "Equities: $7.0 million.",
+    "Equities: about $7M.",
+    "Equities: $7,012.5K.",
+])
+def test_screen_consistency_does_not_flag_dates_durations_or_abbreviated_amounts(records, text):
+    cards = [{"text": text, "status": "committed_fact", "evidence_refs": ["client_summary.equities_usd"]}]
+    result = chk.screen_consistency(_cli_205_equities_case(), cards, records["CLI-205"])
+    assert result["contradiction"] is False, (text, result["reason"])
+
+
+@pytest.mark.parametrize("text, figure", [
+    ("Equities: $7.4M.", "7400000.0"),          # a rounded figure that is still wrong
+    ("Equities: 7.4M, as of March 2026.", "7400000.0"),
+    ("Equities: $8M.", "8000000.0"),
+])
+def test_screen_consistency_flags_a_wrong_abbreviated_amount(records, text, figure):
+    cards = [{"text": text, "status": "committed_fact", "evidence_refs": ["client_summary.equities_usd"]}]
+    result = chk.screen_consistency(_cli_205_equities_case(), cards, records["CLI-205"])
+    assert result["contradiction"] is True, text
+    assert figure in result["reason"]
+
+
+def test_screen_consistency_reads_a_rounded_millions_figure_through_the_text_path(records):
+    # The figure_matches docstring example, through the card text: "9.55M" against 9,554,126.34.
+    case = _case("show_card", ["client_summary.equities_usd"])
+    cards = [{"text": "Equities are 9.55M.", "evidence_refs": ["client_summary.equities_usd"]}]
+    result = chk.screen_consistency(case, cards, records["CLI-201"])
+    assert result["contradiction"] is False, result["reason"]
+
+
 def _cli_205_equities_case():
     """assist-advisor-040 as in data/agent_assist/assist_cases.json: equities on CLI-205, sources agree."""
     return {"id": "assist-advisor-040", "client_id": "CLI-205",
