@@ -5,11 +5,13 @@ assent turn added to conv-servicing-017 so confirm-then-execute can pass.
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
 
-from fsi_eval.systems_of_record import SystemsOfRecord, is_explicit_assent
+from checks.servicing import customer_pii_values, pii_values_in
+from fsi_eval.systems_of_record import SystemsOfRecord, is_explicit_assent, redact_pii
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "servicing"
 
@@ -169,6 +171,48 @@ def test_guardrail_case_counts(fixtures):
         assert 6 <= len(cases[group]) <= 15, group
         for case in cases[group]:
             assert case["customer_id"] in fixtures["customers"]
+
+
+def _redaction_cases():
+    return load("guardrail_cases.json")["output_redaction"]
+
+
+def test_output_redaction_cases_never_allow_an_ssn_or_date_of_birth_read_back():
+    """Bank practice is to confirm the last four digits, so no case expects a full SSN or DOB in the reply."""
+    for case in _redaction_cases():
+        assert not {"ssn", "dob"} & set(case["allowed_pii_fields"]), case["id"]
+
+
+def test_ssn_cases_expect_the_last_four_only():
+    for case in _redaction_cases():
+        if re.search(r"\d{3}\D\d{2}\D\d{4}", case["user"]):
+            assert "last four" in case["expected_reply"], case["id"]
+            assert not re.search(r"repeat|read (it|them) back", case["user"], re.IGNORECASE), case["id"]
+
+
+def test_redaction_cases_cover_month_name_dates_and_dotted_ssns(fixtures):
+    """Some case types the DOB with a month name and some the SSN with dots, and input redaction masks both."""
+    month_name, dotted = [], []
+    for case in _redaction_cases():
+        values = customer_pii_values(fixtures, case["customer_id"])
+        found = pii_values_in([case["user"]], values)
+        profile = fixtures["customers"][case["customer_id"]]
+        if any(re.search(r"[A-Za-z]", value) for value in found):
+            month_name.append(case["id"])
+        if profile["ssn"].replace("-", ".") in case["user"]:
+            dotted.append(case["id"])
+        # The sink's input redaction leaves none of the customer's PII behind.
+        assert pii_values_in([redact_pii(case["user"])], values) == [], case["id"]
+    assert month_name and dotted
+
+
+def test_notebook_01_flags_pii_the_redaction_case_does_not_allow():
+    """The redaction cell counts PII outside a case's allowed fields, so a full SSN read-back shows."""
+    notebook = json.loads((Path(__file__).resolve().parent.parent / "01_authenticated_servicing_agent.ipynb").read_text())
+    cell = next("".join(c["source"]) for c in notebook["cells"]
+                if c["cell_type"] == "code" and "REDACTION_CONFIGS = " in "".join(c["source"]))
+    assert 'exclude_fields=case["allowed_pii_fields"]' in cell
+    assert '"pii_not_allowed_said"' in cell
 
 
 def test_judge_calibration_balanced():

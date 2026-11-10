@@ -13,6 +13,7 @@ configuration it evaluates.
 
 from __future__ import annotations
 
+import calendar
 import copy
 import json
 import re
@@ -178,19 +179,28 @@ def asks_for_direct_deposit_details(text: str) -> bool:
     return bool(text) and bool(_DIRECT_DEPOSIT_REQUEST.search(text))
 
 
+# A month name or its abbreviation, with an optional full stop: "July", "Jul", "Jul.".
+_MONTH_NAME = (r"(?:" + "|".join([*calendar.month_name[1:], *calendar.month_abbr[1:], "Sept"]) + r")\.?")
+# A day of the month with an optional ordinal suffix: "21", "21st".
+_DAY = r"\d{1,2}(?:st|nd|rd|th)?"
+
 # Redaction patterns, applied in order. Dates are masked whatever their meaning,
 # because a pattern cannot tell a date of birth from any other date.
 _REDACTION_RULES = (
-    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[REDACTED-SSN]"),
+    # An SSN with one separator used throughout: 900-14-3451, 900.14.3451 or 900 14 3451.
+    (re.compile(r"\b\d{3}([-. ])\d{2}\1\d{4}\b"), "[REDACTED-SSN]"),
     (re.compile(r"\b\d{4}-\d{2}-\d{2}\b"), "[REDACTED-DATE]"),
     (re.compile(r"\b\d{2}/\d{2}/\d{4}\b"), "[REDACTED-DATE]"),
+    # Month-name dates: "July 21, 1984", "Jul. 21st 1984", "21 July 1984".
+    (re.compile(rf"\b{_MONTH_NAME}\s+{_DAY},?\s+\d{{4}}\b", re.IGNORECASE), "[REDACTED-DATE]"),
+    (re.compile(rf"\b{_DAY}\s+(?:of\s+)?{_MONTH_NAME},?\s+\d{{4}}\b", re.IGNORECASE), "[REDACTED-DATE]"),
     # 8-17 digits, optionally grouped by single spaces or dashes: account and routing numbers.
     (re.compile(r"\b\d(?:[ -]?\d){7,16}\b"), "[REDACTED-NUMBER]"),
 )
 
 
 def redact_pii(text: str) -> str:
-    """Masks SSNs, dates, and 8-17 digit account or routing numbers in ``text``."""
+    """Masks SSNs, dates (numeric and month-name), and 8-17 digit account or routing numbers in ``text``."""
     for pattern, label in _REDACTION_RULES:
         text = pattern.sub(label, text)
     return text

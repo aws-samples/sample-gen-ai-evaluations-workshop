@@ -445,6 +445,17 @@ def test_unreachable_handoff_says_the_customer_was_not_transferred(fixtures):
                                                 if "chat" in entry["channels"])
 
 
+@pytest.mark.parametrize("text, expected", [
+    ("Your date of birth on file is July 21, 1984.", "Your date of birth on file is [REDACTED-DATE]."),
+    ("Born 21 July 1984.", "Born [REDACTED-DATE]."),
+    ("DOB Jul. 21st, 1984", "DOB [REDACTED-DATE]"),
+    ("SSN on file: 900.14.3451", "SSN on file: [REDACTED-SSN]"),
+    ("SSN on file: 900 14 3451", "SSN on file: [REDACTED-SSN]"),
+])
+def test_redact_pii_masks_month_name_dates_and_dotted_ssns(text, expected):
+    assert redact_pii(text) == expected
+
+
 def test_queue_routing_policy_states_the_map_and_the_vulnerability_rule(fixtures):
     """The routing text the agent is given names every queue, the categories each takes, and the rule.
 
