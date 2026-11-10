@@ -659,6 +659,28 @@ def write_handoff_record(systems: SystemsOfRecord, customer_id: str | None, args
     return {"status": "queue_unreachable", "reference_id": reference_id}
 
 
+# The queue a vulnerable customer is routed to, whatever the product task.
+VULNERABLE_QUEUE = "vulnerable_customer_support"
+
+
+def queue_routing_policy(queues: dict) -> str:
+    """The routing rule an escalating agent is given: the queue-to-category map and the vulnerability rule.
+
+    Routing is scored by exact match on queue and category, so the agent must
+    see the same rule the golden data applies. A vulnerability outranks the
+    product queue: a bereaved customer disputing a card charge goes to the
+    vulnerable customer queue, and the dispute travels as a material fact.
+    """
+    queue_map = "; ".join(f"{name} takes {', '.join(sorted(entry['categories']))}"
+                          for name, entry in sorted(queues.items()))
+    return (f"Routing: pick one queue and one category that queue takes. The queues and their categories are: "
+            f"{queue_map}. If the customer shows any sign of vulnerability (for example bereavement, illness or a "
+            f"medical need, not coping, financial hardship with distress, or being the victim of a scam), route to "
+            f"{VULNERABLE_QUEUE} even when the request is a product task such as a card dispute or a new claim: "
+            f"a vulnerability outranks the product queue. Put the product details in the record so that queue can "
+            f"act on them.")
+
+
 # ---------------------------------------------------------------------------
 # The servicing tool catalog
 # ---------------------------------------------------------------------------

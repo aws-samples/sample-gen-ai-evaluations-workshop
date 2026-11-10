@@ -150,17 +150,37 @@ VULNERABLE_QUEUE = "vulnerable_customer_support"
 
 
 def test_vulnerability_cases_route_to_the_vulnerable_queue(handoff_cases):
-    """Every handoff case with a vulnerability trigger goes to the vulnerable customer queue.
+    """Every handoff case with a vulnerability-kind fact goes to the vulnerable customer queue.
 
     A vulnerability outranks the product queue: esc-042 is a card dispute from a
-    recently bereaved customer, and it routes like esc-handoff-008, not to
-    payments_specialist. 3.4 scores the queue by exact match, so a case that
-    breaks this rule would score the consistent choice as a misroute.
+    recently bereaved customer, and esc-handoff-012 is a car-accident claim from a
+    customer who needs a car to get to dialysis. Both route like esc-handoff-008,
+    not to the product queue. The rule is keyed on what the customer said (a
+    vulnerability-kind material fact), not on the trigger label, so a case whose
+    facts show a vulnerability cannot keep a product queue. 3.4 scores the queue by
+    exact match, so a case that broke this rule would score the stated rule as a misroute.
     """
-    vulnerability_cases = [c for c in handoff_cases if c["expected_trigger"] == "vulnerability"]
-    assert vulnerability_cases
+    vulnerability_cases = [c for c in handoff_cases
+                           if any(f["kind"] == "vulnerability" for f in c["material_facts"])]
+    assert {"esc-042", "esc-handoff-012"} <= {c["id"] for c in vulnerability_cases}
     for case in vulnerability_cases:
         assert case["expected_queue"] == VULNERABLE_QUEUE, (case["id"], case["expected_queue"])
+        assert case["expected_trigger"] == "vulnerability", (case["id"], case["expected_trigger"])
+
+
+def test_vulnerability_trigger_cases_carry_a_vulnerability_fact(handoff_cases):
+    """The reverse direction: a case labelled with a vulnerability trigger lists the vulnerability as a fact."""
+    for case in handoff_cases:
+        if case["expected_trigger"] == "vulnerability":
+            assert any(f["kind"] == "vulnerability" for f in case["material_facts"]), case["id"]
+
+
+def test_esc_handoff_012_label_note_states_the_routing_rule(handoff_cases):
+    """esc-handoff-012 says why a new car-accident claim goes to the vulnerable queue."""
+    case = next(c for c in handoff_cases if c["id"] == "esc-handoff-012")
+    assert case["expected_category"] == "vulnerability"
+    note = case.get("label_note", "")
+    assert "dialysis" in note and "outranks" in note and "claims_specialist" in note
 
 
 def test_esc_042_label_note_states_the_routing_rule(handoff_cases):
@@ -169,6 +189,33 @@ def test_esc_042_label_note_states_the_routing_rule(handoff_cases):
     assert VULNERABLE_QUEUE in note
     assert "outranks" in note
     assert "payments_specialist" in note
+
+
+NOTEBOOK_03 = Path(__file__).resolve().parent.parent / "03_escalation_and_handoff.ipynb"
+
+
+def notebook_03_code(marker):
+    """The source of the notebook 03 code cell that contains ``marker`` (exactly one must)."""
+    notebook = json.loads(NOTEBOOK_03.read_text())
+    sources = ["".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "code"]
+    matching = [source for source in sources if marker in source]
+    assert len(matching) == 1, (marker, len(matching))
+    return matching[0]
+
+
+def test_notebook_03_tells_the_agent_the_routing_rule():
+    """The handoff prompt and the structured queue field carry the rule 3.4 scores against.
+
+    ROUTING_POLICY is built from the fixture queues by queue_routing_policy, so the
+    queue-to-category map the agent reads is the one the golden data uses.
+    """
+    tools_cell = notebook_03_code("STRUCTURED_HANDOFF = ToolDefinition(")
+    assert "ROUTING_POLICY = queue_routing_policy(QUEUES)" in tools_cell
+    queue_field = re.search(r'"queue": \{[^}]*\}', tools_cell[tools_cell.index("STRUCTURED_HANDOFF"):]).group(0)
+    assert "ROUTING_POLICY" in queue_field
+    policy_cell = notebook_03_code("HANDOFF_POLICY_SHARED = (")
+    shared = policy_cell[policy_cell.index("HANDOFF_POLICY_SHARED = ("):policy_cell.index("FREE_TEXT_RECORD_GUIDANCE")]
+    assert "ROUTING_POLICY" in shared
 
 
 def test_tamper_base_handoff_matches_esc_042_routing(tamper, handoff_cases, fixtures):

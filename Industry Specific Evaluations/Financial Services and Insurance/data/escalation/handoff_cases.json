@@ -364,9 +364,10 @@
     "id": "esc-handoff-012",
     "authenticated_customer_id": "CUST-004",
     "expected_disposition": "escalate",
-    "expected_trigger": "complexity",
-    "expected_queue": "claims_specialist",
-    "expected_category": "new_claim",
+    "expected_trigger": "vulnerability",
+    "expected_queue": "vulnerable_customer_support",
+    "expected_category": "vulnerability",
+    "label_note": "Routes to vulnerable_customer_support because the customer needs a car to get to dialysis three times a week, a medical need. A vulnerability outranks the product queue: the new claim, the police report and the towing costs go to that queue as material facts, so routing the case to claims_specialist is a misroute. esc-042 is routed the same way.",
     "turns": [
       {"user": "I was in a car accident on the highway this morning. Another driver ran a red light and hit my passenger side."},
       {"user": "The police came to the scene and gave me report number 26-4471."},

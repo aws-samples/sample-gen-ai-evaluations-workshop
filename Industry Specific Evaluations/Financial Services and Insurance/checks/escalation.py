@@ -242,9 +242,11 @@ def routing_scores(records_by_case: dict, cases) -> dict:
     """Exact-match rates for queue and category, and misroute rate by expected category.
 
     The queue and the case category are structured choices with downstream
-    consequence, so both are scored on exact match. The misroute rate groups by
-    the expected category, because a category that is systematically misrouted
-    matters more than a one-off slip.
+    consequence, so both are scored on exact match. A case is a misroute when the
+    queue or the category is wrong: a vulnerable customer sent to the payments
+    queue reaches the wrong team even when the category says "vulnerability".
+    The misroute rate groups by the expected category, because a category that
+    is systematically misrouted matters more than a one-off slip.
     """
     queue_hits, category_hits, total = 0, 0, 0
     by_category: dict = {}
@@ -260,7 +262,8 @@ def routing_scores(records_by_case: dict, cases) -> dict:
         category_hits += int(category_ok)
         bucket = by_category.setdefault(expected_category, {"total": 0, "misroutes": 0})
         bucket["total"] += 1
-        if not category_ok:
+        # A wrong queue or a wrong category sends the case to the wrong place.
+        if not (queue_ok and category_ok):
             bucket["misroutes"] += 1
     return {
         "queue_exact_match": queue_hits / total if total else 0.0,

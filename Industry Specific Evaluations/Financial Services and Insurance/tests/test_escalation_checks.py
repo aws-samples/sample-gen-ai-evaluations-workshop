@@ -329,6 +329,25 @@ def test_routing_scores_exact_match_and_misroute():
     assert result["misroute_rate_by_category"]["complaint"] == pytest.approx(1 / 2)
 
 
+def test_routing_scores_count_a_queue_misroute_with_the_right_category():
+    # esc-042 sent to payments_specialist with the vulnerability category: the category
+    # is right but the queue is wrong, so the vulnerable customer reaches the wrong team.
+    records_by_case = {"esc-042": {"queue": "payments_specialist", "category": "vulnerability"}}
+    cases = [{"id": "esc-042", "expected_queue": "vulnerable_customer_support",
+              "expected_category": "vulnerability"}]
+    result = chk.routing_scores(records_by_case, cases)
+    assert result["queue_exact_match"] == 0.0
+    assert result["category_exact_match"] == 1.0
+    assert result["misroute_rate_by_category"] == {"vulnerability": 1.0}
+
+
+def test_routing_scores_count_a_category_misroute_with_the_right_queue():
+    records_by_case = {"a": {"queue": "payments_specialist", "category": "payment_limit_exceeded"}}
+    cases = [{"id": "a", "expected_queue": "payments_specialist", "expected_category": "disputed_transaction"}]
+    result = chk.routing_scores(records_by_case, cases)
+    assert result["misroute_rate_by_category"] == {"disputed_transaction": 1.0}
+
+
 # ---------------------------------------------------------------------------
 # delivery_verified
 # ---------------------------------------------------------------------------

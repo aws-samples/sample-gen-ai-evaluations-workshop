@@ -16,6 +16,7 @@ from fsi_eval.systems_of_record import (
     ToolDefinition,
     asks_for_direct_deposit_details,
     is_explicit_assent,
+    queue_routing_policy,
     redact_pii,
 )
 
@@ -415,6 +416,20 @@ def test_escalation_session_idempotency(fixtures, session):
     second = escalate(systems, session)
     assert second["status"] == "already_done"
     assert len(systems.store.handoffs) == 1
+
+
+def test_queue_routing_policy_states_the_map_and_the_vulnerability_rule(fixtures):
+    """The routing text the agent is given names every queue, the categories each takes, and the rule.
+
+    3.4 scores the queue and category by exact match, so the agent must be told
+    which categories each queue takes and that a vulnerability outranks the
+    product queue. Otherwise the score grades a rule the agent never saw.
+    """
+    text = queue_routing_policy(fixtures["queues"])
+    for queue, entry in fixtures["queues"].items():
+        assert f"{queue} takes {', '.join(sorted(entry['categories']))}" in text, queue
+    assert "vulnerable_customer_support" in text
+    assert "outranks the product queue" in text
 
 
 def test_custom_tool_list_is_used(fixtures, session):
