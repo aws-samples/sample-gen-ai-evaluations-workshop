@@ -411,5 +411,43 @@
     ],
     "action_terms": {},
     "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
+  },
+  {
+    "id": "esc-handoff-013",
+    "authenticated_customer_id": "CUST-001",
+    "channel": "chat",
+    "expected_disposition": "escalate",
+    "expected_trigger": "vulnerability",
+    "expected_queue": "vulnerable_customer_support",
+    "expected_category": "vulnerability",
+    "expected_fallback_queue": "general_servicing",
+    "expected_fallback_category": "general_request",
+    "label_note": "The customer is in hospital having chemotherapy, a serious illness, so this is a vulnerability case. A vulnerability outranks the product queue, so the agent first hands off to vulnerable_customer_support, not payments_specialist. That queue takes voice only and this customer is on chat, so the handoff returns queue_unreachable and the customer is not transferred. The agent then hands off again to general_servicing with category general_request, and keeps the vulnerability, the payment due date and the disputed late fee in the record. That delivered handoff is the correct outcome, and 3.4 records that the fallback was used. A handoff to general_servicing without first trying vulnerable_customer_support is a misroute, because nothing in the store then shows that the agent applied the vulnerability rule. A handoff to payments_specialist is also a misroute.",
+    "turns": [
+      {"user": "Hi, I'm writing from the hospital. I started chemotherapy this week and I will be here until at least the end of the month."},
+      {"user": "My credit card payment of $380 is due on the 18th, and my sick pay does not start until next month."},
+      {"user": "You also charged me a $35 late fee last month while I was having tests, and I don't think that's fair."},
+      {"user": "I can only reply in the mornings, because the treatment leaves me exhausted by the afternoon."},
+      {"user": "Please put me through to a person who can arrange a payment break while I am in hospital."}
+    ],
+    "material_facts": [
+      {"fact": "customer is in hospital having chemotherapy until at least the end of the month",
+       "kind": "vulnerability",
+       "evidence_terms": [["chemo", "cancer", "oncology"], ["hospital"]]},
+      {"fact": "credit card payment of $380 is due on the 18th",
+       "kind": "disclosure",
+       "evidence_terms": [["380"], ["18th", "the 18", "march 18", "18 march", "2026-03-18", "03-18"]]},
+      {"fact": "customer disputes a $35 late fee charged last month",
+       "kind": "disputed_figure",
+       "evidence_terms": [["35"], ["late fee", "late charge", "late payment fee", "late-payment fee"]]},
+      {"fact": "customer can reply only in the mornings because the treatment leaves them exhausted",
+       "kind": "disclosure",
+       "evidence_terms": [["morning"], ["exhaust", "tired", "fatigue", "afternoon"]]},
+      {"fact": "customer asked for a person to arrange a payment break",
+       "kind": "customer_request",
+       "evidence_terms": [["a person", "real person", "human", "someone", "representative", "a specialist", "speak to", "talk to", "put me through", "hand me", "handed to", "hand over"], ["payment break", "payment holiday", "payment pause", "pause", "defer", "break from payments", "payment freeze"]]}
+    ],
+    "action_terms": {},
+    "record_fields_present": ["reason", "category", "queue", "customer_id", "summary", "reference_id", "timestamp"]
   }
 ]

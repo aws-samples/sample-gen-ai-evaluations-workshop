@@ -487,6 +487,101 @@ def test_routing_scores_count_a_category_misroute_with_the_right_queue():
     assert result["misroute_rate_by_category"] == {"disputed_transaction": 1.0}
 
 
+# A chat-origin vulnerability case, shaped like esc-handoff-013: the preferred queue
+# takes voice only, so the expected route on chat is the general_servicing fallback.
+CHAT_VULNERABLE_CASE = {"id": "chat-vuln", "channel": "chat", "expected_queue": "vulnerable_customer_support",
+                        "expected_category": "vulnerability", "expected_fallback_queue": "general_servicing",
+                        "expected_fallback_category": "general_request"}
+REFUSED_VULNERABLE = {"chat-vuln": ["vulnerable_customer_support"]}
+
+
+def test_routing_scores_count_the_chat_fallback_as_correct_and_flag_it():
+    # The vulnerable queue refused on chat, and the retry went to general_servicing:
+    # the correct route, recorded as a fallback.
+    records_by_case = {"chat-vuln": {"queue": "general_servicing", "category": "general_request"}}
+    result = chk.routing_scores(records_by_case, [CHAT_VULNERABLE_CASE], REFUSED_VULNERABLE)
+    assert result["queue_exact_match"] == 1.0
+    assert result["category_exact_match"] == 1.0
+    assert result["misroute_rate_by_category"] == {"vulnerability": 0.0}
+    assert result["fallback_used"] == ["chat-vuln"]
+
+
+def test_routing_scores_count_a_direct_general_servicing_handoff_as_a_misroute():
+    # No attempt to the vulnerable queue: nothing in the store shows the agent applied
+    # the vulnerability rule, so general_servicing is a misroute here.
+    records_by_case = {"chat-vuln": {"queue": "general_servicing", "category": "general_request"}}
+    result = chk.routing_scores(records_by_case, [CHAT_VULNERABLE_CASE], {})
+    assert result["queue_exact_match"] == 0.0
+    assert result["misroute_rate_by_category"] == {"vulnerability": 1.0}
+    assert result["fallback_used"] == []
+
+
+def test_routing_scores_count_a_product_queue_after_the_refusal_as_a_misroute():
+    records_by_case = {"chat-vuln": {"queue": "payments_specialist", "category": "disputed_transaction"}}
+    result = chk.routing_scores(records_by_case, [CHAT_VULNERABLE_CASE], REFUSED_VULNERABLE)
+    assert result["queue_exact_match"] == 0.0
+    assert result["misroute_rate_by_category"] == {"vulnerability": 1.0}
+    assert result["fallback_used"] == []
+
+
+def test_routing_scores_count_a_refused_attempt_with_no_retry_as_a_misroute():
+    # The only record is the undelivered one to the voice-only queue: no human has the customer.
+    records_by_case = {"chat-vuln": {"queue": "vulnerable_customer_support", "category": "vulnerability",
+                                     "enqueued": False}}
+    result = chk.routing_scores(records_by_case, [CHAT_VULNERABLE_CASE], REFUSED_VULNERABLE)
+    assert result["queue_exact_match"] == 0.0
+    assert result["misroute_rate_by_category"] == {"vulnerability": 1.0}
+
+
+def test_routing_scores_count_the_fallback_with_the_vulnerability_category_as_a_category_misroute():
+    # general_servicing takes only general_request, so the category must change with the queue.
+    records_by_case = {"chat-vuln": {"queue": "general_servicing", "category": "vulnerability"}}
+    result = chk.routing_scores(records_by_case, [CHAT_VULNERABLE_CASE], REFUSED_VULNERABLE)
+    assert result["queue_exact_match"] == 1.0
+    assert result["category_exact_match"] == 0.0
+    assert result["misroute_rate_by_category"] == {"vulnerability": 1.0}
+    assert result["fallback_used"] == []
+
+
+def test_routing_scores_ignore_a_refusal_on_a_case_without_a_fallback():
+    # A voice case has no fallback: general_servicing after any refusal stays a misroute.
+    case = {"id": "voice-vuln", "channel": "voice", "expected_queue": "vulnerable_customer_support",
+            "expected_category": "vulnerability"}
+    records_by_case = {"voice-vuln": {"queue": "general_servicing", "category": "general_request"}}
+    result = chk.routing_scores(records_by_case, [case], {"voice-vuln": ["vulnerable_customer_support"]})
+    assert result["queue_exact_match"] == 0.0
+    assert result["fallback_used"] == []
+
+
+def test_unreachable_handoff_queues_lists_the_refused_queues_in_order(fixtures):
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    assert chk.unreachable_handoff_queues(systems.store) == []
+    _escalate(systems, session, queue="vulnerable_customer_support", category="vulnerability")
+    _escalate(systems, session, queue="general_servicing", category="general_request", turn_index=1)
+    assert chk.unreachable_handoff_queues(systems.store) == ["vulnerable_customer_support"]
+
+
+def test_chat_fallback_scored_from_the_gateway_store(fixtures):
+    """End to end on the real store: refused on chat, retried to general_servicing, scored correct.
+
+    This is how notebook 03 scores 3.4: the record is the delivered one, and the
+    refused queues come from the same store.
+    """
+    systems = SystemsOfRecord(fixtures, GatewaySettings(write_idempotency="idempotency_key"), tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    _escalate(systems, session, queue="vulnerable_customer_support", category="vulnerability")
+    _escalate(systems, session, queue="general_servicing", category="general_request", turn_index=1)
+    record = chk.delivered_handoff_record(systems.store)
+    assert record["queue"] == "general_servicing"
+    result = chk.routing_scores({"chat-vuln": record}, [CHAT_VULNERABLE_CASE],
+                                {"chat-vuln": chk.unreachable_handoff_queues(systems.store)})
+    assert result["fallback_used"] == ["chat-vuln"]
+    assert result["misroute_rate_by_category"] == {"vulnerability": 0.0}
+    assert chk.disposition_from_store(systems.store) == "escalate"
+    assert chk.delivery_verified(systems.store, record["reference_id"], fixtures["queues"], "chat")["delivered"]
+
+
 # ---------------------------------------------------------------------------
 # delivery_verified
 # ---------------------------------------------------------------------------

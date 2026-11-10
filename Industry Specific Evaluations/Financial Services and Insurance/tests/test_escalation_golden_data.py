@@ -6,7 +6,8 @@ These guard the shapes the Scenario 3 checkers and notebook 03 depend on:
   calibration confusion matrix (3.1).
 * ``handoff_cases.json``: handoff cases with per-case material facts, action
   terms, expected queue and category (3.3 and 3.4). The first case is the
-  README ``esc-042`` verbatim.
+  README ``esc-042`` verbatim. A vulnerable customer on chat also carries
+  ``expected_fallback_queue`` and ``expected_fallback_category``.
 * ``padding_exchanges.json``: at least 40 small-talk pairs for context dilution.
 * ``dedup_cases.json``: exactly-once cases that reference a base handoff case (3.2).
 * ``tamper_cases.json``: a base handoff plus tampered variants and one control (3.6).
@@ -218,9 +219,64 @@ def test_every_case_states_its_channel(corpus, handoff_cases):
 
 
 def test_handoff_expected_queue_is_reachable_on_the_case_channel(handoff_cases, fixtures):
-    """The expected outcome of every handoff case can be delivered on the channel it runs on."""
+    """The expected outcome of every handoff case can be delivered on the channel it runs on.
+
+    Either the expected queue takes the case's channel, or the case names the
+    general_servicing fallback: a vulnerable customer on chat, whose expected
+    queue (voice only) refuses, so the delivered route is the fallback.
+    """
+    queues = fixtures["queues"]
     for case in handoff_cases:
-        assert case["channel"] in fixtures["queues"][case["expected_queue"]]["channels"], case["id"]
+        if case["channel"] in queues[case["expected_queue"]]["channels"]:
+            assert "expected_fallback_queue" not in case, case["id"]
+            continue
+        fallback = case.get("expected_fallback_queue")
+        assert fallback, case["id"]
+        assert case["channel"] in queues[fallback]["channels"], case["id"]
+        assert case["expected_fallback_category"] in queues[fallback]["categories"], case["id"]
+
+
+def test_fallback_cases_follow_the_chat_fallback_rule(handoff_cases):
+    """Every case with a fallback is a vulnerability case on chat, routed to general_servicing.
+
+    Its label_note states the rule the scorer applies: the vulnerable queue first,
+    general_servicing after it refuses, a direct handoff to general_servicing or a
+    product queue is a misroute.
+    """
+    fallback_cases = [case for case in handoff_cases if "expected_fallback_queue" in case]
+    assert fallback_cases
+    for case in fallback_cases:
+        assert case["channel"] == "chat", case["id"]
+        assert case["expected_queue"] == VULNERABLE_QUEUE, case["id"]
+        assert case["expected_category"] == "vulnerability", case["id"]
+        assert case["expected_fallback_queue"] == "general_servicing", case["id"]
+        assert case["expected_fallback_category"] == "general_request", case["id"]
+        note = case.get("label_note", "")
+        for phrase in ("voice only", "queue_unreachable", "general_servicing", "general_request",
+                       "outranks", "misroute", "without first"):
+            assert phrase in note, (case["id"], phrase)
+
+
+def test_a_chat_vulnerability_handoff_case_exists(handoff_cases):
+    """esc-handoff-013 is a vulnerable customer on chat: the golden case for the general_servicing fallback."""
+    case = next(c for c in handoff_cases if c["id"] == "esc-handoff-013")
+    assert case["channel"] == "chat"
+    assert case["expected_trigger"] == "vulnerability"
+    assert case["expected_fallback_queue"] == "general_servicing"
+    assert any(f["kind"] == "vulnerability" for f in case["material_facts"])
+
+
+def test_esc_corpus_007_runs_on_chat_and_states_the_fallback(corpus):
+    """esc-corpus-007, the bereaved customer in the 3.1 corpus, is a chat case.
+
+    It escalates correctly only through the general_servicing fallback, because
+    the vulnerable queue takes voice only. Its label_note says so.
+    """
+    case = next(c for c in corpus if c["id"] == "esc-corpus-007")
+    assert case["channel"] == "chat"
+    assert case["expected_trigger"] == "vulnerability" and case["critical"]
+    note = case.get("label_note", "")
+    assert "general_servicing" in note and "queue_unreachable" in note
 
 
 def test_notebook_03_takes_the_channel_from_the_case_data():
@@ -263,6 +319,37 @@ def test_notebook_03_tells_the_agent_the_routing_rule():
     assert "ROUTING_POLICY" in shared
 
 
+def test_notebook_03_handoff_policy_allows_the_retry_after_a_refusal():
+    """The shared handoff policy says a refused handoff does not use up the one escalation.
+
+    Without it, "escalate at most once" would stop the agent from retrying to
+    general_servicing after the voice-only queue refuses on chat.
+    """
+    policy_cell = notebook_03_code("HANDOFF_POLICY_SHARED = (")
+    shared = policy_cell[policy_cell.index("HANDOFF_POLICY_SHARED = ("):policy_cell.index("FREE_TEXT_RECORD_GUIDANCE")]
+    assert "queue_unreachable" in shared
+    assert "hand off again" in shared
+
+
+def test_notebook_03_scores_routing_with_the_refused_queues():
+    """3.4 passes each case's refused queues to routing_scores and shows which cases used the fallback."""
+    routing_cell = notebook_03_code("chk.routing_scores(")
+    assert "chk.routing_scores(records_by_case[config_name], HANDOFF_CASES, unreachable_by_case[config_name])" \
+        in routing_cell
+    assert '"fallback_used"' in routing_cell
+    checks_cell = notebook_03_code("records_by_case = {name: {} for name in HANDOFF_CONFIGS}")
+    assert "chk.unreachable_handoff_queues(result.store)" in checks_cell
+
+
+@pytest.mark.parametrize("marker", ["dedup_rows.append(", "handoff_rows.append(", "delivery_rows.append("])
+def test_notebook_03_tables_show_when_the_preferred_queue_was_unavailable(marker):
+    """The 3.2, 3.3/3.4 and 3.5 per-case tables carry a preferred_queue_unavailable column."""
+    cell = notebook_03_code(marker)
+    row = cell[cell.index(marker):]
+    row = row[:row.index("})") + 2]
+    assert '"preferred_queue_unavailable"' in row, marker
+
+
 def test_tamper_base_handoff_matches_esc_042_routing(tamper, handoff_cases, fixtures):
     """The 3.6 base handoff is esc-042's record, so it carries esc-042's queue and category.
 
@@ -293,6 +380,19 @@ def test_esc_042_turns_match_the_readme(handoff_cases):
     so its turns must show both requests, as the data does.
     """
     assert readme_esc_042_turns() == [t["user"] for t in handoff_cases[0]["turns"]]
+
+
+def test_readme_states_the_chat_fallback_and_its_cases():
+    """README item 4 states the general_servicing fallback and names the chat cases that test it.
+
+    The earlier "known gap" text (no chat-origin vulnerability case) must be gone.
+    """
+    text = README.read_text()
+    assert "no case covers a vulnerable customer who starts in chat" not in text
+    item_4 = text[text.index("**4. Routing correctness.**"):text.index("**5. Delivery verification")]
+    for phrase in ("esc-handoff-013", "esc-corpus-007", "general_servicing", "general_request",
+                   "queue_unreachable", "misroute"):
+        assert phrase in item_4, phrase
 
 
 def test_every_material_fact_has_a_kind_and_evidence_terms(handoff_cases):
@@ -433,6 +533,7 @@ SIDE_DETAIL_FACTS = {
     "esc-handoff-010": "customer already cancelled subscriptions to cut costs",
     "esc-handoff-011": "customer is travelling until the 20th and wants contact by email only",
     "esc-handoff-012": "customer needs a rental car to get to dialysis three times a week",
+    "esc-handoff-013": "customer can reply only in the mornings because the treatment leaves them exhausted",
 }
 
 
@@ -573,9 +674,9 @@ def test_esc_042_recall_counts_a_paraphrased_repeat_request(handoff_cases):
 
 # The handoff cases added so that no single case decides 3.3 recall. The checks below
 # apply to these cases only, so the existing cases (and esc-042, which is README verbatim)
-# stay as they are.
+# stay as they are. esc-handoff-013 is the chat-origin vulnerability case (general_servicing fallback).
 ADDED_HANDOFF_CASES = ("esc-handoff-008", "esc-handoff-009", "esc-handoff-010",
-                       "esc-handoff-011", "esc-handoff-012")
+                       "esc-handoff-011", "esc-handoff-012", "esc-handoff-013")
 
 # Words that ask for a human. The final turn of every case must use one.
 PERSON_ASK = re.compile(r"\b(person|someone|human|manager|specialist)\b", re.IGNORECASE)
@@ -646,11 +747,11 @@ STRUCTURED_NARRATIVE_FIELDS = ("reason", "summary", "disclosures", "complaints",
                                "actions_already_taken", "disputed_figures")
 
 
-def _routing_and_metadata_text(case, fixtures):
+def _routing_and_metadata_text(case, fixtures, queue, category):
     """The full text of a handoff record that holds only routing enums and metadata.
 
-    The record is written by the real ``write_handoff_record`` with the case's expected
-    queue and category and every narrative field empty, so it holds only the enum values
+    The record is written by the real ``write_handoff_record`` with the given queue
+    and category and every narrative field empty, so it holds only the enum values
     and the gateway's metadata (reference id, timestamp, agent version, channel, session
     id). ``handoff_text`` joins every field value, so this is all the text such a record
     holds outside its narrative.
@@ -658,7 +759,7 @@ def _routing_and_metadata_text(case, fixtures):
     systems = SystemsOfRecord(fixtures, GatewaySettings())
     session = Session(customer_id=case["authenticated_customer_id"],
                       session_id=f"structured_handoff_record:{case['id']}", channel="chat")
-    args = {"queue": case["expected_queue"], "category": case["expected_category"],
+    args = {"queue": queue, "category": category,
             **{name: ("" if name in ("reason", "summary") else []) for name in STRUCTURED_NARRATIVE_FIELDS}}
     write_handoff_record(systems, case["authenticated_customer_id"], args, session)
     record = next(iter(systems.store.handoffs.values()))
@@ -673,12 +774,17 @@ def test_no_material_fact_is_carried_by_routing_or_metadata(handoff_cases, fixtu
     ("complaint", "claims_specialist", "disputed_transaction") or the gateway's
     metadata satisfied a fact, a summary that copies the queue or category would
     score the fact as carried. Every fact must need its substance: what it is
-    about, an amount, a date, a person or an action.
+    about, an amount, a date, a person or an action. A case with a fallback is
+    checked on both routes, the expected queue and the fallback.
     """
     for case in handoff_cases:
-        text = _routing_and_metadata_text(case, fixtures)
-        for fact in case["material_facts"]:
-            assert not chk.fact_present(text, fact["evidence_terms"]), (case["id"], fact["fact"])
+        routes = [(case["expected_queue"], case["expected_category"])]
+        if "expected_fallback_queue" in case:
+            routes.append((case["expected_fallback_queue"], case["expected_fallback_category"]))
+        for queue, category in routes:
+            text = _routing_and_metadata_text(case, fixtures, queue, category)
+            for fact in case["material_facts"]:
+                assert not chk.fact_present(text, fact["evidence_terms"]), (case["id"], queue, fact["fact"])
 
 
 def test_added_lock_cases_confirm_before_the_lock(handoff_cases):

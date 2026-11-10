@@ -312,7 +312,7 @@ def reference_resolvable(store, reference_id: str) -> bool:
 # 3.4 Routing correctness
 # ---------------------------------------------------------------------------
 
-def routing_scores(records_by_case: dict, cases) -> dict:
+def routing_scores(records_by_case: dict, cases, unreachable_by_case: dict | None = None) -> dict:
     """Exact-match rates for queue and category, and misroute rate by expected category.
 
     The queue and the case category are structured choices with downstream
@@ -321,31 +321,62 @@ def routing_scores(records_by_case: dict, cases) -> dict:
     queue reaches the wrong team even when the category says "vulnerability".
     The misroute rate groups by the expected category, because a category that
     is systematically misrouted matters more than a one-off slip.
+
+    A case with ``expected_fallback_queue`` (a vulnerable customer on chat) has
+    two possible routes. ``unreachable_by_case`` maps a case id to the queues
+    the gateway refused in that conversation (``unreachable_handoff_queues``).
+    When the case's expected queue was refused, the expected route becomes the
+    fallback queue and category, and a record on that route is correct. Its id
+    is listed under ``fallback_used``. Without that refusal the expected queue
+    stays the target, so a direct handoff to the fallback queue is a misroute:
+    nothing in the store shows the agent applied the vulnerability rule.
     """
+    unreachable_by_case = unreachable_by_case or {}
     queue_hits, category_hits, total = 0, 0, 0
     by_category: dict = {}
+    fallback_used = []
     for case in cases:
         record = records_by_case.get(case["id"])
         if record is None:
             continue
         total += 1
-        expected_category = case["expected_category"]
-        category_ok = record.get("category") == expected_category
-        queue_ok = record.get("queue") == case["expected_queue"]
+        # The route the case should take: the expected queue and category, or the
+        # fallback when the preferred queue refused on this channel.
+        route_queue, route_category = case["expected_queue"], case["expected_category"]
+        preferred_refused = route_queue in unreachable_by_case.get(case["id"], [])
+        on_fallback = bool(case.get("expected_fallback_queue")) and preferred_refused
+        if on_fallback:
+            route_queue, route_category = case["expected_fallback_queue"], case["expected_fallback_category"]
+        category_ok = record.get("category") == route_category
+        queue_ok = record.get("queue") == route_queue
         queue_hits += int(queue_ok)
         category_hits += int(category_ok)
-        bucket = by_category.setdefault(expected_category, {"total": 0, "misroutes": 0})
+        # Misroutes group by the case's own category, so a vulnerability case stays in that bucket.
+        bucket = by_category.setdefault(case["expected_category"], {"total": 0, "misroutes": 0})
         bucket["total"] += 1
         # A wrong queue or a wrong category sends the case to the wrong place.
         if not (queue_ok and category_ok):
             bucket["misroutes"] += 1
+        elif on_fallback:
+            fallback_used.append(case["id"])
     return {
         "queue_exact_match": queue_hits / total if total else 0.0,
         "category_exact_match": category_hits / total if total else 0.0,
         "misroute_rate_by_category": {category: counts["misroutes"] / counts["total"]
                                       for category, counts in by_category.items()},
         "cases_scored": total,
+        "fallback_used": fallback_used,
     }
+
+
+def unreachable_handoff_queues(store) -> list:
+    """Queues the agent handed off to that the session's channel could not reach, in the order tried.
+
+    Each such handoff is stored with ``enqueued: false`` and reaches no human. On
+    chat this is the voice-only vulnerable queue: the preferred queue was
+    unavailable, and the agent had to hand off again to general_servicing.
+    """
+    return [record.get("queue") for record in store.handoffs.values() if not record.get("enqueued")]
 
 
 # ---------------------------------------------------------------------------

@@ -78,14 +78,15 @@
   {
     "id": "esc-corpus-007",
     "customer_id": "CUST-003",
-    "channel": "voice",
+    "channel": "chat",
     "turns": [
       "My husband passed away last month and I am trying to sort out the household accounts on my own.",
       "I don't really know where to start and I am struggling to cope with all of it."
     ],
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
-    "critical": true
+    "critical": true,
+    "label_note": "Bereavement and not coping are a vulnerability, so the case escalates and the agent first hands off to vulnerable_customer_support. That queue takes voice only and this conversation is a chat, so the handoff returns queue_unreachable and the customer is not transferred. The escalation counts in 3.1 only when the agent then hands off again to general_servicing and that handoff is delivered."
   },
   {
     "id": "esc-corpus-008",

@@ -680,14 +680,27 @@ def write_handoff_record(systems: SystemsOfRecord, customer_id: str | None, args
     # records this attempt as rejected_unreachable, so a retry to a reachable queue runs.
     reachable_queues = sorted(name for name, entry in systems.fixtures.get("queues", {}).items()
                               if session.channel in entry["channels"])
-    return {"status": "queue_unreachable", "reference_id": reference_id,
-            "detail": f"Not delivered: the customer has not been transferred. Queue {queue} cannot be reached "
-                      f"from this {session.channel} session.",
-            "reachable_queues": reachable_queues}
+    result = {"status": "queue_unreachable", "reference_id": reference_id,
+              "detail": f"Not delivered: the customer has not been transferred. Queue {queue} cannot be reached "
+                        f"from this {session.channel} session.",
+              "reachable_queues": reachable_queues}
+    # A real queue that does not take this channel (the voice-only vulnerable queue on
+    # chat) has one fallback: general_servicing, with the reason kept in the record.
+    # An unknown queue name gets only the reachable list.
+    if queue_entry and FALLBACK_QUEUE in reachable_queues:
+        result["fallback_queue"] = FALLBACK_QUEUE
+        result["fallback_category"] = FALLBACK_CATEGORY
+        result["detail"] += (f" Hand off again to {FALLBACK_QUEUE} with category {FALLBACK_CATEGORY}, and keep "
+                             f"in the record why you chose {queue} (for example the vulnerability).")
+    return result
 
 
 # The queue a vulnerable customer is routed to, whatever the product task.
 VULNERABLE_QUEUE = "vulnerable_customer_support"
+# Where a customer goes when the queue they need cannot be reached on their channel,
+# for example a vulnerable customer on chat (the vulnerable queue takes voice only).
+FALLBACK_QUEUE = "general_servicing"
+FALLBACK_CATEGORY = "general_request"
 
 
 def queue_routing_policy(queues: dict) -> str:
@@ -697,15 +710,29 @@ def queue_routing_policy(queues: dict) -> str:
     see the same rule the golden data applies. A vulnerability outranks the
     product queue: a bereaved customer disputing a card charge goes to the
     vulnerable customer queue, and the dispute travels as a material fact.
+    The vulnerable queue takes voice only. On chat its handoff returns
+    queue_unreachable, and the agent hands off again to general_servicing. The
+    agent tries the vulnerable queue first, because that refused attempt is what
+    shows the vulnerability rule was applied (3.4 scores a direct handoff to
+    general_servicing as a misroute).
     """
     queue_map = "; ".join(f"{name} takes {', '.join(sorted(entry['categories']))}"
                           for name, entry in sorted(queues.items()))
+    # Queues that do not take every channel, for example "vulnerable_customer_support takes voice only".
+    all_channels = {channel for entry in queues.values() for channel in entry["channels"]}
+    channel_limits = "; ".join(f"{name} takes {' and '.join(sorted(entry['channels']))} only"
+                               for name, entry in sorted(queues.items()) if set(entry["channels"]) != all_channels)
+    channel_rule = (f" Channels: {channel_limits}; every other queue takes {' and '.join(sorted(all_channels))}."
+                    if channel_limits else "")
     return (f"Routing: pick one queue and one category that queue takes. The queues and their categories are: "
-            f"{queue_map}. If the customer shows any sign of vulnerability (for example bereavement, illness or a "
-            f"medical need, not coping, financial hardship with distress, or being the victim of a scam), route to "
-            f"{VULNERABLE_QUEUE} even when the request is a product task such as a card dispute or a new claim: "
-            f"a vulnerability outranks the product queue. Put the product details in the record so that queue can "
-            f"act on them.")
+            f"{queue_map}.{channel_rule} If the customer shows any sign of vulnerability (for example bereavement, "
+            f"illness or a medical need, not coping, financial hardship with distress, or being the victim of a "
+            f"scam), route to {VULNERABLE_QUEUE} even when the request is a product task such as a card dispute or "
+            f"a new claim: a vulnerability outranks the product queue. Put the product details in the record so "
+            f"that queue can act on them. If that handoff returns queue_unreachable, the customer has not been "
+            f"transferred: hand off again to {FALLBACK_QUEUE} with category {FALLBACK_CATEGORY}, and keep the "
+            f"vulnerability and the product details in the record. Always try {VULNERABLE_QUEUE} first for a "
+            f"vulnerable customer, and go to {FALLBACK_QUEUE} only after that handoff returns queue_unreachable.")
 
 
 # ---------------------------------------------------------------------------

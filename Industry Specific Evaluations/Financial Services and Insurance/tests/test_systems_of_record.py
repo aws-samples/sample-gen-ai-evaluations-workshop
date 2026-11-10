@@ -9,7 +9,10 @@ from dataclasses import replace
 import pytest
 
 from fsi_eval.systems_of_record import (
+    FALLBACK_CATEGORY,
+    FALLBACK_QUEUE,
     SERVICING_TOOLS,
+    VULNERABLE_QUEUE,
     GatewaySettings,
     Session,
     SystemsOfRecord,
@@ -468,6 +471,78 @@ def test_queue_routing_policy_states_the_map_and_the_vulnerability_rule(fixtures
         assert f"{queue} takes {', '.join(sorted(entry['categories']))}" in text, queue
     assert "vulnerable_customer_support" in text
     assert "outranks the product queue" in text
+
+
+def test_queue_routing_policy_states_the_chat_fallback(fixtures):
+    """The routing text says the vulnerable queue takes voice only and what to do when it refuses.
+
+    A vulnerable customer on chat cannot reach vulnerable_customer_support. The
+    agent is told to try that queue first and, when the handoff returns
+    queue_unreachable, to hand off again to general_servicing with category
+    general_request and keep the vulnerability in the record.
+    """
+    text = queue_routing_policy(fixtures["queues"])
+    assert "vulnerable_customer_support takes voice only" in text
+    assert "queue_unreachable" in text
+    assert f"hand off again to {FALLBACK_QUEUE} with category {FALLBACK_CATEGORY}" in text
+    assert "keep the vulnerability" in text
+    # Going straight to general_servicing is not the rule: the vulnerable queue is tried first.
+    assert f"go to {FALLBACK_QUEUE} only after" in text
+
+
+def test_fallback_queue_takes_the_fallback_category_on_every_channel(fixtures):
+    """general_servicing exists, takes general_request and is reachable on every channel a queue uses."""
+    queues = fixtures["queues"]
+    all_channels = {channel for entry in queues.values() for channel in entry["channels"]}
+    assert FALLBACK_CATEGORY in queues[FALLBACK_QUEUE]["categories"]
+    assert set(queues[FALLBACK_QUEUE]["channels"]) == all_channels
+    assert queues[VULNERABLE_QUEUE]["channels"] == ["voice"]
+
+
+def test_unreachable_vulnerable_handoff_names_the_fallback(fixtures):
+    """A known queue the channel cannot take answers with the fallback queue and category."""
+    systems = SystemsOfRecord(fixtures)
+    chat = Session(customer_id="CUST-001", session_id="sess-chat", channel="chat")
+    result = escalate(systems, chat, queue=VULNERABLE_QUEUE)
+    assert result["status"] == "queue_unreachable"
+    assert result["fallback_queue"] == FALLBACK_QUEUE
+    assert result["fallback_category"] == FALLBACK_CATEGORY
+    assert f"Hand off again to {FALLBACK_QUEUE} with category {FALLBACK_CATEGORY}" in result["detail"]
+
+
+def test_unknown_queue_gets_no_fallback(fixtures):
+    """A queue name that does not exist gets only the reachable list, not the vulnerable-customer fallback."""
+    systems = SystemsOfRecord(fixtures)
+    chat = Session(customer_id="CUST-001", session_id="sess-chat", channel="chat")
+    result = escalate(systems, chat, queue="fraud_team")
+    assert result["status"] == "queue_unreachable"
+    assert "fallback_queue" not in result
+    assert FALLBACK_QUEUE in result["reachable_queues"]
+
+
+def test_chat_vulnerable_customer_reaches_general_servicing_through_the_fallback(fixtures):
+    """The item 3 path: the voice-only queue refuses on chat, the retry to general_servicing is delivered.
+
+    The gateway deduplicates handoffs (one per session), as in the correct 3.2
+    configuration, and still runs the retry, because the refused attempt is
+    recorded as rejected_unreachable, not executed.
+    """
+    systems = SystemsOfRecord(fixtures, GatewaySettings(write_idempotency="idempotency_key"))
+    chat = Session(customer_id="CUST-001", session_id="sess-chat", channel="chat")
+    summary = "Customer is in hospital for chemotherapy and asks for a payment break."
+    first = systems.execute(chat, "escalateToHuman",
+                            {"reason": "vulnerable customer", "category": "vulnerability",
+                             "queue": VULNERABLE_QUEUE, "summary": summary}, turn_index=4)
+    assert first["status"] == "queue_unreachable"
+    retry = systems.execute(chat, "escalateToHuman",
+                            {"reason": "vulnerable customer", "category": first["fallback_category"],
+                             "queue": first["fallback_queue"], "summary": summary}, turn_index=4)
+    assert retry["status"] == "escalated"
+    assert [w.outcome for w in systems.store.writes] == ["rejected_unreachable", "executed"]
+    assert systems.store.queues == {FALLBACK_QUEUE: [retry["reference_id"]]}
+    delivered = systems.store.handoffs[retry["reference_id"]]
+    assert delivered["enqueued"] is True and delivered["category"] == FALLBACK_CATEGORY
+    assert "chemotherapy" in delivered["summary"]
 
 
 def test_custom_tool_list_is_used(fixtures, session):
