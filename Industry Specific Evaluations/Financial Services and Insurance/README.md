@@ -31,16 +31,18 @@ The notebooks call Amazon Bedrock. Your AWS credentials need permission to invok
 
 The notebooks read the region from `AWS_REGION` and use `us-east-1` when it is not set. They create no AWS resources.
 
-`requirements.txt` lists the packages the notebook code imports. It does not include Jupyter. If you already run Jupyter (SageMaker Studio, JupyterLab or VS Code), install the requirements into your kernel. Each notebook has a commented-out `%pip install -r requirements.txt` cell for this.
+`requirements.txt` lists the packages the notebook code imports, with exact versions. These versions need Python 3.12 or later: numpy 2.5.3 does not install on an older Python. The file does not include Jupyter. If you already run Jupyter (SageMaker Studio, JupyterLab or VS Code), check that your kernel runs Python 3.12 or later, then install the requirements into it. Each notebook has a commented-out `%pip install -r requirements.txt` cell for this.
 
 To run the notebooks on your own machine in a new virtual environment, install Jupyter alongside the requirements. Run these commands from this folder:
 
 ```bash
-python -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt jupyterlab==4.6.4
 jupyter lab
 ```
+
+The first command creates the environment with Python 3.12. Any Python 3.12 or later works, so use the interpreter you have, for example `python3.14 -m venv .venv`. On many machines `python` does not exist and `python3` is an older version, so check with `python3 --version` before you use it.
 
 The notebooks were validated with Python 3.14 and JupyterLab 4.6.4. Each notebook takes two to three minutes to run.
 
