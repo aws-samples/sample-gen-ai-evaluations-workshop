@@ -63,6 +63,31 @@ def test_disposition_escalate_when_escalation_called(fixtures):
     assert chk.disposition_from_store(systems.store) == "escalate"
 
 
+def test_disposition_not_escalated_when_the_handoff_was_not_delivered(fixtures):
+    # vulnerable_customer_support is voice-only. On chat the call is made, but no
+    # human receives the customer, so 3.1 must not count it as a correct escalation.
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    result = _escalate(systems, _session(channel="chat"), queue="vulnerable_customer_support",
+                       category="vulnerability")
+    assert result["status"] == "queue_unreachable"
+    assert chk.disposition_from_store(systems.store) == "handled"
+
+
+def test_disposition_not_escalated_with_acknowledge_only_tool(fixtures):
+    # The tool reports success but delivers nothing.
+    systems = SystemsOfRecord(fixtures, tools=(ACKNOWLEDGE_ONLY_TOOL,))
+    _escalate(systems, _session())
+    assert chk.disposition_from_store(systems.store) == "handled"
+
+
+def test_disposition_escalate_after_a_retry_to_a_reachable_queue(fixtures):
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    _escalate(systems, session, queue="vulnerable_customer_support", category="vulnerability")
+    _escalate(systems, session, queue="general_servicing", category="general_request", turn_index=1)
+    assert chk.disposition_from_store(systems.store) == "escalate"
+
+
 def test_disposition_handled_when_no_escalation(fixtures):
     systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
     systems.execute(_session(), "getCards", {}, 0)
@@ -127,6 +152,41 @@ def test_duplicate_handoffs_found_without_idempotency(fixtures):
     _escalate(systems, session, turn_index=5)
     assert chk.handoff_records_written(systems.store) == 2
     assert chk.duplicate_handoffs(systems.store) == 1
+
+
+def test_undelivered_handoff_and_its_retry_are_not_duplicates(fixtures):
+    # The unreachable record reaches no human, so only the retry is a case for a person.
+    systems = SystemsOfRecord(fixtures, GatewaySettings(write_idempotency="idempotency_key"), tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    _escalate(systems, session, queue="vulnerable_customer_support", category="vulnerability")
+    _escalate(systems, session, queue="general_servicing", category="general_request", turn_index=1)
+    assert chk.handoff_records_written(systems.store) == 2
+    assert chk.delivered_handoffs(systems.store) == 1
+    assert chk.duplicate_handoffs(systems.store) == 0
+
+
+# ---------------------------------------------------------------------------
+# delivered_handoff_record
+# ---------------------------------------------------------------------------
+
+def test_delivered_handoff_record_prefers_the_enqueued_record(fixtures):
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    _escalate(systems, session, queue="vulnerable_customer_support", category="vulnerability")
+    retry = _escalate(systems, session, queue="general_servicing", category="general_request", turn_index=1)
+    assert chk.delivered_handoff_record(systems.store)["reference_id"] == retry["reference_id"]
+
+
+def test_delivered_handoff_record_falls_back_to_the_first_record(fixtures):
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    first = _escalate(systems, _session(channel="chat"), queue="vulnerable_customer_support",
+                      category="vulnerability")
+    assert chk.delivered_handoff_record(systems.store)["reference_id"] == first["reference_id"]
+
+
+def test_delivered_handoff_record_none_without_escalation(fixtures):
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    assert chk.delivered_handoff_record(systems.store) is None
 
 
 # ---------------------------------------------------------------------------

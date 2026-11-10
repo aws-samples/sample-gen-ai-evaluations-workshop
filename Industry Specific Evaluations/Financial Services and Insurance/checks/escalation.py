@@ -37,8 +37,15 @@ DISPOSITION_LABELS = ("handled", "escalate")
 # ---------------------------------------------------------------------------
 
 def disposition_from_store(store) -> str:
-    """The disposition a conversation reached: escalate when an escalation call was made."""
-    return "escalate" if store.calls_to(ESCALATION_TOOL) else "handled"
+    """The disposition a conversation reached: escalate only when a handoff reached a human queue.
+
+    An escalation call is not enough. A handoff to a queue the session's channel
+    cannot reach, or a tool that reports success and writes nothing, leaves the
+    customer with no human. Grading on the call would count that as a correct
+    escalation, so such a conversation counts as handled (a missed escalation
+    when the case should escalate).
+    """
+    return "escalate" if delivered_handoffs(store) else "handled"
 
 
 def escalation_confusion(expected, actual, critical, ids=None) -> dict:
@@ -82,14 +89,39 @@ def handoff_records_written(store) -> int:
     return len(store.handoffs)
 
 
-def duplicate_handoffs(store) -> int:
-    """Handoff records beyond the first for one customer in one session.
+def _delivered_records(store) -> list:
+    """Handoff records the gateway placed in a human queue, in the order they were written."""
+    enqueued = {reference for references in store.queues.values() for reference in references}
+    return [record for reference, record in store.handoffs.items() if reference in enqueued]
 
-    Exactly-once means one handoff record per conversation. Any record past the
-    first for the same customer is a duplicate: two cases, two humans, one
-    customer.
+
+def delivered_handoffs(store) -> int:
+    """Number of handoff records that reached a human queue in this conversation."""
+    return len(_delivered_records(store))
+
+
+def delivered_handoff_record(store) -> dict | None:
+    """The handoff record the receiving human reads: the first one enqueued, else the first written.
+
+    When the first attempt went to an unreachable queue and a retry was
+    delivered, the human reads the retry's record. With no delivered record the
+    first record written is returned, so its content can still be scored.
     """
-    counts = Counter(record["customer_id"] for record in store.handoffs.values())
+    delivered = _delivered_records(store)
+    if delivered:
+        return delivered[0]
+    return next(iter(store.handoffs.values()), None)
+
+
+def duplicate_handoffs(store) -> int:
+    """Delivered handoff records beyond the first for one customer in one session.
+
+    Exactly-once means one delivered handoff per conversation. Any delivered
+    record past the first for the same customer is a duplicate: two cases, two
+    humans, one customer. A record the gateway could not enqueue reaches no
+    human, so it is not a duplicate of the retry that followed it.
+    """
+    counts = Counter(record["customer_id"] for record in _delivered_records(store))
     return sum(count - 1 for count in counts.values() if count > 1)
 
 

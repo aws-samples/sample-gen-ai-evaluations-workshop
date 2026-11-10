@@ -418,6 +418,33 @@ def test_escalation_session_idempotency(fixtures, session):
     assert len(systems.store.handoffs) == 1
 
 
+def test_unreachable_handoff_does_not_block_a_retry(fixtures):
+    """A handoff to a queue the channel cannot reach is not an executed write, so a retry works.
+
+    escalateToHuman has one idempotency key per session. If the unreachable attempt
+    counted as executed, the gateway would refuse the retry as a repeat and the
+    customer would reach no human at all.
+    """
+    systems = SystemsOfRecord(fixtures, GatewaySettings(write_idempotency="idempotency_key"))
+    chat = Session(customer_id="CUST-001", session_id="sess-chat", channel="chat")
+    first = escalate(systems, chat, queue="vulnerable_customer_support")  # voice only
+    assert first["status"] == "queue_unreachable"
+    retry = escalate(systems, chat, queue="general_servicing")
+    assert retry["status"] == "escalated"
+    assert [w.outcome for w in systems.store.writes] == ["rejected_unreachable", "executed"]
+    assert systems.store.queues == {"general_servicing": [retry["reference_id"]]}
+
+
+def test_unreachable_handoff_says_the_customer_was_not_transferred(fixtures):
+    systems = SystemsOfRecord(fixtures)
+    chat = Session(customer_id="CUST-001", session_id="sess-chat", channel="chat")
+    result = escalate(systems, chat, queue="vulnerable_customer_support")
+    assert "not been transferred" in result["detail"]
+    # The queues this chat session can reach, so the agent can retry to one of them.
+    assert result["reachable_queues"] == sorted(name for name, entry in fixtures["queues"].items()
+                                                if "chat" in entry["channels"])
+
+
 def test_queue_routing_policy_states_the_map_and_the_vulnerability_rule(fixtures):
     """The routing text the agent is given names every queue, the categories each takes, and the rule.
 

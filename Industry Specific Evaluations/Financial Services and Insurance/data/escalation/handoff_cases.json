@@ -2,6 +2,7 @@
   {
     "id": "esc-042",
     "authenticated_customer_id": "CUST-001",
+    "channel": "voice",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
     "expected_queue": "vulnerable_customer_support",
@@ -38,6 +39,7 @@
   {
     "id": "esc-handoff-002",
     "authenticated_customer_id": "CUST-002",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "above_authority",
     "expected_queue": "payments_specialist",
@@ -68,6 +70,7 @@
   {
     "id": "esc-handoff-003",
     "authenticated_customer_id": "CUST-003",
+    "channel": "voice",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
     "expected_queue": "vulnerable_customer_support",
@@ -98,6 +101,7 @@
   {
     "id": "esc-handoff-004",
     "authenticated_customer_id": "CUST-004",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "complaint",
     "expected_queue": "complaints",
@@ -129,6 +133,7 @@
   {
     "id": "esc-handoff-005",
     "authenticated_customer_id": "CUST-001",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "complexity",
     "expected_queue": "claims_specialist",
@@ -160,6 +165,7 @@
   {
     "id": "esc-handoff-006",
     "authenticated_customer_id": "CUST-002",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "explicit_ask",
     "expected_queue": "payments_specialist",
@@ -193,6 +199,7 @@
   {
     "id": "esc-handoff-007",
     "authenticated_customer_id": "CUST-003",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "complaint",
     "expected_queue": "complaints",
@@ -224,6 +231,7 @@
   {
     "id": "esc-handoff-008",
     "authenticated_customer_id": "CUST-004",
+    "channel": "voice",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
     "expected_queue": "vulnerable_customer_support",
@@ -258,6 +266,7 @@
   {
     "id": "esc-handoff-009",
     "authenticated_customer_id": "CUST-003",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "explicit_ask",
     "expected_queue": "payments_specialist",
@@ -295,6 +304,7 @@
   {
     "id": "esc-handoff-010",
     "authenticated_customer_id": "CUST-002",
+    "channel": "voice",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
     "expected_queue": "vulnerable_customer_support",
@@ -329,6 +339,7 @@
   {
     "id": "esc-handoff-011",
     "authenticated_customer_id": "CUST-001",
+    "channel": "chat",
     "expected_disposition": "escalate",
     "expected_trigger": "complaint",
     "expected_queue": "complaints",
@@ -363,6 +374,7 @@
   {
     "id": "esc-handoff-012",
     "authenticated_customer_id": "CUST-004",
+    "channel": "voice",
     "expected_disposition": "escalate",
     "expected_trigger": "vulnerability",
     "expected_queue": "vulnerable_customer_support",

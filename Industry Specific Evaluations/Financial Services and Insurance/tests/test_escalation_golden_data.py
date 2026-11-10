@@ -203,6 +203,40 @@ def notebook_03_code(marker):
     return matching[0]
 
 
+CHANNELS = {"chat", "voice"}
+
+
+def test_every_case_states_its_channel(corpus, handoff_cases):
+    """Each corpus and handoff case stores the channel the customer used.
+
+    The notebook runs the case on this channel. It must not derive the channel
+    from the expected queue, because a real system does not know the right
+    queue before the conversation.
+    """
+    for case in [*corpus, *handoff_cases]:
+        assert case.get("channel") in CHANNELS, (case["id"], case.get("channel"))
+
+
+def test_handoff_expected_queue_is_reachable_on_the_case_channel(handoff_cases, fixtures):
+    """The expected outcome of every handoff case can be delivered on the channel it runs on."""
+    for case in handoff_cases:
+        assert case["channel"] in fixtures["queues"][case["expected_queue"]]["channels"], case["id"]
+
+
+def test_notebook_03_takes_the_channel_from_the_case_data():
+    """No notebook 03 session picks its channel from the expected queue (a label leak)."""
+    notebook = json.loads(NOTEBOOK_03.read_text())
+    code = "\n".join("".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "code")
+    assert "channel_for_queue" not in code
+    assert not re.search(r"channel\s*=.*expected_queue", code)
+    for runner in ("def run_corpus_case", "def run_dedup_case", "def run_handoff_case", "def run_acknowledge_case"):
+        body = notebook_03_code(runner)
+        body = body[body.index(runner):]
+        assert re.search(r'channel=(case|base)\["channel"\]', body), runner
+    delivery = notebook_03_code("chk.delivery_verified(")
+    assert 'case["channel"]' in delivery
+
+
 def test_notebook_03_tells_the_agent_the_routing_rule():
     """The handoff prompt and the structured queue field carry the rule 3.4 scores against.
 

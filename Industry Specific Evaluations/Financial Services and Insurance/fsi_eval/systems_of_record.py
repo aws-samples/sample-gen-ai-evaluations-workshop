@@ -114,7 +114,9 @@ class WriteRecord:
     arguments: dict
     action_key: str  # tool + session + identifying arguments; always computed
     idempotency_key: str | None  # action_key when the gateway enforces idempotency, else None
-    outcome: str  # executed | duplicate_ignored | confirmation_required | rejected_over_limit | rejected_invalid
+    # executed | duplicate_ignored | confirmation_required | rejected_over_limit | rejected_invalid
+    # | rejected_unreachable (a handoff the session's channel could not deliver)
+    outcome: str
 
 
 @dataclass
@@ -202,6 +204,10 @@ def load_fixtures(path: str | Path) -> dict:
 # ---------------------------------------------------------------------------
 # The gateway
 # ---------------------------------------------------------------------------
+
+# Handler statuses that mean the write did not take effect, and the outcome recorded for them.
+_NOT_EXECUTED_OUTCOMES = {"queue_unreachable": "rejected_unreachable"}
+
 
 class SystemsOfRecord:
     """Fixture-backed systems of record behind a recording tool gateway.
@@ -365,6 +371,10 @@ class SystemsOfRecord:
                                    "executed", action_key, enforce_key)
         result = tool.handler(self, customer_id, arguments, session)
         result.setdefault("status", "done")
+        # A handler can report that its action did not take effect, such as a handoff
+        # to a queue this channel cannot reach. That attempt is not an executed write,
+        # so the idempotency key does not refuse a retry to a reachable queue.
+        write.outcome = _NOT_EXECUTED_OUTCOMES.get(result["status"], write.outcome)
         result["write_id"] = write.write_id
         self._results_by_write_id[write.write_id] = dict(result)
         return result
@@ -656,7 +666,14 @@ def write_handoff_record(systems: SystemsOfRecord, customer_id: str | None, args
     if reachable:
         systems.store.queues.setdefault(queue, []).append(reference_id)
         return {"status": "escalated", "reference_id": reference_id}
-    return {"status": "queue_unreachable", "reference_id": reference_id}
+    # The record is kept for audit, but no human receives the customer. The gateway
+    # records this attempt as rejected_unreachable, so a retry to a reachable queue runs.
+    reachable_queues = sorted(name for name, entry in systems.fixtures.get("queues", {}).items()
+                              if session.channel in entry["channels"])
+    return {"status": "queue_unreachable", "reference_id": reference_id,
+            "detail": f"Not delivered: the customer has not been transferred. Queue {queue} cannot be reached "
+                      f"from this {session.channel} session.",
+            "reachable_queues": reachable_queues}
 
 
 # The queue a vulnerable customer is routed to, whatever the product task.
