@@ -55,8 +55,29 @@ def test_code_names(path):
         assert not BANNED_NAMES.search(text), BANNED_NAMES.search(text).group(0)
 
 
+# Folders that hold installed or generated code, not module code. The README creates
+# .venv inside the module folder, so the naming rule must not walk into it.
+NON_MODULE_DIRS = {".venv", "venv", "env", ".env", "site-packages", "node_modules", ".tox", "__pycache__",
+                   "build", "dist", ".git", ".ipynb_checkpoints"}
+
+
+def module_python_files(root):
+    """Every .py file under ``root`` that belongs to the module, skipping virtual environments and build output."""
+    return sorted(path for path in root.rglob("*.py")
+                  if not NON_MODULE_DIRS & set(path.relative_to(root).parts[:-1]))
+
+
+def test_module_python_files_skip_virtual_environments(tmp_path):
+    for folder in (".venv/lib/python3.14/site-packages", "venv/lib", "env/lib", "fsi_eval"):
+        (tmp_path / folder).mkdir(parents=True)
+    for path in (".venv/lib/python3.14/site-packages/threadpoolctl.py", "venv/lib/a.py", "env/lib/b.py",
+                 "fsi_eval/module.py"):
+        (tmp_path / path).write_text("new_ = 1\n")
+    assert module_python_files(tmp_path) == [tmp_path / "fsi_eval" / "module.py"]
+
+
 def test_python_names():
-    for path in MODULE_ROOT.rglob("*.py"):
+    for path in module_python_files(MODULE_ROOT):
         if path.name == "test_notebook_hygiene.py":
             continue  # this file names the banned patterns
         match = BANNED_NAMES.search(path.read_text())
