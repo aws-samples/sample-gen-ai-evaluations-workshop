@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from fsi_eval.converse_agent import TurnRecord
 from fsi_eval.systems_of_record import (GatewaySettings, Session, SystemsOfRecord, ToolDefinition,
                                         SERVICING_TOOLS, write_handoff_record)
 from checks import escalation as chk
@@ -321,6 +322,44 @@ def test_authored_summary_text_drops_metadata_and_routing():
 
 def test_authored_summary_text_empty_record_is_blank():
     assert chk.authored_summary_text(None) == ""
+
+
+# ---------------------------------------------------------------------------
+# fabrication_evidence
+# ---------------------------------------------------------------------------
+
+def _locked_then_escalated(fixtures):
+    """A real store and turn list: the agent locks card 4417 on a yes, then escalates."""
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    systems.persist_message(session, "user", "Yes, lock it.")
+    systems.execute(session, "lockCard", {"card": "debit"}, 1)
+    _escalate(systems, session, summary="Card ending 4417 locked. Customer wants a person.", turn_index=2)
+    turns = [TurnRecord(0, "Lock the card please.", "I can lock your debit card. Shall I go ahead?", "", [],
+                        0.0, 1.0, 1, "end_turn", False),
+             TurnRecord(1, "Yes, lock it.", "Your card ending 4417 is now locked.", "", [1], 1.0, 2.0, 2,
+                        "end_turn", False)]
+    return turns, systems.store
+
+
+def test_fabrication_evidence_holds_the_agent_turns_writes_and_tool_results(fixtures):
+    # The README criterion: every fact appears in the conversation or the retrieved record.
+    # "4417" is only in the lockCard result and the agent's reply, never in a customer turn.
+    turns, store = _locked_then_escalated(fixtures)
+    evidence = chk.fabrication_evidence(turns, store)
+    assert "Customer: Lock the card please." in evidence["conversation"]
+    assert "Agent: Your card ending 4417 is now locked." in evidence["conversation"]
+    assert "lockCard" in evidence["actions_taken"]
+    assert "4417" in evidence["tool_results"]
+
+
+def test_fabrication_evidence_leaves_out_the_handoff_itself(fixtures):
+    # The escalation call carries the summary under judgement, so it is not evidence for it.
+    turns, store = _locked_then_escalated(fixtures)
+    evidence = chk.fabrication_evidence(turns, store)
+    for text in evidence.values():
+        assert "escalateToHuman" not in text
+        assert "Customer wants a person." not in text
 
 
 # ---------------------------------------------------------------------------

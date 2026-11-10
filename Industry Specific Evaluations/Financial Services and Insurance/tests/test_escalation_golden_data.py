@@ -237,6 +237,17 @@ def test_notebook_03_takes_the_channel_from_the_case_data():
     assert 'case["channel"]' in delivery
 
 
+def test_notebook_03_fabrication_judge_sees_the_conversation_and_the_records():
+    """The fabrication judge's evidence is the full conversation, the writes and the tool results.
+
+    With only the customer turns, a card number the agent read from a tool would
+    count as invented, so the correct configuration could not reach a rate of 0.
+    """
+    judge_cell = notebook_03_code("FABRICATION_CRITERION = (")
+    assert "chk.fabrication_evidence(result.turns, result.store)" in judge_cell
+    assert 't["user"] for t in case["turns"]' not in judge_cell
+
+
 def test_notebook_03_tells_the_agent_the_routing_rule():
     """The handoff prompt and the structured queue field carry the rule 3.4 scores against.
 

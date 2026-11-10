@@ -18,6 +18,7 @@ same gateway binds identity for the receiving agent as for the Scenario 1 agent.
 from __future__ import annotations
 
 import copy
+import json
 import re
 from collections import Counter
 
@@ -181,11 +182,12 @@ def authored_summary_text(record: dict | None) -> str:
     must not satisfy a request to speak to a person through the word "agent".
 
     A fabrication judge checks that every fact in the summary appears in the
-    conversation. Its evidence is the conversation turns, so it must see only the
-    text the model wrote about that conversation: the reason, the summary and the
+    conversation or the retrieved records. Its evidence (``fabrication_evidence``)
+    is the conversation, the actions taken and the tool results, so it must see
+    only the text the model wrote about them: the reason, the summary and the
     material-fact lists. The routing enums and the gateway's own metadata
-    (reference id, timestamp, agent version, channel, customer id) never appear
-    in the turns, so feeding them to the judge would charge the model with
+    (reference id, timestamp, agent version, channel, customer id) appear in none
+    of that evidence, so feeding them to the judge would charge the model with
     inventing the record's own machinery. They are excluded here.
     """
     if not record:
@@ -198,6 +200,26 @@ def authored_summary_text(record: dict | None) -> str:
         elif isinstance(value, list):
             parts.extend(str(item) for item in value)
     return "\n".join(parts)
+
+
+def fabrication_evidence(turns, store) -> dict:
+    """What a fabrication judge may check a handoff summary against, as text.
+
+    The README criterion is that every fact in the summary appears in the
+    conversation or the retrieved record. So the evidence holds both sides of the
+    conversation, the writes the agent executed, and every tool call with its
+    result (for example the lockCard result that names card ending 4417). The
+    escalation call itself is left out: its arguments are the summary under
+    judgement, so they cannot be evidence for it.
+    """
+    conversation = "\n".join(f"Customer: {turn.user_text}\nAgent: {turn.assistant_text}" for turn in turns)
+    actions = [{"tool": write.tool, "arguments": write.arguments}
+               for write in store.executed_writes() if write.tool != ESCALATION_TOOL]
+    results = [{"tool": call.tool, "arguments": call.effective_arguments, "result": call.result}
+               for call in store.tool_calls if call.tool != ESCALATION_TOOL]
+    return {"conversation": conversation,
+            "actions_taken": json.dumps(actions, indent=1, default=str),
+            "tool_results": json.dumps(results, indent=1, default=str)}
 
 
 def fact_present(text: str, evidence_terms) -> bool:
