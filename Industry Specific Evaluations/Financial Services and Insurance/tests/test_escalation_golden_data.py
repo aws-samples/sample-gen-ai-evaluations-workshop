@@ -274,14 +274,25 @@ def test_tamper_base_handoff_matches_esc_042_routing(tamper, handoff_cases, fixt
     assert base["context"]["channel"] in fixtures["queues"][base["queue"]]["channels"]
 
 
+README = Path(__file__).resolve().parent.parent / "README.md"
+
+
+def readme_esc_042_turns():
+    """The user turns of the README esc-042 example, in order."""
+    text = README.read_text()
+    block = text[text.index("escalation_case = {"):]
+    start = block.index('"turns": [')
+    turns = block[start:block.index("],", start)]
+    return re.findall(r'\{"user": "(.*)"\}', turns)
+
+
 def test_esc_042_turns_match_the_readme(handoff_cases):
-    """The esc-042 turns are the four README user turns, in order."""
-    case = handoff_cases[0]
-    user_turns = [t["user"] for t in case["turns"]]
-    assert any("two charges" in t.lower() and "240" in t for t in user_turns)
-    assert any("lock the card" in t.lower() for t in user_turns)
-    assert any("passed" in t.lower() or "bereav" in t.lower() for t in user_turns)
-    assert any("talk to a person" in t.lower() or "speak to a" in t.lower() for t in user_turns)
+    """The README esc-042 example lists the data's user turns, verbatim and in order.
+
+    The README lists the material fact "customer asked twice to speak to a person",
+    so its turns must show both requests, as the data does.
+    """
+    assert readme_esc_042_turns() == [t["user"] for t in handoff_cases[0]["turns"]]
 
 
 def test_every_material_fact_has_a_kind_and_evidence_terms(handoff_cases):

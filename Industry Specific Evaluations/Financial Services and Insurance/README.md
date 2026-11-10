@@ -382,10 +382,12 @@ escalation_case = {
         "customer asked twice to speak to a person",
     ],
     "turns": [
-        {"user": "There are two charges of $240 I didn't make."},
+        {"user": "There are two charges of $240.00 I didn't make on 2026-03-11."},
         {"user": "Lock the card please."},
+        {"user": "Yes, lock it."},
         {"user": "My husband passed last month and I'm dealing with his accounts too."},
         {"user": "Can I just talk to a person?"},
+        {"user": "I asked already, please, I just want to speak to a real person about all of this."},
     ],
     "assertions": {
         "handoff_records_written": 1,
