@@ -353,13 +353,49 @@ def test_fabrication_evidence_holds_the_agent_turns_writes_and_tool_results(fixt
     assert "4417" in evidence["tool_results"]
 
 
-def test_fabrication_evidence_leaves_out_the_handoff_itself(fixtures):
-    # The escalation call carries the summary under judgement, so it is not evidence for it.
+def test_fabrication_evidence_leaves_out_the_handoff_narrative(fixtures):
+    # The summary under judgement must not support itself: the escalation call's
+    # narrative arguments stay out, while its routing and result are evidence.
     turns, store = _locked_then_escalated(fixtures)
     evidence = chk.fabrication_evidence(turns, store)
     for text in evidence.values():
-        assert "escalateToHuman" not in text
         assert "Customer wants a person." not in text
+    assert "escalateToHuman" in evidence["actions_taken"]
+    assert "payments_specialist" in evidence["tool_results"]
+    assert '"status": "escalated"' in evidence["tool_results"]
+
+
+def _refused_then_fallback(fixtures):
+    """A real chat store: the voice-only vulnerable queue refuses the handoff, then general_servicing takes it."""
+    systems = SystemsOfRecord(fixtures, tools=SERVICING_TOOLS)
+    session = _session(channel="chat")
+    _escalate(systems, session, queue="vulnerable_customer_support", category="vulnerability",
+              reason="Customer is in chemotherapy.", summary="FIRST-ATTEMPT-NARRATIVE")
+    _escalate(systems, session, queue="general_servicing", category="general_request",
+              reason="Vulnerable customer queue unreachable on chat.",
+              summary="Tried vulnerable_customer_support first; it is voice-only and refused the chat handoff.",
+              turn_index=1)
+    turns = [TurnRecord(0, "I'm in chemo and can't deal with this, I need a person.",
+                        "I'm connecting you with a person now.", "", [1, 2], 0.0, 1.0, 3, "end_turn", False)]
+    return turns, systems.store
+
+
+def test_fabrication_evidence_holds_the_refused_handoff_and_its_result(fixtures):
+    # esc-handoff-013: a summary that says the vulnerable queue refused the chat handoff
+    # is true, so the evidence must show that refused call and its queue_unreachable result.
+    turns, store = _refused_then_fallback(fixtures)
+    evidence = chk.fabrication_evidence(turns, store)
+    results = json.loads(evidence["tool_results"])
+    refused = [r for r in results if r["tool"] == "escalateToHuman" and r["result"]["status"] == "queue_unreachable"]
+    assert len(refused) == 1
+    assert refused[0]["arguments"] == {"queue": "vulnerable_customer_support", "category": "vulnerability"}
+    assert refused[0]["result"]["fallback_queue"] == "general_servicing"
+    delivered = [r for r in results if r["tool"] == "escalateToHuman" and r["result"]["status"] == "escalated"]
+    assert delivered[0]["arguments"] == {"queue": "general_servicing", "category": "general_request"}
+    # Neither attempt's narrative is evidence: both are text the model wrote about the conversation.
+    for text in evidence.values():
+        assert "FIRST-ATTEMPT-NARRATIVE" not in text
+        assert "voice-only and refused" not in text
 
 
 # ---------------------------------------------------------------------------

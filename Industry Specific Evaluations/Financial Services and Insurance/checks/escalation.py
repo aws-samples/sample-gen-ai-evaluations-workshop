@@ -186,9 +186,10 @@ def authored_summary_text(record: dict | None) -> str:
     is the conversation, the actions taken and the tool results, so it must see
     only the text the model wrote about them: the reason, the summary and the
     material-fact lists. The routing enums and the gateway's own metadata
-    (reference id, timestamp, agent version, channel, customer id) appear in none
-    of that evidence, so feeding them to the judge would charge the model with
-    inventing the record's own machinery. They are excluded here.
+    (reference id, timestamp, agent version, channel, customer id) are not claims
+    about the conversation, and most of them appear nowhere in that evidence, so
+    feeding them to the judge would charge the model with inventing the record's
+    own machinery. They are excluded here.
     """
     if not record:
         return ""
@@ -202,21 +203,41 @@ def authored_summary_text(record: dict | None) -> str:
     return "\n".join(parts)
 
 
+def _evidence_arguments(tool: str, arguments: dict) -> dict:
+    """A tool call's arguments as fabrication evidence: an escalation call keeps only its routing.
+
+    The narrative arguments of an escalation call (``AUTHORED_NARRATIVE_FIELDS``)
+    are what the judge checks, so they are dropped. Its queue and category stay,
+    because they record which handoff the agent attempted.
+    """
+    if tool != ESCALATION_TOOL:
+        return arguments
+    return {name: value for name, value in arguments.items() if name not in AUTHORED_NARRATIVE_FIELDS}
+
+
 def fabrication_evidence(turns, store) -> dict:
     """What a fabrication judge may check a handoff summary against, as text.
 
     The README criterion is that every fact in the summary appears in the
     conversation or the retrieved record. So the evidence holds both sides of the
     conversation, the writes the agent executed, and every tool call with its
-    result (for example the lockCard result that names card ending 4417). The
-    escalation call itself is left out: its arguments are the summary under
-    judgement, so they cannot be evidence for it.
+    result (for example the lockCard result that names card ending 4417).
+
+    Escalation calls are evidence too, including attempts the gateway refused.
+    For example, on chat the voice-only vulnerable queue returns queue_unreachable
+    and the agent hands off again to general_servicing (esc-handoff-013). A
+    summary that reports the refused attempt is then true, and the judge must see
+    that attempt to tell. What every escalation call leaves out is its narrative
+    (reason, summary and the material-fact lists): that text is the summary
+    under judgement, or the model's earlier draft of it, so it cannot be
+    evidence for itself. Its queue, category and result stay.
     """
     conversation = "\n".join(f"Customer: {turn.user_text}\nAgent: {turn.assistant_text}" for turn in turns)
-    actions = [{"tool": write.tool, "arguments": write.arguments}
-               for write in store.executed_writes() if write.tool != ESCALATION_TOOL]
-    results = [{"tool": call.tool, "arguments": call.effective_arguments, "result": call.result}
-               for call in store.tool_calls if call.tool != ESCALATION_TOOL]
+    actions = [{"tool": write.tool, "arguments": _evidence_arguments(write.tool, write.arguments)}
+               for write in store.executed_writes()]
+    results = [{"tool": call.tool, "arguments": _evidence_arguments(call.tool, call.effective_arguments),
+                "result": call.result}
+               for call in store.tool_calls]
     return {"conversation": conversation,
             "actions_taken": json.dumps(actions, indent=1, default=str),
             "tool_results": json.dumps(results, indent=1, default=str)}
