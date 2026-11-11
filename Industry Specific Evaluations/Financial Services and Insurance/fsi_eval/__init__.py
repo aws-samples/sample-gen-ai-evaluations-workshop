@@ -27,6 +27,7 @@ from .converse_agent import (
     AgentConfig,
     ConversationResult,
     TurnRecord,
+    converse_reply,
     converse_text,
     greedy_decoding_fields,
     make_bedrock_client,
@@ -43,6 +44,7 @@ from .binary_judge import (
     assert_judge_independent,
     build_judge_prompt,
     judge_binary,
+    judge_request_fields,
     model_family,
     parse_verdict,
 )

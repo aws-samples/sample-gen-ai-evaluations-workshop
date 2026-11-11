@@ -225,9 +225,13 @@ def run_conversation(client, agent: AgentConfig, systems: SystemsOfRecord, sessi
                               store=systems.store, messages=messages)
 
 
-def converse_text(client, model_id: str, system_prompt: str, user_text: str, max_tokens: int = 512,
-                  temperature: float | None = None, additional_model_request_fields: dict | None = None) -> str:
-    """Single-shot Converse call without tools; returns the visible text of the reply."""
+def converse_reply(client, model_id: str, system_prompt: str, user_text: str, max_tokens: int = 512,
+                   temperature: float | None = None, additional_model_request_fields: dict | None = None) -> tuple:
+    """Single-shot Converse call without tools; returns (visible text, stopReason) of the reply.
+
+    The stopReason tells a caller why a reply holds no text, for example
+    "max_tokens" when a model's reasoning used the whole output budget.
+    """
     inference = {"maxTokens": max_tokens}
     if temperature is not None:
         inference["temperature"] = temperature
@@ -237,7 +241,14 @@ def converse_text(client, model_id: str, system_prompt: str, user_text: str, max
     if additional_model_request_fields:
         request["additionalModelRequestFields"] = additional_model_request_fields
     response = client.converse(**request)
-    return visible_text(response["output"]["message"]["content"])[0]
+    return visible_text(response["output"]["message"]["content"])[0], response.get("stopReason", "")
+
+
+def converse_text(client, model_id: str, system_prompt: str, user_text: str, max_tokens: int = 512,
+                  temperature: float | None = None, additional_model_request_fields: dict | None = None) -> str:
+    """Single-shot Converse call without tools; returns the visible text of the reply."""
+    return converse_reply(client, model_id, system_prompt, user_text, max_tokens, temperature,
+                          additional_model_request_fields)[0]
 
 
 def map_in_order(function: Callable, items: Iterable, max_workers: int = 4) -> list:
