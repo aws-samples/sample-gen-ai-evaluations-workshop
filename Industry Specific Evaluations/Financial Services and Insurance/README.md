@@ -44,7 +44,7 @@ jupyter lab
 
 The first command creates the environment with Python 3.12. Any Python 3.12 or later works, so use the interpreter you have, for example `python3.14 -m venv .venv`. On many machines `python` does not exist and `python3` is an older version, so check with `python3 --version` before you use it.
 
-The notebooks were validated with Python 3.14 and JupyterLab 4.6.4. Each notebook takes two to three minutes to run.
+The notebooks were validated with Python 3.14 and JupyterLab 4.6.4. Each notebook takes about 1 to 4 minutes to run. In two live runs on 2026-11-11 (us-east-1, Nova 2 Lite agent, Claude Sonnet 5 judge) notebook 01 took 155 s and 143 s, notebook 02 took 74 s and 63 s, and notebook 03 took 233 s and 217 s.
 
 ---
 
