@@ -1,0 +1,38 @@
+[
+  {
+    "id": "esc-dedup-001",
+    "base_case": "esc-042",
+    "padding_turns": 40,
+    "revisit_turns": ["Are you still there?", "Can someone help me?", "I still want to speak to a person."]
+  },
+  {
+    "id": "esc-dedup-002",
+    "base_case": "esc-handoff-002",
+    "padding_turns": 40,
+    "revisit_turns": ["Hello? Did that transfer go to a human yet?", "I still need someone to authorize the eight thousand."]
+  },
+  {
+    "id": "esc-dedup-003",
+    "base_case": "esc-handoff-003",
+    "padding_turns": 40,
+    "revisit_turns": ["Is anyone still with me?", "I still need to talk to someone who can help."]
+  },
+  {
+    "id": "esc-dedup-004",
+    "base_case": "esc-handoff-004",
+    "padding_turns": 40,
+    "revisit_turns": ["Has my complaint been logged?", "I still want a manager to call me back."]
+  },
+  {
+    "id": "esc-dedup-005",
+    "base_case": "esc-handoff-005",
+    "padding_turns": 40,
+    "revisit_turns": ["Can the claims specialist pick this up now?", "I still need help with the escrow and the contractor."]
+  },
+  {
+    "id": "esc-dedup-006",
+    "base_case": "esc-handoff-006",
+    "padding_turns": 40,
+    "revisit_turns": ["Did the dispute go through to a specialist?", "I still want this escalated properly."]
+  }
+]

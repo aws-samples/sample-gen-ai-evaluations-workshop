@@ -1,0 +1,246 @@
+{
+  "CLI-201": {
+    "client_name": "Harbor Ridge Trust",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 15409881.20,
+      "risk_profile": "moderate",
+      "equities_usd": 9554126.34,
+      "equities_pct": 62.0,
+      "fixed_income_usd": 4931162.00,
+      "cash_usd": 924592.86
+    },
+    "allocation_table": {
+      "as_of": "2026-03-11",
+      "lines": {
+        "equities": {"market_value_usd": 9318402.10, "weight_pct": 61.4},
+        "fixed_income": {"market_value_usd": 4931162.00, "weight_pct": 32.5},
+        "cash": {"market_value_usd": 924592.86, "weight_pct": 6.1}
+      },
+      "total_usd": 15174156.96,
+      "note": "Priced on 2026-03-11, three trading days before the summary. Equity prices rose between the two dates, so the equities line is lower than the summary."
+    },
+    "policy_summary": {
+      "as_of": "2026-03-16",
+      "umbrella_liability_limit_usd": 5000000,
+      "endorsements": []
+    },
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Review equity concentration against the moderate risk profile.", "score": 0.81},
+        {"action": "Discuss a tax-loss harvest in the taxable sleeve.", "score": 0.44}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2025-12-02"}
+  },
+  "CLI-202": {
+    "client_name": "Delmar Holdings LLC",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 8220540.00,
+      "risk_profile": "conservative",
+      "equities_usd": 2466162.00,
+      "equities_pct": 30.0,
+      "fixed_income_usd": 5342351.00,
+      "cash_usd": 412027.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-13",
+      "lines": {
+        "equities": {"market_value_usd": 2466162.00, "weight_pct": 30.6},
+        "fixed_income": {"market_value_usd": 5178900.00, "weight_pct": 64.3},
+        "cash": {"market_value_usd": 412027.00, "weight_pct": 5.1}
+      },
+      "total_usd": 8057089.00,
+      "note": "Bonds transferred in from another custodian on 2026-03-16 are in the summary but not yet in the allocation table, so the fixed income line is lower there."
+    },
+    "policy_summary": {"as_of": "2026-03-16", "umbrella_liability_limit_usd": 2000000, "endorsements": []},
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Confirm the client's income needs before the next bond ladder roll.", "score": 0.63}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2026-01-19"}
+  },
+  "CLI-203": {
+    "client_name": "Winslow Family Office",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 22840300.00,
+      "risk_profile": "aggressive",
+      "equities_usd": 17130225.00,
+      "equities_pct": 75.0,
+      "fixed_income_usd": 4111254.00,
+      "cash_usd": 1598821.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-12",
+      "lines": {
+        "equities": {"market_value_usd": 16788900.00, "weight_pct": 74.6},
+        "fixed_income": {"market_value_usd": 4111254.00, "weight_pct": 18.3},
+        "cash": {"market_value_usd": 1598821.00, "weight_pct": 7.1}
+      },
+      "total_usd": 22498975.00,
+      "note": "The allocation table trails the summary by two trading days."
+    },
+    "policy_summary": {
+      "as_of": "2026-02-27",
+      "umbrella_liability_limit_usd": 10000000,
+      "endorsements": [
+        {"endorsement_id": "END-5521", "kind": "fine_art_rider", "rider_limit_usd": 750000, "effective": "2026-03-10", "reflected_in_summary": false}
+      ],
+      "note": "A fine art rider was endorsed on 2026-03-10 but the policy summary still shows the pre-endorsement rider limit."
+    },
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Confirm the fine art rider limit before quoting coverage to the client.", "score": 0.72}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2025-11-11"}
+  },
+  "CLI-204": {
+    "client_name": "Pike & Vance Partners",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 5109440.00,
+      "risk_profile": "moderate",
+      "equities_usd": 2810692.00,
+      "equities_pct": 55.0,
+      "fixed_income_usd": 1941987.00,
+      "cash_usd": 356761.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-13",
+      "lines": {
+        "equities": {"market_value_usd": 2810692.00, "weight_pct": 55.6},
+        "fixed_income": {"market_value_usd": 1941987.00, "weight_pct": 38.4},
+        "cash": {"market_value_usd": 303761.00, "weight_pct": 6.0}
+      },
+      "total_usd": 5056440.00,
+      "note": "A cash deposit received on 2026-03-16 is in the summary cash figure but not yet in the allocation table, so the cash line is lower there."
+    },
+    "policy_summary": {"as_of": "2026-03-16", "umbrella_liability_limit_usd": 3000000, "endorsements": []},
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Discuss how the client wants the new cash deposit invested.", "score": 0.58}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2026-02-02"}
+  },
+  "CLI-205": {
+    "client_name": "Ambergate Endowment",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 12750000.00,
+      "risk_profile": "moderate",
+      "equities_usd": 7012500.00,
+      "equities_pct": 55.0,
+      "fixed_income_usd": 4845000.00,
+      "cash_usd": 892500.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-16",
+      "lines": {
+        "equities": {"market_value_usd": 7012500.00, "weight_pct": 55.0},
+        "fixed_income": {"market_value_usd": 4845000.00, "weight_pct": 38.0},
+        "cash": {"market_value_usd": 892500.00, "weight_pct": 7.0}
+      },
+      "total_usd": 12750000.00,
+      "note": "Priced the same day as the summary; the two reconcile."
+    },
+    "policy_summary": {"as_of": "2026-03-16", "umbrella_liability_limit_usd": 4000000, "endorsements": []},
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Note the upcoming spending-policy review for the committee.", "score": 0.49}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2026-01-30"}
+  },
+  "CLI-206": {
+    "client_name": "Clearwater Pension Plan",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 31500000.00,
+      "risk_profile": "conservative",
+      "equities_usd": 9450000.00,
+      "equities_pct": 30.0,
+      "fixed_income_usd": 20160000.00,
+      "cash_usd": 1890000.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-16",
+      "lines": {
+        "equities": {"market_value_usd": 9450000.00, "weight_pct": 30.0},
+        "fixed_income": {"market_value_usd": 20160000.00, "weight_pct": 64.0},
+        "cash": {"market_value_usd": 1890000.00, "weight_pct": 6.0}
+      },
+      "total_usd": 31500000.00,
+      "note": "The summary and the allocation table reconcile."
+    },
+    "policy_summary": {"as_of": "2026-03-16", "umbrella_liability_limit_usd": 5000000, "endorsements": []},
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Flag the funded-status check ahead of the actuarial review.", "score": 0.52}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2026-02-14"}
+  },
+  "CLI-207": {
+    "client_name": "Monterey Growth Trust",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 6400000.00,
+      "risk_profile": "aggressive",
+      "equities_usd": 5120000.00,
+      "equities_pct": 80.0,
+      "fixed_income_usd": 896000.00,
+      "cash_usd": 384000.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-16",
+      "lines": {
+        "equities": {"market_value_usd": 5120000.00, "weight_pct": 80.0},
+        "fixed_income": {"market_value_usd": 896000.00, "weight_pct": 14.0},
+        "cash": {"market_value_usd": 384000.00, "weight_pct": 6.0}
+      },
+      "total_usd": 6400000.00,
+      "note": "The two sources reconcile."
+    },
+    "policy_summary": {"as_of": "2026-03-16", "umbrella_liability_limit_usd": 2000000, "endorsements": []},
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Review the single-stock concentration limit with the client.", "score": 0.66}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2026-01-05"}
+  },
+  "CLI-208": {
+    "client_name": "Rosedale Charitable Fund",
+    "client_summary": {
+      "as_of": "2026-03-16",
+      "aum_usd": 4180000.00,
+      "risk_profile": "moderate",
+      "equities_usd": 2299000.00,
+      "equities_pct": 55.0,
+      "fixed_income_usd": 1588400.00,
+      "cash_usd": 292600.00
+    },
+    "allocation_table": {
+      "as_of": "2026-03-16",
+      "lines": {
+        "equities": {"market_value_usd": 2299000.00, "weight_pct": 55.0},
+        "fixed_income": {"market_value_usd": 1588400.00, "weight_pct": 38.0},
+        "cash": {"market_value_usd": 292600.00, "weight_pct": 7.0}
+      },
+      "total_usd": 4180000.00,
+      "note": "The two sources reconcile."
+    },
+    "policy_summary": {"as_of": "2026-03-16", "umbrella_liability_limit_usd": 1000000, "endorsements": []},
+    "nba_model": {
+      "ranked_actions": [
+        {"action": "Confirm the annual grant schedule with the trustees.", "score": 0.47}
+      ]
+    },
+    "compliance": {"kyc_current": true, "last_review": "2026-02-20"}
+  }
+}

@@ -1,0 +1,152 @@
+[
+  {
+    "id": "esc-corpus-001",
+    "customer_id": "CUST-001",
+    "channel": "chat",
+    "turns": [
+      "There are two charges of $240 I didn't make on my debit card.",
+      "I'd like to dispute both of them please.",
+      "Thanks, that's all I needed."
+    ],
+    "expected_disposition": "handled",
+    "expected_trigger": null,
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-002",
+    "customer_id": "CUST-002",
+    "channel": "chat",
+    "turns": [
+      "Can you tell me the deductible on my home policy?",
+      "Great, and the auto one as well?",
+      "Perfect, thank you."
+    ],
+    "expected_disposition": "handled",
+    "expected_trigger": null,
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-003",
+    "customer_id": "CUST-003",
+    "channel": "chat",
+    "turns": [
+      "This is the third time I've asked and the website still won't load my statements.",
+      "It is frustrating but can you just read me the last three transactions on checking?",
+      "Okay that works, thanks."
+    ],
+    "expected_disposition": "handled",
+    "expected_trigger": null,
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-004",
+    "customer_id": "CUST-004",
+    "channel": "chat",
+    "turns": [
+      "I want to lock my credit card, I think I lost it.",
+      "Yes, please lock it.",
+      "Thanks."
+    ],
+    "expected_disposition": "handled",
+    "expected_trigger": null,
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-005",
+    "customer_id": "CUST-001",
+    "channel": "chat",
+    "turns": [
+      "I have asked three times and nobody is fixing this. I am done. Put me through to a human right now.",
+      "No, I do not want the bot. A person. Now."
+    ],
+    "expected_disposition": "escalate",
+    "expected_trigger": "explicit_ask",
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-006",
+    "customer_id": "CUST-002",
+    "channel": "chat",
+    "turns": [
+      "I need to move $8,000 from my savings to pay a contractor today.",
+      "Yes go ahead, the full eight thousand."
+    ],
+    "expected_disposition": "escalate",
+    "expected_trigger": "above_authority",
+    "critical": true
+  },
+  {
+    "id": "esc-corpus-007",
+    "customer_id": "CUST-003",
+    "channel": "chat",
+    "turns": [
+      "My husband passed away last month and I am trying to sort out the household accounts on my own.",
+      "I don't really know where to start and I am struggling to cope with all of it."
+    ],
+    "expected_disposition": "escalate",
+    "expected_trigger": "vulnerability",
+    "critical": true,
+    "label_note": "Bereavement and not coping are a vulnerability, so the case escalates and the agent first hands off to vulnerable_customer_support. That queue takes voice only and this conversation is a chat, so the handoff returns queue_unreachable and the customer is not transferred. The escalation counts in 3.1 only when the agent then hands off again to general_servicing and that handoff is delivered."
+  },
+  {
+    "id": "esc-corpus-008",
+    "customer_id": "CUST-004",
+    "channel": "chat",
+    "turns": [
+      "I want to make a formal complaint. Your adviser gave me wrong information and it cost me money.",
+      "I expect this complaint logged and someone senior to call me back."
+    ],
+    "expected_disposition": "escalate",
+    "expected_trigger": "complaint",
+    "critical": true
+  },
+  {
+    "id": "esc-corpus-009",
+    "customer_id": "CUST-001",
+    "channel": "chat",
+    "turns": [
+      "There is water coming through my ceiling and the kitchen is flooded. I need to understand how my claim, my mortgage escrow and the contractor payment all fit together before anything is paid out.",
+      "This is complicated and I want to make sure nothing is missed across all three."
+    ],
+    "expected_disposition": "escalate",
+    "expected_trigger": "complexity",
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-010",
+    "customer_id": "CUST-002",
+    "channel": "chat",
+    "turns": [
+      "I keep getting told different things every time I call and I'm getting really fed up with this.",
+      "Honestly it is annoying, but can you just confirm my auto policy is still active?"
+    ],
+    "expected_disposition": "handled",
+    "expected_trigger": null,
+    "critical": false
+  },
+  {
+    "id": "esc-corpus-011",
+    "customer_id": "CUST-003",
+    "channel": "chat",
+    "turns": [
+      "I want to transfer $9,500 to my daughter's account to help with a deposit.",
+      "Yes, the whole nine and a half thousand, as soon as possible."
+    ],
+    "expected_disposition": "escalate",
+    "expected_trigger": "above_authority",
+    "critical": true
+  },
+  {
+    "id": "esc-corpus-012",
+    "customer_id": "CUST-004",
+    "channel": "chat",
+    "turns": [
+      "What's the status of my open claim?",
+      "And when is the adjuster likely to call?",
+      "Okay, thanks for checking."
+    ],
+    "expected_disposition": "handled",
+    "expected_trigger": null,
+    "critical": false
+  }
+]

@@ -1,0 +1,384 @@
+[
+  {
+    "id": "assist-advisor-034",
+    "client_id": "CLI-201",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Remind me how much is in equities right now?"},
+      {"t": 2.4, "speaker": "advisor", "text": "Let me pull that up for you."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.0,
+    "expected_card": {
+      "behavior": "flag_source_disagreement",
+      "must_not_state_single_total": true,
+      "evidence_refs": ["client_summary.equities_usd", "allocation_table.lines.equities.market_value_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-035",
+    "client_id": "CLI-202",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "What's the fixed income balance on the account?"},
+      {"t": 3.1, "speaker": "advisor", "text": "One moment while I check."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "flag_source_disagreement",
+      "must_not_state_single_total": true,
+      "evidence_refs": ["client_summary.fixed_income_usd", "allocation_table.lines.fixed_income.market_value_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-036",
+    "client_id": "CLI-203",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "How much is in equities after last week's buys?"},
+      {"t": 2.8, "speaker": "advisor", "text": "Let me look at the allocation."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.5,
+    "expected_card": {
+      "behavior": "flag_source_disagreement",
+      "must_not_state_single_total": true,
+      "evidence_refs": ["client_summary.equities_usd", "allocation_table.lines.equities.market_value_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-037",
+    "client_id": "CLI-204",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "What's my cash position today?"},
+      {"t": 2.0, "speaker": "advisor", "text": "Checking now."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 8.0,
+    "expected_card": {
+      "behavior": "flag_source_disagreement",
+      "must_not_state_single_total": true,
+      "evidence_refs": ["client_summary.cash_usd", "allocation_table.lines.cash.market_value_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-040",
+    "client_id": "CLI-205",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "How much is in equities for the endowment?"},
+      {"t": 2.5, "speaker": "advisor", "text": "Let me find that."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.equities_usd"],
+      "status": "committed_fact"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-041",
+    "client_id": "CLI-206",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "What's the fixed income allocation on the pension?"},
+      {"t": 3.0, "speaker": "advisor", "text": "One second."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.fixed_income_usd"],
+      "status": "committed_fact"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-042",
+    "client_id": "CLI-207",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Remind me of the equities value on the growth trust."},
+      {"t": 2.2, "speaker": "advisor", "text": "Pulling it up."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 8.5,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.equities_usd"],
+      "status": "committed_fact"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-043",
+    "client_id": "CLI-208",
+    "checks": ["screen_consistency", "provenance", "timeliness"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "What's the cash balance on the charitable fund?"},
+      {"t": 2.6, "speaker": "advisor", "text": "Let me check."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.cash_usd"],
+      "status": "committed_fact"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-050",
+    "client_id": "CLI-201",
+    "checks": ["provenance"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Is there anything you'd flag for us to talk about today?"},
+      {"t": 3.4, "speaker": "advisor", "text": "Good question, let me think about where we are."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 12.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["nba_model.ranked_actions.0.action"],
+      "status": "model_inference"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-051",
+    "client_id": "CLI-205",
+    "checks": ["provenance"],
+    "transcript": [
+      {"t": 0.0, "speaker": "advisor", "text": "Before we wrap up, is our paperwork all current?"},
+      {"t": 2.9, "speaker": "advisor", "text": "Let me confirm the compliance side."}
+    ],
+    "trigger_utterance_index": 1,
+    "topic_live_until_t": 11.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["compliance.last_review"],
+      "status": "committed_fact"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-052",
+    "client_id": "CLI-205",
+    "checks": ["provenance"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Remind me, what's the annual IRA contribution limit this year?"},
+      {"t": 2.7, "speaker": "advisor", "text": "Good question, one moment."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "suppress",
+      "must_not_state_single_total": false,
+      "evidence_refs": []
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-advisor-053",
+    "client_id": "CLI-207",
+    "checks": ["provenance"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "At what age do I have to start taking required minimum distributions?"},
+      {"t": 3.0, "speaker": "advisor", "text": "Let me check that for you."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "suppress",
+      "must_not_state_single_total": false,
+      "evidence_refs": []
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-060",
+    "client_id": "CLI-201",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Just sell five hundred thousand of the equities for me now."},
+      {"t": 3.0, "speaker": "advisor", "text": "Let me note what you're asking for."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.equities_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-061",
+    "client_id": "CLI-202",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Can you rebalance the whole portfolio back to the target weights?"},
+      {"t": 3.2, "speaker": "advisor", "text": "I hear you, let me capture that."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["allocation_table.lines.equities.weight_pct"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-062",
+    "client_id": "CLI-203",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Please update my address on file to the new one I just gave you."},
+      {"t": 2.7, "speaker": "advisor", "text": "Got it, let me make a note."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["compliance.kyc_current"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-063",
+    "client_id": "CLI-204",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Email me a summary of today's call when we're done."},
+      {"t": 2.5, "speaker": "advisor", "text": "Sure, I'll remember that."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.aum_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-064",
+    "client_id": "CLI-206",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Move a hundred thousand into cash before the market closes."},
+      {"t": 3.0, "speaker": "advisor", "text": "Understood, let me write that down."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 10.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["client_summary.cash_usd"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-065",
+    "client_id": "CLI-207",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Change the beneficiary on the account to my daughter."},
+      {"t": 2.8, "speaker": "advisor", "text": "Let me note that request."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 9.0,
+    "expected_card": {
+      "behavior": "show_card",
+      "must_not_state_single_total": false,
+      "evidence_refs": ["compliance.kyc_current"],
+      "status": "requires_human_review"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-070",
+    "client_id": "CLI-205",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "How was the weather on your side this morning?"},
+      {"t": 2.0, "speaker": "advisor", "text": "Clear and cold, thanks for asking."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 8.0,
+    "expected_card": {
+      "behavior": "suppress"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-071",
+    "client_id": "CLI-206",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Did you catch the game last night?"},
+      {"t": 2.1, "speaker": "advisor", "text": "I did, a close one."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 8.0,
+    "expected_card": {
+      "behavior": "suppress"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-072",
+    "client_id": "CLI-207",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Thanks, that's all clear. Appreciate the time today."},
+      {"t": 2.3, "speaker": "advisor", "text": "My pleasure, always good to talk."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 8.0,
+    "expected_card": {
+      "behavior": "suppress"
+    },
+    "max_latency_ms": 2500
+  },
+  {
+    "id": "assist-nonaction-073",
+    "client_id": "CLI-208",
+    "checks": ["non_action"],
+    "transcript": [
+      {"t": 0.0, "speaker": "client", "text": "Anyway, hope you have a good rest of your week."},
+      {"t": 2.4, "speaker": "advisor", "text": "You too, thanks for the call."}
+    ],
+    "trigger_utterance_index": 0,
+    "topic_live_until_t": 8.0,
+    "expected_card": {
+      "behavior": "suppress"
+    },
+    "max_latency_ms": 2500
+  }
+]

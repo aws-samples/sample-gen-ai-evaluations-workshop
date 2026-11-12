@@ -1,0 +1,847 @@
+{
+  "customers": {
+    "CUST-001": {
+      "name": "Avery Chen",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-14-3451",
+      "dob": "1984-07-21",
+      "phone": "555-0101"
+    },
+    "CUST-002": {
+      "name": "Blake Okafor",
+      "segment": "retail",
+      "communication_preference": "narrative",
+      "ssn": "900-25-4562",
+      "dob": "1979-02-11",
+      "phone": "555-0102"
+    },
+    "CUST-003": {
+      "name": "Casey Moreno",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-36-5673",
+      "dob": "1990-11-03",
+      "phone": "555-0103"
+    },
+    "CUST-004": {
+      "name": "Devon Patel",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-47-6784",
+      "dob": "1986-05-29",
+      "phone": "555-0104"
+    },
+    "CUST-777": {
+      "name": "Jordan Chen",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-77-7001",
+      "dob": "1983-03-14",
+      "phone": "555-0177"
+    },
+    "CUST-010": {
+      "name": "Emery Walsh",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-10-6010",
+      "dob": "1975-02-10",
+      "phone": "555-0110"
+    },
+    "CUST-011": {
+      "name": "Finley Brooks",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-11-6011",
+      "dob": "1975-03-11",
+      "phone": "555-0111"
+    },
+    "CUST-012": {
+      "name": "Gray Holloway",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-12-6012",
+      "dob": "1975-04-12",
+      "phone": "555-0112"
+    },
+    "CUST-013": {
+      "name": "Harper Nguyen",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-13-6013",
+      "dob": "1975-05-13",
+      "phone": "555-0113"
+    },
+    "CUST-014": {
+      "name": "Indigo Ramos",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-14-6014",
+      "dob": "1975-06-14",
+      "phone": "555-0114"
+    },
+    "CUST-015": {
+      "name": "Jules Varga",
+      "segment": "retail",
+      "communication_preference": "structured",
+      "ssn": "900-15-6015",
+      "dob": "1975-07-15",
+      "phone": "555-0115"
+    }
+  },
+  "policies": [
+    {
+      "policy_id": "POL-1001",
+      "owner_customer_id": "CUST-001",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1284.0,
+      "status": "active",
+      "renewal_date": "2026-09-01"
+    },
+    {
+      "policy_id": "POL-1002",
+      "owner_customer_id": "CUST-001",
+      "line": "auto",
+      "deductible_usd": 500,
+      "premium_usd": 962.0,
+      "status": "active",
+      "renewal_date": "2026-11-15"
+    },
+    {
+      "policy_id": "POL-2001",
+      "owner_customer_id": "CUST-002",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1284.0,
+      "status": "active",
+      "renewal_date": "2026-09-01"
+    },
+    {
+      "policy_id": "POL-2002",
+      "owner_customer_id": "CUST-002",
+      "line": "auto",
+      "deductible_usd": 500,
+      "premium_usd": 962.0,
+      "status": "active",
+      "renewal_date": "2026-11-15"
+    },
+    {
+      "policy_id": "POL-3001",
+      "owner_customer_id": "CUST-003",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1284.0,
+      "status": "active",
+      "renewal_date": "2026-09-01"
+    },
+    {
+      "policy_id": "POL-3002",
+      "owner_customer_id": "CUST-003",
+      "line": "auto",
+      "deductible_usd": 500,
+      "premium_usd": 962.0,
+      "status": "active",
+      "renewal_date": "2026-11-15"
+    },
+    {
+      "policy_id": "POL-4001",
+      "owner_customer_id": "CUST-004",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1284.0,
+      "status": "active",
+      "renewal_date": "2026-09-01"
+    },
+    {
+      "policy_id": "POL-4002",
+      "owner_customer_id": "CUST-004",
+      "line": "auto",
+      "deductible_usd": 500,
+      "premium_usd": 962.0,
+      "status": "active",
+      "renewal_date": "2026-11-15"
+    },
+    {
+      "policy_id": "POL-99999",
+      "owner_customer_id": "CUST-777",
+      "line": "auto",
+      "deductible_usd": 250,
+      "premium_usd": 1410.0,
+      "status": "active",
+      "renewal_date": "2026-08-20"
+    },
+    {
+      "policy_id": "POL-1010",
+      "owner_customer_id": "CUST-010",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1190.0,
+      "status": "active",
+      "renewal_date": "2026-10-01"
+    },
+    {
+      "policy_id": "POL-1110",
+      "owner_customer_id": "CUST-011",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1190.0,
+      "status": "active",
+      "renewal_date": "2026-10-01"
+    },
+    {
+      "policy_id": "POL-1210",
+      "owner_customer_id": "CUST-012",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1190.0,
+      "status": "active",
+      "renewal_date": "2026-10-01"
+    },
+    {
+      "policy_id": "POL-1310",
+      "owner_customer_id": "CUST-013",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1190.0,
+      "status": "active",
+      "renewal_date": "2026-10-01"
+    },
+    {
+      "policy_id": "POL-1410",
+      "owner_customer_id": "CUST-014",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1190.0,
+      "status": "active",
+      "renewal_date": "2026-10-01"
+    },
+    {
+      "policy_id": "POL-1510",
+      "owner_customer_id": "CUST-015",
+      "line": "home",
+      "deductible_usd": 1000,
+      "premium_usd": 1190.0,
+      "status": "active",
+      "renewal_date": "2026-10-01"
+    }
+  ],
+  "accounts": [
+    {
+      "account_id": "ACCT-5567",
+      "owner_customer_id": "CUST-001",
+      "type": "checking",
+      "balance_usd": 3412.58,
+      "account_number_full": "4401000055670",
+      "routing_number": "990000101",
+      "holder": {
+        "name": "Avery Chen",
+        "ssn": "900-14-3451",
+        "dob": "1984-07-21"
+      }
+    },
+    {
+      "account_id": "ACCT-5568",
+      "owner_customer_id": "CUST-001",
+      "type": "savings",
+      "balance_usd": 12750.0,
+      "account_number_full": "4402000055680",
+      "routing_number": "990000101",
+      "holder": {
+        "name": "Avery Chen",
+        "ssn": "900-14-3451",
+        "dob": "1984-07-21"
+      }
+    },
+    {
+      "account_id": "ACCT-6567",
+      "owner_customer_id": "CUST-002",
+      "type": "checking",
+      "balance_usd": 2987.14,
+      "account_number_full": "4401000065670",
+      "routing_number": "990000102",
+      "holder": {
+        "name": "Blake Okafor",
+        "ssn": "900-25-4562",
+        "dob": "1979-02-11"
+      }
+    },
+    {
+      "account_id": "ACCT-6568",
+      "owner_customer_id": "CUST-002",
+      "type": "savings",
+      "balance_usd": 11930.4,
+      "account_number_full": "4402000065680",
+      "routing_number": "990000102",
+      "holder": {
+        "name": "Blake Okafor",
+        "ssn": "900-25-4562",
+        "dob": "1979-02-11"
+      }
+    },
+    {
+      "account_id": "ACCT-7567",
+      "owner_customer_id": "CUST-003",
+      "type": "checking",
+      "balance_usd": 4105.9,
+      "account_number_full": "4401000075670",
+      "routing_number": "990000103",
+      "holder": {
+        "name": "Casey Moreno",
+        "ssn": "900-36-5673",
+        "dob": "1990-11-03"
+      }
+    },
+    {
+      "account_id": "ACCT-7568",
+      "owner_customer_id": "CUST-003",
+      "type": "savings",
+      "balance_usd": 13320.75,
+      "account_number_full": "4402000075680",
+      "routing_number": "990000103",
+      "holder": {
+        "name": "Casey Moreno",
+        "ssn": "900-36-5673",
+        "dob": "1990-11-03"
+      }
+    },
+    {
+      "account_id": "ACCT-8567",
+      "owner_customer_id": "CUST-004",
+      "type": "checking",
+      "balance_usd": 3768.22,
+      "account_number_full": "4401000085670",
+      "routing_number": "990000104",
+      "holder": {
+        "name": "Devon Patel",
+        "ssn": "900-47-6784",
+        "dob": "1986-05-29"
+      }
+    },
+    {
+      "account_id": "ACCT-8568",
+      "owner_customer_id": "CUST-004",
+      "type": "savings",
+      "balance_usd": 12115.1,
+      "account_number_full": "4402000085680",
+      "routing_number": "990000104",
+      "holder": {
+        "name": "Devon Patel",
+        "ssn": "900-47-6784",
+        "dob": "1986-05-29"
+      }
+    },
+    {
+      "account_id": "ACCT-9777",
+      "owner_customer_id": "CUST-777",
+      "type": "checking",
+      "balance_usd": 8820.33,
+      "account_number_full": "4401000097770",
+      "routing_number": "990000177",
+      "holder": {
+        "name": "Jordan Chen",
+        "ssn": "900-77-7001",
+        "dob": "1983-03-14"
+      }
+    },
+    {
+      "account_id": "ACCT-1011",
+      "owner_customer_id": "CUST-010",
+      "type": "checking",
+      "balance_usd": 1510.0,
+      "account_number_full": "44010000110110",
+      "routing_number": "990000210",
+      "holder": {
+        "name": "Emery Walsh",
+        "ssn": "900-10-6010",
+        "dob": "1975-02-10"
+      }
+    },
+    {
+      "account_id": "ACCT-1111",
+      "owner_customer_id": "CUST-011",
+      "type": "checking",
+      "balance_usd": 1511.0,
+      "account_number_full": "44010000111110",
+      "routing_number": "990000211",
+      "holder": {
+        "name": "Finley Brooks",
+        "ssn": "900-11-6011",
+        "dob": "1975-03-11"
+      }
+    },
+    {
+      "account_id": "ACCT-1211",
+      "owner_customer_id": "CUST-012",
+      "type": "checking",
+      "balance_usd": 1512.0,
+      "account_number_full": "44010000112110",
+      "routing_number": "990000212",
+      "holder": {
+        "name": "Gray Holloway",
+        "ssn": "900-12-6012",
+        "dob": "1975-04-12"
+      }
+    },
+    {
+      "account_id": "ACCT-1311",
+      "owner_customer_id": "CUST-013",
+      "type": "checking",
+      "balance_usd": 1513.0,
+      "account_number_full": "44010000113110",
+      "routing_number": "990000213",
+      "holder": {
+        "name": "Harper Nguyen",
+        "ssn": "900-13-6013",
+        "dob": "1975-05-13"
+      }
+    },
+    {
+      "account_id": "ACCT-1411",
+      "owner_customer_id": "CUST-014",
+      "type": "checking",
+      "balance_usd": 1514.0,
+      "account_number_full": "44010000114110",
+      "routing_number": "990000214",
+      "holder": {
+        "name": "Indigo Ramos",
+        "ssn": "900-14-6014",
+        "dob": "1975-06-14"
+      }
+    },
+    {
+      "account_id": "ACCT-1511",
+      "owner_customer_id": "CUST-015",
+      "type": "checking",
+      "balance_usd": 1515.0,
+      "account_number_full": "44010000115110",
+      "routing_number": "990000215",
+      "holder": {
+        "name": "Jules Varga",
+        "ssn": "900-15-6015",
+        "dob": "1975-07-15"
+      }
+    }
+  ],
+  "cards": [
+    {
+      "card_id": "CARD-4417",
+      "owner_customer_id": "CUST-001",
+      "type": "debit",
+      "last4": "4417",
+      "status": "active",
+      "account_id": "ACCT-5567"
+    },
+    {
+      "card_id": "CARD-9921",
+      "owner_customer_id": "CUST-001",
+      "type": "credit",
+      "last4": "9921",
+      "status": "active",
+      "account_id": null
+    },
+    {
+      "card_id": "CARD-5528",
+      "owner_customer_id": "CUST-002",
+      "type": "debit",
+      "last4": "5528",
+      "status": "active",
+      "account_id": "ACCT-6567"
+    },
+    {
+      "card_id": "CARD-8832",
+      "owner_customer_id": "CUST-002",
+      "type": "credit",
+      "last4": "8832",
+      "status": "active",
+      "account_id": null
+    },
+    {
+      "card_id": "CARD-6639",
+      "owner_customer_id": "CUST-003",
+      "type": "debit",
+      "last4": "6639",
+      "status": "active",
+      "account_id": "ACCT-7567"
+    },
+    {
+      "card_id": "CARD-7743",
+      "owner_customer_id": "CUST-003",
+      "type": "credit",
+      "last4": "7743",
+      "status": "active",
+      "account_id": null
+    },
+    {
+      "card_id": "CARD-7740",
+      "owner_customer_id": "CUST-004",
+      "type": "debit",
+      "last4": "7740",
+      "status": "active",
+      "account_id": "ACCT-8567"
+    },
+    {
+      "card_id": "CARD-6654",
+      "owner_customer_id": "CUST-004",
+      "type": "credit",
+      "last4": "6654",
+      "status": "active",
+      "account_id": null
+    },
+    {
+      "card_id": "CARD-3377",
+      "owner_customer_id": "CUST-777",
+      "type": "debit",
+      "last4": "3377",
+      "status": "active",
+      "account_id": "ACCT-9777"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-20411",
+      "owner_customer_id": "CUST-001",
+      "policy_id": "POL-1001",
+      "status": "open",
+      "loss_type": "water_damage",
+      "opened": "2026-02-27",
+      "adjuster": "assigned",
+      "next_step": "adjuster site visit scheduled"
+    },
+    {
+      "claim_id": "CLM-20412",
+      "owner_customer_id": "CUST-002",
+      "policy_id": "POL-2001",
+      "status": "open",
+      "loss_type": "water_damage",
+      "opened": "2026-02-27",
+      "adjuster": "assigned",
+      "next_step": "adjuster site visit scheduled"
+    },
+    {
+      "claim_id": "CLM-20413",
+      "owner_customer_id": "CUST-003",
+      "policy_id": "POL-3001",
+      "status": "open",
+      "loss_type": "water_damage",
+      "opened": "2026-02-27",
+      "adjuster": "assigned",
+      "next_step": "adjuster site visit scheduled"
+    },
+    {
+      "claim_id": "CLM-20414",
+      "owner_customer_id": "CUST-004",
+      "policy_id": "POL-4001",
+      "status": "open",
+      "loss_type": "water_damage",
+      "opened": "2026-02-27",
+      "adjuster": "assigned",
+      "next_step": "adjuster site visit scheduled"
+    },
+    {
+      "claim_id": "CLM-77701",
+      "owner_customer_id": "CUST-777",
+      "policy_id": "POL-99999",
+      "status": "open",
+      "loss_type": "collision",
+      "opened": "2026-01-19",
+      "adjuster": "assigned",
+      "next_step": "repair estimate review"
+    }
+  ],
+  "transactions": [
+    {
+      "transaction_id": "TXN-1001",
+      "owner_customer_id": "CUST-001",
+      "account_id": "ACCT-5567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1002",
+      "owner_customer_id": "CUST-001",
+      "account_id": "ACCT-5567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1003",
+      "owner_customer_id": "CUST-001",
+      "account_id": "ACCT-5567",
+      "date": "2026-03-09",
+      "merchant": "Corner Grocer",
+      "amount_usd": 54.2,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1004",
+      "owner_customer_id": "CUST-001",
+      "account_id": "ACCT-5568",
+      "date": "2026-03-01",
+      "merchant": "Interest credit",
+      "amount_usd": 18.75,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-2001",
+      "owner_customer_id": "CUST-002",
+      "account_id": "ACCT-6567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-2002",
+      "owner_customer_id": "CUST-002",
+      "account_id": "ACCT-6567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-2003",
+      "owner_customer_id": "CUST-002",
+      "account_id": "ACCT-6567",
+      "date": "2026-03-09",
+      "merchant": "Corner Grocer",
+      "amount_usd": 54.2,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-2004",
+      "owner_customer_id": "CUST-002",
+      "account_id": "ACCT-6568",
+      "date": "2026-03-01",
+      "merchant": "Interest credit",
+      "amount_usd": 18.75,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-3001",
+      "owner_customer_id": "CUST-003",
+      "account_id": "ACCT-7567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-3002",
+      "owner_customer_id": "CUST-003",
+      "account_id": "ACCT-7567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-3003",
+      "owner_customer_id": "CUST-003",
+      "account_id": "ACCT-7567",
+      "date": "2026-03-09",
+      "merchant": "Corner Grocer",
+      "amount_usd": 54.2,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-3004",
+      "owner_customer_id": "CUST-003",
+      "account_id": "ACCT-7568",
+      "date": "2026-03-01",
+      "merchant": "Interest credit",
+      "amount_usd": 18.75,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-4001",
+      "owner_customer_id": "CUST-004",
+      "account_id": "ACCT-8567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-4002",
+      "owner_customer_id": "CUST-004",
+      "account_id": "ACCT-8567",
+      "date": "2026-03-11",
+      "merchant": "Brightline Electronics",
+      "amount_usd": 240.0,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-4003",
+      "owner_customer_id": "CUST-004",
+      "account_id": "ACCT-8567",
+      "date": "2026-03-09",
+      "merchant": "Corner Grocer",
+      "amount_usd": 54.2,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-4004",
+      "owner_customer_id": "CUST-004",
+      "account_id": "ACCT-8568",
+      "date": "2026-03-01",
+      "merchant": "Interest credit",
+      "amount_usd": 18.75,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1010",
+      "owner_customer_id": "CUST-010",
+      "account_id": "ACCT-1011",
+      "date": "2026-03-05",
+      "merchant": "Corner Grocer",
+      "amount_usd": 38.1,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1110",
+      "owner_customer_id": "CUST-011",
+      "account_id": "ACCT-1111",
+      "date": "2026-03-05",
+      "merchant": "Corner Grocer",
+      "amount_usd": 38.1,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1210",
+      "owner_customer_id": "CUST-012",
+      "account_id": "ACCT-1211",
+      "date": "2026-03-05",
+      "merchant": "Corner Grocer",
+      "amount_usd": 38.1,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1310",
+      "owner_customer_id": "CUST-013",
+      "account_id": "ACCT-1311",
+      "date": "2026-03-05",
+      "merchant": "Corner Grocer",
+      "amount_usd": 38.1,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1410",
+      "owner_customer_id": "CUST-014",
+      "account_id": "ACCT-1411",
+      "date": "2026-03-05",
+      "merchant": "Corner Grocer",
+      "amount_usd": 38.1,
+      "status": "posted"
+    },
+    {
+      "transaction_id": "TXN-1510",
+      "owner_customer_id": "CUST-015",
+      "account_id": "ACCT-1511",
+      "date": "2026-03-05",
+      "merchant": "Corner Grocer",
+      "amount_usd": 38.1,
+      "status": "posted"
+    }
+  ],
+  "documents": [
+    {
+      "doc_id": "WORDING-HOME-2025",
+      "section": "4.2 Water damage",
+      "text": "We cover sudden and accidental discharge of water from a plumbing system, subject to the deductible. Gradual seepage, wear and tear, and flood from surface water are excluded. Each claim is assessed by a claims adjuster."
+    },
+    {
+      "doc_id": "WORDING-HOME-2025",
+      "section": "7.1 Claims process",
+      "text": "To start a claim, report the loss with the date and a description. An adjuster reviews the loss and decides whether and how much is payable under the policy terms."
+    },
+    {
+      "doc_id": "WORDING-AUTO-2025",
+      "section": "3.4 Deductible",
+      "text": "The collision deductible is the amount you pay toward each covered collision loss. You can change your deductible at renewal; a lower deductible raises your premium."
+    },
+    {
+      "doc_id": "TERMS-DEPOSIT-2025",
+      "section": "5.3 Transfers and limits",
+      "text": "Transfers between your own accounts post immediately. Digital transfers above $2,500 must be completed by a banker."
+    },
+    {
+      "doc_id": "TERMS-CARD-2025",
+      "section": "2.1 Lock and unlock",
+      "text": "Locking a card declines new purchases and withdrawals. Recurring payments may still go through. You can unlock the card at any time."
+    },
+    {
+      "doc_id": "TERMS-CARD-2025",
+      "section": "6.2 Disputes",
+      "text": "You can dispute a card transaction within 60 days. We review the dispute and may issue a provisional credit while we investigate."
+    }
+  ],
+  "queues": {
+    "payments_specialist": {
+      "channels": [
+        "chat",
+        "voice"
+      ],
+      "categories": [
+        "disputed_transaction",
+        "payment_limit_exceeded"
+      ]
+    },
+    "claims_specialist": {
+      "channels": [
+        "chat",
+        "voice"
+      ],
+      "categories": [
+        "claim_question",
+        "new_claim"
+      ]
+    },
+    "vulnerable_customer_support": {
+      "channels": [
+        "voice"
+      ],
+      "categories": [
+        "payment_scam",
+        "vulnerability"
+      ]
+    },
+    "complaints": {
+      "channels": [
+        "chat",
+        "voice"
+      ],
+      "categories": [
+        "complaint"
+      ]
+    },
+    "general_servicing": {
+      "channels": [
+        "chat",
+        "voice"
+      ],
+      "categories": [
+        "general_request"
+      ]
+    }
+  },
+  "lookup_failures": [
+    {
+      "customer_id": "CUST-011",
+      "tool": "getClaimStatus"
+    },
+    {
+      "customer_id": "CUST-013",
+      "tool": "getTransactions"
+    },
+    {
+      "customer_id": "CUST-015",
+      "tool": "getPolicies"
+    }
+  ]
+}
