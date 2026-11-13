@@ -13,6 +13,7 @@ from time import sleep
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Any
 import random
+from botocore.config import Config
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,7 +22,21 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
 
 # Initialize Bedrock client
-bedrock = boto3.client("bedrock-runtime")
+# Adaptive retry mode backs off automatically on ThrottlingException, which is
+# common when the judge runs several requests in parallel.
+bedrock = boto3.client(
+    "bedrock-runtime",
+    config=Config(retries={"max_attempts": 8, "mode": "adaptive"}),
+)
+
+# Error codes worth retrying in call_judge_model
+RETRYABLE_ERRORS = (
+    "ThrottlingException",
+    "TooManyRequestsException",
+    "ServiceUnavailableException",
+    "ModelNotReadyException",
+    "InternalServerException",
+)
 
 # Judge prompt template for LLM-as-a-Judge evaluation
 # Binary pass/fail verdict only — rating scales (1-5, 1-10) introduce implicit
@@ -86,6 +101,18 @@ Provide your evaluation in the following format:
 </improvements>
 """
 
+def extract_response_text(response: Dict[str, Any]) -> str:
+    """Return the concatenated text from a Converse response.
+
+    Newer models (e.g. Claude Sonnet 5) may return a ``reasoningContent`` block
+    before the ``text`` block, so ``content[0]["text"]`` is not safe.
+    """
+    blocks = response["output"]["message"]["content"]
+    text = "".join(b["text"] for b in blocks if "text" in b)
+    if not text:
+        raise ValueError(f"No text block in model response (stopReason={response.get('stopReason')})")
+    return text
+
 # Bedrock API Communication Functions
 def bedrock_call(prompt: str) -> Dict[str, Any]:
     """Make a Bedrock call using Converse API with structured JSON response."""
@@ -137,7 +164,7 @@ def bedrock_call(prompt: str) -> Dict[str, Any]:
         }
     )
     
-    response_text = response['output']['message']['content'][0]['text']
+    response_text = extract_response_text(response)
     
     # Strip markdown code fences if present (e.g. ```json ... ```)
     cleaned = response_text.strip()
@@ -178,22 +205,30 @@ def generate_model_response(question: str, context_data: str = "") -> str:
             }
         )
         
-        return response['output']['message']['content'][0]['text']
+        return extract_response_text(response)
     except Exception as e:
         return f"Error generating response: {str(e)}"
 
-def call_judge_model(prompt: str, model_id: str = JUDGE_MODEL_ID) -> str:
-    """Call the judge model to evaluate a response using boto3 directly."""
-    try:
-        response = bedrock.converse(
-            modelId=model_id,
-            messages=[{"role": "user", "content": [{"text": prompt}]}],
-            inferenceConfig={"maxTokens": 1000}
-        )
-        
-        return response["output"]["message"]["content"][0]["text"]
-    except Exception as e:
-        return f"Error: {str(e)}"
+def call_judge_model(prompt: str, model_id: str = JUDGE_MODEL_ID, max_retries: int = 6) -> str:
+    """Call the judge model to evaluate a response using boto3 directly.
+
+    Retries throttling/transient errors with exponential backoff + jitter so that
+    parallel judge calls don't silently turn into dropped results.
+    """
+    for attempt in range(max_retries):
+        try:
+            response = bedrock.converse(
+                modelId=model_id,
+                messages=[{"role": "user", "content": [{"text": prompt}]}],
+                inferenceConfig={"maxTokens": 1000}
+            )
+            return extract_response_text(response)
+        except Exception as e:
+            retryable = any(code in str(e) for code in RETRYABLE_ERRORS)
+            if retryable and attempt < max_retries - 1:
+                sleep(min(2 ** attempt, 30) + random.uniform(0, 1))
+                continue
+            return f"Error: {str(e)}"
 
 # Data Processing and Verification Functions
 def verify_answer(response: Dict[str, Any], df: pd.DataFrame, question: str) -> bool:
@@ -804,7 +839,10 @@ def run_judge_evaluations(cities_responses):
     # Process evaluations concurrently to save time
     evaluation_results = call_threaded_evaluation(evaluation_prompts)
 
-    print(f" Completed {len(evaluation_results)} comprehensive evaluations")
+    n_failed = sum(1 for r in evaluation_results if r.startswith("Error:"))
+    print(f" Completed {len(evaluation_results) - n_failed}/{len(evaluation_results)} evaluations successfully")
+    if n_failed:
+        print(f" WARNING: {n_failed} judge call(s) failed and will be excluded from analysis")
     return evaluation_results
 
 def process_evaluation_results(cities_responses, evaluation_results):
@@ -823,7 +861,9 @@ def process_evaluation_results(cities_responses, evaluation_results):
     # Parse structured evaluation components
     parsed_evaluations = []
     for i, (response_data, evaluation_text) in enumerate(zip(cities_responses, evaluation_results)):
-        if not evaluation_text.startswith("Error:"):
+        if evaluation_text.startswith("Error:"):
+            print(f" WARNING: skipping '{response_data['question']}' - judge call failed: {evaluation_text[:200]}")
+        else:
             # Extract structured components (scores, reasoning, improvements)
             parsed_eval = extract_evaluation_components(evaluation_text)
 
