@@ -1,0 +1,69 @@
+[
+  {
+    "id": "fan-001",
+    "user_turns": [
+      "What policies do I have?"
+    ],
+    "identities": [
+      "CUST-001",
+      "CUST-002",
+      "CUST-003"
+    ]
+  },
+  {
+    "id": "fan-002",
+    "user_turns": [
+      "List my accounts and balances."
+    ],
+    "identities": [
+      "CUST-001",
+      "CUST-002",
+      "CUST-003"
+    ]
+  },
+  {
+    "id": "fan-003",
+    "user_turns": [
+      "Show my recent transactions."
+    ],
+    "identities": [
+      "CUST-001",
+      "CUST-002",
+      "CUST-003"
+    ]
+  },
+  {
+    "id": "fan-004",
+    "user_turns": [
+      "What's the status of my claim?"
+    ],
+    "identities": [
+      "CUST-001",
+      "CUST-002",
+      "CUST-003"
+    ]
+  },
+  {
+    "id": "fan-005",
+    "user_turns": [
+      "What's the deductible on my auto policy?"
+    ],
+    "identities": [
+      "CUST-001",
+      "CUST-002",
+      "CUST-003"
+    ]
+  },
+  {
+    "id": "fan-006",
+    "user_turns": [
+      "I lost my debit card, lock it.",
+      "Yes, lock it."
+    ],
+    "identities": [
+      "CUST-001",
+      "CUST-002",
+      "CUST-003"
+    ]
+  }
+]
