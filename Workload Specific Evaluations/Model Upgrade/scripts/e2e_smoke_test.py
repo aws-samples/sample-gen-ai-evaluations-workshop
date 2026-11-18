@@ -42,9 +42,14 @@ import time
 import secrets
 from pathlib import Path
 
+# The module's model IDs come from model_config.py (which reads the judge from the
+# workshop's shared Foundational Evaluations/model_config.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import model_config as mc  # noqa: E402
+
 REGION = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
-TARGET_MODEL = os.environ.get("E2E_TARGET_MODEL", "us.openai.gpt-6-luna")  # direct Bedrock id
-JUDGE_MODEL = os.environ.get("E2E_JUDGE_MODEL", "amazon.nova-micro-v1:0")
+TARGET_MODEL = os.environ.get("E2E_TARGET_MODEL", mc.TARGET_MODEL.model_id)  # direct Bedrock id
+JUDGE_MODEL = os.environ.get("E2E_JUDGE_MODEL", mc.JUDGE_MODEL.model_id)
 PROJECT = "mue2e" + secrets.token_hex(3)
 EVALUATOR = "goalsuccess"
 

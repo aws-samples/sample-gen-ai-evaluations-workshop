@@ -12,10 +12,27 @@ apply.
 
 from __future__ import annotations
 
+import importlib.util
 from dataclasses import dataclass, field
+from pathlib import Path as _SharedPath
 
 
 AWS_REGION = "us-east-1"
+
+# The workshop's shared model config, Foundational Evaluations/model_config.py. This
+# folder's own file has the same name, so it is loaded by path rather than imported.
+_SHARED_FILE = _SharedPath(__file__).resolve().parents[2] / "Foundational Evaluations" / "model_config.py"
+_spec = importlib.util.spec_from_file_location("workshop_shared_model_config", _SHARED_FILE)
+_shared = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_shared)
+
+_GEO_PREFIXES = ("us", "eu", "apac", "global", "us-gov", "ca", "jp", "au")
+
+
+def _without_geo_prefix(model_id: str) -> str:
+    """`us.amazon.nova-micro-v1:0` -> `amazon.nova-micro-v1:0`; other IDs are returned unchanged."""
+    head, _, rest = model_id.partition(".")
+    return rest if head in _GEO_PREFIXES and rest else model_id
 
 
 @dataclass(frozen=True)
@@ -54,6 +71,9 @@ class ModelSpec:
 # model card's Pricing section, or the provider's pricing page for 1P/Azure).
 
 # --- The migration pair -----------------------------------------------------
+# The source, target and optimizer models below are the subject of this module (the
+# upgrade being tested), so they are set here and not in the workshop's shared model
+# config. Only the judge, which is a general-purpose choice, comes from the shared file.
 # DEFAULT LIVE PATH: both ends on Amazon Bedrock, so anyone with only Bedrock
 # access can run the whole module end to end. We migrate an OpenAI-on-Bedrock
 # model from one version to the next: GPT-5.6 Luna -> GPT-6 Luna.
@@ -101,10 +121,15 @@ EXAMPLE_SOURCE_AZURE_OPENAI = ModelSpec(
 
 # Judge model for the AgentCore custom evaluators. Kept small/cheap and held FIXED
 # across source and target so the score is comparable — you are comparing the two
-# agent models, not two judges. (The Chatbot module uses Nova Micro as judge.)
+# agent models, not two judges. It is the shared small model (CHATBOT_MODEL_ID in
+# Foundational Evaluations/model_config.py), the same one the Chatbot module uses as
+# its judge. The shared JUDGE_MODEL_ID (Claude Sonnet 5) is not used here: an AgentCore
+# LLM-as-a-judge evaluator built on it fails to create (see the README, "Pick the judge
+# model carefully"). AgentCore gets the model ID without its geo prefix
+# (`amazon.nova-micro-v1:0`), the form the live smoke test verified.
 JUDGE_MODEL = ModelSpec(
-    label="Amazon Nova Micro (judge)",
-    model_id="amazon.nova-micro-v1:0",
+    label=f"{_shared.MODEL_NAMES.get(_shared.CHATBOT_MODEL_ID, _shared.CHATBOT_MODEL_ID)} (judge)",
+    model_id=_without_geo_prefix(_shared.CHATBOT_MODEL_ID),
     provider="bedrock",
     price_in_per_1m=0.035,
     price_out_per_1m=0.14,

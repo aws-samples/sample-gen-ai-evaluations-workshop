@@ -124,8 +124,10 @@ it down (`--keep` leaves it up). Running it surfaced two more findings baked int
 
 - **Pick the judge model carefully.** A `claude-sonnet-5` LLM-as-a-judge evaluator fails to
   create because that model rejects the default `temperature` parameter
-  (`temperature is deprecated for this model`). The module's judge is **Nova Micro**
-  (`amazon.nova-micro-v1:0`), which creates and scores cleanly and is cheap.
+  (`temperature is deprecated for this model`). The module's judge is therefore the
+  workshop's shared small model, **Nova Micro** (`CHATBOT_MODEL_ID` in
+  [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py)),
+  passed to AgentCore as `amazon.nova-micro-v1:0`, which creates and scores cleanly and is cheap.
 - **`eval ondemand` selects sessions from ingested Observability traces**, and trace
   ingestion lags the agent turn by a couple of minutes — budget an ingestion wait before
   grading, and confirm `sessionsEvaluated > 0` rather than trusting an empty `results: []`.
@@ -240,7 +242,7 @@ Model Upgrade/
 ├── README.md                              # This file
 ├── NN Model Upgrade Evaluation.ipynb      # The module (lead notebook)
 ├── requirements.txt
-├── model_config.py                        # source/target model IDs, pricing, region, fan-out knobs
+├── model_config.py                        # source/target model IDs, pricing, region, fan-out knobs (judge model read from the shared Foundational Evaluations/model_config.py)
 ├── hillclimb.py                           # candidate generation, selection, stop rule, results objects
 ├── gateway/                               # AgentCore Gateway (inference targets: Bedrock + OpenAI)
 │   └── ...                                # CDK / CLI config for the single inference seam
