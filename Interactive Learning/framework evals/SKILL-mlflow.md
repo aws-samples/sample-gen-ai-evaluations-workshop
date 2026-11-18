@@ -8,7 +8,7 @@ description: Evaluate RAG generation quality using MLflow's GenAI evaluation fra
 Use MLflow's GenAI evaluation framework to measure how faithfully Bedrock models ground answers in retrieved context. Register 18 scorers across five categories (code-based, built-in LLM-as-Judge, Guidelines, custom `make_judge`, DeepEval), run evaluations against multiple models, and compare results side-by-side — all tracked in MLflow.
 
 ## Prerequisites
-- AWS account with Bedrock model access (Claude Sonnet 4.5, Claude Haiku 4.5)
+- AWS account with Bedrock model access (the models named in `Foundational Evaluations/model_config.py`: `DEFAULT_MODEL_ID`, `JUDGE_MODEL_ID` and `HAIKU_MODEL_ID`)
 - Python 3.10+ with `mlflow>=3.8.0`, `deepeval`, `datasets`, `boto3>=1.42.4`, `litellm`, `pandas`, `nest_asyncio`, `python-dotenv`
 - Source notebook: `../../Framework Specific Evaluations/MLflow/01 Mlflow Evaluation.ipynb`
 
@@ -60,12 +60,16 @@ os.environ["AWS_DEFAULT_REGION"] = region
 if _creds.token:
     os.environ["AWS_SESSION_TOKEN"] = _creds.token
 
-# Models
+# Models: IDs come from the shared config, Foundational Evaluations/model_config.py
+import os, sys
+sys.path.append(os.path.abspath(os.path.join("..", "..", "Foundational Evaluations")))
+from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID, HAIKU_MODEL_ID
+
 BEDROCK_MODELS = {
-    "claude-sonnet-4-5": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
-    "claude-haiku-4-5": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "default-model": DEFAULT_MODEL_ID,
+    "small-model": HAIKU_MODEL_ID,
 }
-JUDGE_MODEL = "bedrock:/us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+JUDGE_MODEL = f"bedrock:/{JUDGE_MODEL_ID}"
 
 # MLflow tracking — local store by default
 import mlflow

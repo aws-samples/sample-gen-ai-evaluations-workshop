@@ -1,20 +1,34 @@
 """
 Centralised model IDs and prompts for the metrics notebooks.
-Edit this file to change models or prompts across all notebooks.
+Edit this file to change prompts or to override the models for this module.
+
+The agent and judge models come from the workshop's shared config,
+Foundational Evaluations/model_config.py. Change them there to update every
+module at once.
 """
+
+import importlib.util
+from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Model IDs
 # ---------------------------------------------------------------------------
 
-# Agent model — used by all spoke/peer agents and the hub coordinator
-AGENT_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+# This folder's own file is also called model_config.py, so load the shared one
+# by path instead of with a plain import (which would find this file again).
+_SHARED_PATH = Path(__file__).resolve().parents[2] / "Foundational Evaluations" / "model_config.py"
+_spec = importlib.util.spec_from_file_location("workshop_shared_model_config", _SHARED_PATH)
+_shared = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_shared)
 
-# Judge model — used by LLM-as-judge for semantic evaluation
-# Claude Sonnet provides a good balance of speed and quality for workshop use.
-# For higher accuracy (at the cost of longer evaluation times), switch to Opus:
-#   JUDGE_MODEL_ID = "us.anthropic.claude-opus-4-20250514-v1:0"
-JUDGE_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+# Agent model — used by all spoke/peer agents and the hub coordinator.
+# To compare models in this module only, assign a different model ID here.
+AGENT_MODEL_ID = _shared.DEFAULT_MODEL_ID
+
+# Judge model — used by LLM-as-judge for semantic evaluation.
+# For higher accuracy (at the cost of longer evaluation times), assign a
+# stronger model ID here.
+JUDGE_MODEL_ID = _shared.JUDGE_MODEL_ID
 
 # Embedding model — used for C2 alignment in peer-to-peer notebook
 EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"

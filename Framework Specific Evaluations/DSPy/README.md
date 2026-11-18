@@ -33,7 +33,7 @@ The key idea: **compile, don't write**. The optimizer generates instructions and
 
 - Python 3.11+
 - AWS credentials with Bedrock access
-- Model access: `global.anthropic.claude-haiku-4-5-20251001-v1:0`
+- Model access: the Claude Haiku model named `HAIKU_MODEL_ID` in [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py)
 
 ### IAM Permissions
 
