@@ -101,6 +101,14 @@ pip install strands-agents strands-agents-tools strands-agents-evals "dspy>=3.1,
 npm install -g promptfoo
 ```
 
+### Model IDs
+
+Do not hard-code Bedrock model IDs in notebooks or helper code. The default and judge models are defined once, in [`Foundational Evaluations/model_config.py`](Foundational%20Evaluations/model_config.py), so a model can be replaced in one place when it is retired. Import `DEFAULT_MODEL_ID` and `JUDGE_MODEL_ID` from that file; its docstring shows the import for notebooks in other modules.
+
+A module can keep its own `model_config.py` for settings that are specific to it, such as the candidate set in Capacity Management or the prompts in Multiagent Shared Context. If the module also needs the workshop's default or judge model, that file should read them from the shared file instead of repeating the IDs.
+
+Claude Sonnet 5 rejects the `temperature` and `top_p` parameters, so do not send them.
+
 
 ## Licensing
 

@@ -11,10 +11,11 @@ Complete the Foundational Evaluations modules first:
 
 ## Model Configuration
 
-Model IDs are centralised in [model_config.py](model_config.py), following the
-Foundational Evaluations pattern. The notebook imports `DEFAULT_MODEL_ID` for
-extraction, LLM judges, and chatbot responses. Edit the default in that file, or
-set `EVAL_MODEL_ID` to override it.
+The model ID comes from the shared workshop config,
+[Foundational Evaluations/model_config.py](../../Foundational%20Evaluations/model_config.py).
+The notebook imports `DEFAULT_MODEL_ID` for extraction, LLM judges, and chatbot
+responses. Edit the default in that file to change the model for this module and
+every other module that uses it.
 
 Use a Claude inference profile supported in `us-east-1` and compatible with the
 Anthropic Messages API used by the notebook. Run the notebook with this folder as

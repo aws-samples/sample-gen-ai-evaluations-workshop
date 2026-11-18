@@ -1,14 +1,28 @@
 """
-Centralised Bedrock model IDs for all Foundational Evaluations notebooks.
+Centralised Bedrock model IDs for the workshop.
 
-Edit this file to change models across every notebook in this module,
-then restart your notebook kernel and re-run from the top.
+This is the one place to change the default and judge models. Edit it, then
+restart your notebook kernel and re-run from the top.
 
-Notebooks import this file from their subdirectory with:
+Foundational Evaluations notebooks import this file from their subdirectory:
 
     import sys
     sys.path.append("..")
     from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
+
+Notebooks in other modules (for example "Workload Specific Evaluations/Tool
+Calling") sit two folders below the repository root and import it like this:
+
+    import os, sys
+    sys.path.append(os.path.abspath(os.path.join("..", "..", "Foundational Evaluations")))
+    from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
+
+A module that keeps its own model_config.py (for prompts or a model-comparison
+set) should read DEFAULT_MODEL_ID and JUDGE_MODEL_ID from this file instead of
+repeating the IDs.
+
+Request parameters: Claude Sonnet 5 rejects ``temperature`` and ``top_p`` with a
+ValidationException, so notebooks that use these models must not send them.
 """
 
 # ---------------------------------------------------------------------------

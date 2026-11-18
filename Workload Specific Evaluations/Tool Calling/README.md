@@ -83,7 +83,7 @@ Tool Calling/
    ```
 
 2. Ensure you have AWS credentials configured with access to Amazon Bedrock:
-   - Claude Sonnet 4 for both the agent under test and LLM-as-Judge
+   - The workshop's default model for both the agent under test and LLM-as-Judge. It is set in [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py); edit that file to change it.
 
 3. Open [01 Tool Calling Evaluation.ipynb](01%20Tool%20Calling%20Evaluation.ipynb) and work through the approaches in order.
 
