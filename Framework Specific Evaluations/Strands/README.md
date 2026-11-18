@@ -71,7 +71,7 @@ from report_display import display_evaluation_report
 display_evaluation_report(trajectory_report)
 ```
 
-Before executing this notebook, ensure access to Global Claude 4.5 Haiku in your configured AWS region, or change the notebook to your model of choice.  
+Before executing this notebook, ensure access to the Claude Haiku model named `HAIKU_MODEL_ID` in [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py), or change that file to your model of choice.  
 
 ## Resources
 

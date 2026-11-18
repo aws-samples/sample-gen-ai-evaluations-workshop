@@ -59,7 +59,7 @@ Chatbot/
 ## Prerequisites
 
 - AWS account with Amazon Bedrock access (us-east-1)
-- Access to Claude Sonnet 4.5 (travel booking agent and judge) and Amazon Nova Micro (user simulator) models in Bedrock
+- Access in Bedrock to the models named in [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py): `DEFAULT_MODEL_ID` (travel booking agent), `JUDGE_MODEL_ID` (judge) and `CHATBOT_MODEL_ID` (user simulator)
 - Python 3.10+
 - AWS CLI configured with valid credentials (`aws configure`)
 

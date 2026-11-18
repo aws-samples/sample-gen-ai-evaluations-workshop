@@ -45,8 +45,13 @@ bedrock = boto3.client(
     config=Config(connect_timeout=5, read_timeout=60, retries={"max_attempts": 2})
 )
 
-AGENT_MODEL = "us.anthropic.claude-sonnet-4-20250514-v1:0"
-JUDGE_MODEL = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+# Model IDs come from the shared config, Foundational Evaluations/model_config.py
+import os, sys
+sys.path.append(os.path.abspath(os.path.join("..", "..", "Foundational Evaluations")))
+from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
+
+AGENT_MODEL = DEFAULT_MODEL_ID
+JUDGE_MODEL = JUDGE_MODEL_ID
 ```
 
 Load the evaluation data (provided in `data/`):
@@ -565,7 +570,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 SIMULATOR_MODEL = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-20250514-v1:0",
+    model_id=DEFAULT_MODEL_ID,
     boto_client_config=Config(connect_timeout=5, read_timeout=60, retries={"max_attempts": 2})
 )
 

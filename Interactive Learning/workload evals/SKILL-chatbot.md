@@ -10,7 +10,7 @@ Single-turn evaluation follows a simple pattern: input, output, judge. Multi-tur
 ## Prerequisites
 
 - AWS account with Bedrock access (us-east-1)
-- Access to Claude Sonnet 4.5 and Amazon Nova Micro in Bedrock
+- Access in Bedrock to the models named in `Foundational Evaluations/model_config.py` (`DEFAULT_MODEL_ID`, `JUDGE_MODEL_ID` and `CHATBOT_MODEL_ID`)
 - Python 3.10+
 - Familiarity with boto3 and the Bedrock Converse API
 - Completed SKILL-operational or equivalent understanding of LLM invocation
@@ -37,9 +37,14 @@ import json
 from strands import Agent, tool
 from datetime import date
 
+# Model IDs come from the shared config, Foundational Evaluations/model_config.py
+import os, sys
+sys.path.append(os.path.abspath(os.path.join("..", "..", "Foundational Evaluations")))
+from model_config import DEFAULT_MODEL_ID, CHATBOT_MODEL_ID, JUDGE_MODEL_ID
+
 # Verify Bedrock access
 bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
-for model_id in ['us.anthropic.claude-sonnet-4-5-20250929-v1:0', 'amazon.nova-micro-v1:0']:
+for model_id in [DEFAULT_MODEL_ID, CHATBOT_MODEL_ID]:
     resp = bedrock.converse(
         modelId=model_id,
         messages=[{'role': 'user', 'content': [{'text': 'Say hello in one word.'}]}],
@@ -237,7 +242,7 @@ from deepeval.models import DeepEvalBaseLLM
 
 class BedrockNovaMicro(DeepEvalBaseLLM):
     """Amazon Nova Micro as the user simulator model."""
-    MODEL_ID = "amazon.nova-micro-v1:0"
+    MODEL_ID = CHATBOT_MODEL_ID
 
     def __init__(self, region: str = "us-east-1"):
         self.region = region
@@ -319,9 +324,9 @@ from deepeval.test_case import TurnParams
 from deepeval import evaluate
 from deepeval.evaluate import AsyncConfig
 
-# Claude Sonnet 4.5 as the evaluation judge (same wrapper pattern as BedrockNovaMicro)
-class BedrockClaudeSonnet45(DeepEvalBaseLLM):
-    MODEL_ID = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+# The shared judge model as the evaluation judge (same wrapper pattern as BedrockNovaMicro)
+class BedrockClaudeJudge(DeepEvalBaseLLM):
+    MODEL_ID = JUDGE_MODEL_ID
 
     def __init__(self, region: str = 'us-east-1'):
         self.region = region
@@ -356,7 +361,7 @@ class BedrockClaudeSonnet45(DeepEvalBaseLLM):
     async def a_generate(self, prompt: str, schema=None) -> str:
         return self._invoke(prompt, schema)
 
-judge_model = BedrockClaudeSonnet45()
+judge_model = BedrockClaudeJudge()
 
 # One binary metric per failure mode
 metric_no_invented = ConversationalGEval(
@@ -438,7 +443,7 @@ from strands_evals.evaluators import GoalSuccessRateEvaluator, OutputEvaluator
 
 # Session-level: did the full conversation achieve its goal?
 goal_evaluator = GoalSuccessRateEvaluator(
-    model_id='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+    model_id=JUDGE_MODEL_ID,
     region_name='us-east-1'
 )
 
@@ -460,7 +465,7 @@ Return FAIL if any reference is invented.
 
 output_evaluator = OutputEvaluator(
     rubric=no_hallucination_rubric,
-    model_id='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+    model_id=JUDGE_MODEL_ID,
     region_name='us-east-1'
 )
 ```
@@ -522,9 +527,9 @@ Write ONE realistic opening message. No explanation, just the message."""
 def generate_query(intent, complexity, mood, edge):
     prompt = TUPLE_TO_QUERY_PROMPT.format(intent=intent, complexity=complexity, mood=mood, edge=edge)
     resp = bedrock.converse(
-        modelId='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+        modelId=DEFAULT_MODEL_ID,
         messages=[{'role': 'user', 'content': [{'text': prompt}]}],
-        inferenceConfig={'maxTokens': 200, 'temperature': 0.7},
+        inferenceConfig={'maxTokens': 200},  # no temperature: Claude Sonnet 5 rejects it
     )
     return resp['output']['message']['content'][0]['text']
 
@@ -577,7 +582,7 @@ from strands_evals.evaluators import GoalSuccessRateEvaluator, OutputEvaluator
 from strands_evals.telemetry import StrandsEvalsTelemetry
 from strands_evals.mappers import StrandsInMemorySessionMapper
 
-JUDGE_MODEL = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+JUDGE_MODEL = JUDGE_MODEL_ID
 
 # Define evaluators for each failure mode
 evaluators = {

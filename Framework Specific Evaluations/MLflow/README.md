@@ -94,7 +94,7 @@ The notebook walks you through:
 2. Bootstrapping (or reusing) the S3 bucket, IAM service role, and serverless SageMaker MLflow App
 3. Loading and shaping the evaluation dataset into `{inputs, expectations}` records
 4. Defining code-based scorers, custom `make_judge` scorers, MLflow Guidelines, and DeepEval scorers (18 total)
-5. Running `mlflow.genai.evaluate()` for `claude-sonnet-4-5` and `claude-haiku-4-5`
+5. Running `mlflow.genai.evaluate()` for the `default-model` and `small-model` entries (their IDs, and the judge's, come from `Foundational Evaluations/model_config.py`)
 6. Logging per-sample CSV artifacts to each MLflow run
 7. Comparing both models side-by-side via `mlflow.search_runs`
 8. Rendering a clickable, presigned MLflow UI link (valid 5 minutes) via `IPython.display.HTML`
