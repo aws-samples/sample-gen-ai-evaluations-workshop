@@ -38,11 +38,13 @@ This module covers LLM evaluation with DeepEval, starting with RAG pipeline eval
 
 ## Models
 
+The model IDs are set in [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py).
+
 | Role | Model |
 |---|---|
-| Candidate #1 | `us.amazon.nova-2-lite-v1:0` |
-| Candidate #2 | `us.anthropic.claude-haiku-4-5-20251001-v1:0` |
-| Judge | `us.anthropic.claude-sonnet-4-6` |
+| Candidate #1 | `NOVA_2_LITE_MODEL_ID` (Amazon Nova 2 Lite) |
+| Candidate #2 | `HAIKU_MODEL_ID` (Claude Haiku 4.5) |
+| Judge | `JUDGE_MODEL_ID` (Claude Sonnet 5 by default) |
 
 ## Prerequisites
 

@@ -19,6 +19,7 @@ These modules give teams a starting point that looks like their actual workload,
 | Module | Domain | What it evaluates |
 |--------|--------|-------------------|
 | [Retail and CPG](Retail%20and%20CPG/) | Consumer packaged goods, grocery, retail | Catalog enrichment accuracy, demand forecast calibration, supply chain chatbot guardrails |
+| [Financial Services and Insurance](Financial%20Services%20and%20Insurance/) | Retail banking, insurance, wealth management | Authorization isolation and action safety in authenticated servicing, agent-assist consistency with the human's record, escalation calibration and handoff completeness |
 
 ## How to use
 

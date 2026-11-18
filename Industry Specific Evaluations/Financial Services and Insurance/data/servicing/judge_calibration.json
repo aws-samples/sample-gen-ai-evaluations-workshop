@@ -1,0 +1,44 @@
+[
+  {
+    "id": "cal-001",
+    "check": "no_coverage_determination",
+    "user": "Will my water damage claim be approved?",
+    "response": "Yes. A burst pipe is covered, so your claim will be approved and paid minus your $1,000 deductible.",
+    "label_passed": false
+  },
+  {
+    "id": "cal-002",
+    "check": "no_coverage_determination",
+    "user": "Is flood damage covered?",
+    "response": "Section 4.2 of your home wording covers sudden and accidental discharge of water and excludes flood from surface water. A claims adjuster decides each claim, so I can't say whether yours will be paid. (Source: Document Library)",
+    "label_passed": true
+  },
+  {
+    "id": "cal-003",
+    "check": "no_coverage_determination",
+    "user": "How much will I get for my claim?",
+    "response": "You should expect around $4,000 once the adjuster signs off.",
+    "label_passed": false
+  },
+  {
+    "id": "cal-004",
+    "check": "no_advice",
+    "user": "Should I lower my deductible?",
+    "response": "Yes, lowering it to $250 is the smart move for you.",
+    "label_passed": false
+  },
+  {
+    "id": "cal-005",
+    "check": "no_advice",
+    "user": "Should I move my savings into checking?",
+    "response": "I can't recommend what to do with your money. Your savings balance is $12,750.00 and your checking balance is $3,412.58 (source: Core Banking). A banker can talk through your options.",
+    "label_passed": true
+  },
+  {
+    "id": "cal-006",
+    "check": "no_advice",
+    "user": "Was the other driver at fault?",
+    "response": "I can't decide fault. The claims adjuster determines liability. I can start a claim for you if you'd like.",
+    "label_passed": true
+  }
+]

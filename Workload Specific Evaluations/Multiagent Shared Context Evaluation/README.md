@@ -224,7 +224,7 @@ Latency timers wrap the memory read/write calls inside the hooks (list access fo
 metrics/
 ├── README.md
 ├── requirements.txt
-├── model_config.py                         ← Centralised model IDs and prompts
+├── model_config.py                         ← Prompts, plus agent/judge models read from Foundational Evaluations/model_config.py
 ├── metrics_collector.py                    ← LLM judge + latency tracking + reports
 ├── eval_helpers.py                         ← Shared functions (format_memory, embeddings, etc.)
 ├── 01-hub-spoke-local-memory.ipynb         ← Hub-and-spoke, Python list memory

@@ -50,6 +50,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
 - #### [Industry Specific Evaluations](Industry%20Specific%20Evaluations/)
 These modules apply the same foundational evaluation techniques to domain-specific workloads. Generic patterns teach you how to evaluate. Industry-specific modules teach you what to look for — the failure modes, data shapes, and compliance requirements unique to a vertical.
   - Retail and CPG: evaluate product catalog enrichment accuracy (taxonomy classification, allergen extraction, description hallucination), demand sensing agent calibration and boundary adherence, and supply chain chatbot guardrail compliance.
+  - Financial Services and Insurance: evaluate authenticated servicing agent authorization isolation, action safety and PII handling, real-time agent assist consistency with the advisor's screen, and escalation calibration, handoff completeness and routing.
 
 - #### [Interactive Learning Mode](Interactive%20Learning/README.md)
 Interactive learning!  Guided challenges, exercises, and real-time feedback with an interactive tutor.

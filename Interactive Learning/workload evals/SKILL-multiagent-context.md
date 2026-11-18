@@ -48,9 +48,20 @@ logger = logging.getLogger("multiagent-eval")
 Model and prompt configuration (shared across all sections):
 
 ```python
-# Model IDs
-AGENT_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
-JUDGE_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+# Model IDs: the agent and judge models come from the shared config,
+# Foundational Evaluations/model_config.py. Only the embedding model is set here.
+import importlib.util
+from pathlib import Path
+
+_spec = importlib.util.spec_from_file_location(
+    "workshop_shared_model_config",
+    Path(__file__).resolve().parents[2] / "Foundational Evaluations" / "model_config.py",
+)
+_shared = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_shared)
+
+AGENT_MODEL_ID = _shared.DEFAULT_MODEL_ID
+JUDGE_MODEL_ID = _shared.JUDGE_MODEL_ID
 EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"
 
 # Hub-and-Spoke prompts (travel planning)

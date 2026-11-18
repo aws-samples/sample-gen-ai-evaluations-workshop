@@ -49,7 +49,7 @@ logger = logging.getLogger("metrics_collector")
 # ---------------------------------------------------------------------------
 
 class LLMJudge:
-    """Bedrock Claude Opus for semantic evaluation."""
+    """Bedrock LLM judge for semantic evaluation (model set by JUDGE_MODEL_ID)."""
 
     def __init__(self, region: str = "us-west-2", model_id: str = JUDGE_MODEL_ID):
         self.client = boto3.client("bedrock-runtime", region_name=region)
@@ -59,7 +59,6 @@ class LLMJudge:
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 1024,
-            "temperature": 0.0,
             "messages": [{"role": "user", "content": prompt}],
         })
         for attempt in range(max_retries):
@@ -67,7 +66,10 @@ class LLMJudge:
                 resp = self.client.invoke_model(
                     modelId=self.model_id, body=body,
                     contentType="application/json", accept="application/json")
-                text = json.loads(resp["body"].read())["content"][0]["text"]
+                content = json.loads(resp["body"].read())["content"]
+                # Claude Sonnet 5 rejects temperature, so none is sent. A reasoning
+                # model can return a thinking block first, so take the first text block.
+                text = next(block["text"] for block in content if block.get("type") == "text")
                 if "```" in text:
                     text = text.split("```")[1]
                     if text.startswith("json"):

@@ -1,14 +1,28 @@
 """
-Centralised Bedrock model IDs for all Foundational Evaluations notebooks.
+Centralised Bedrock model IDs for the workshop.
 
-Edit this file to change models across every notebook in this module,
-then restart your notebook kernel and re-run from the top.
+This is the one place to change the default and judge models. Edit it, then
+restart your notebook kernel and re-run from the top.
 
-Notebooks import this file from their subdirectory with:
+Foundational Evaluations notebooks import this file from their subdirectory:
 
     import sys
     sys.path.append("..")
     from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
+
+Notebooks in other modules (for example "Workload Specific Evaluations/Tool
+Calling") sit two folders below the repository root and import it like this:
+
+    import os, sys
+    sys.path.append(os.path.abspath(os.path.join("..", "..", "Foundational Evaluations")))
+    from model_config import DEFAULT_MODEL_ID, JUDGE_MODEL_ID
+
+A module that keeps its own model_config.py (for prompts or a model-comparison
+set) should read DEFAULT_MODEL_ID and JUDGE_MODEL_ID from this file instead of
+repeating the IDs.
+
+Request parameters: Claude Sonnet 5 rejects ``temperature`` and ``top_p`` with a
+ValidationException, so notebooks that use these models must not send them.
 """
 
 # ---------------------------------------------------------------------------
@@ -28,6 +42,13 @@ JUDGE_MODEL_ID = DEFAULT_MODEL_ID
 # (deliberately weak so the evaluation has failures to find).
 CHATBOT_MODEL_ID = "us.amazon.nova-micro-v1:0"
 
+# Named smaller models. Notebooks that compare models, or that deliberately use
+# a small, cheap model (for example as a guardrail-checked agent), import these
+# names instead of repeating the IDs.
+NOVA_2_LITE_MODEL_ID = "us.amazon.nova-2-lite-v1:0"
+NOVA_PRO_MODEL_ID = "us.amazon.nova-pro-v1:0"
+HAIKU_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
 # ---------------------------------------------------------------------------
 # Model comparison sets
 # ---------------------------------------------------------------------------
@@ -37,23 +58,23 @@ CHATBOT_MODEL_ID = "us.amazon.nova-micro-v1:0"
 # Note: Claude Sonnet 5 standard rate is $3/$15 (an introductory rate of
 # $2/$10 applies through August 31, 2026).
 MODEL_PRICING = {
-    "us.amazon.nova-2-lite-v1:0": {"input": 0.33, "output": 2.75},
-    "us.amazon.nova-pro-v1:0": {"input": 0.80, "output": 3.20},
-    "us.anthropic.claude-haiku-4-5-20251001-v1:0": {"input": 1.00, "output": 5.00},
+    NOVA_2_LITE_MODEL_ID: {"input": 0.33, "output": 2.75},
+    NOVA_PRO_MODEL_ID: {"input": 0.80, "output": 3.20},
+    HAIKU_MODEL_ID: {"input": 1.00, "output": 5.00},
     DEFAULT_MODEL_ID: {"input": 3.00, "output": 15.00},
 }
 
 # Small models used in the quick multi-city comparison in 04-agentic-metrics.
 QUICK_COMPARISON_MODELS = [
-    "us.amazon.nova-2-lite-v1:0",
-    "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    NOVA_2_LITE_MODEL_ID,
+    HAIKU_MODEL_ID,
 ]
 
 # Friendly names used in comparison prompts and result tables.
 MODEL_NAMES = {
     CHATBOT_MODEL_ID: "Nova Micro",
-    "us.amazon.nova-2-lite-v1:0": "Nova 2 Lite",
-    "us.amazon.nova-pro-v1:0": "Nova Pro",
-    "us.anthropic.claude-haiku-4-5-20251001-v1:0": "Claude Haiku 4.5",
+    NOVA_2_LITE_MODEL_ID: "Nova 2 Lite",
+    NOVA_PRO_MODEL_ID: "Nova Pro",
+    HAIKU_MODEL_ID: "Claude Haiku 4.5",
     DEFAULT_MODEL_ID: "Claude Sonnet 5",
 }
