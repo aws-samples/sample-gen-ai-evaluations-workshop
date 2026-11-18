@@ -9,6 +9,23 @@ Complete the Foundational Evaluations modules first:
 - 02 Quality Metrics
 - 04 Agentic Metrics
 
+## Model Configuration
+
+Model IDs are centralised in [model_config.py](model_config.py), following the
+Foundational Evaluations pattern. The notebook imports `DEFAULT_MODEL_ID` for
+extraction, LLM judges, and chatbot responses. Edit the default in that file, or
+set `EVAL_MODEL_ID` to override it.
+
+Use a Claude inference profile supported in `us-east-1` and compatible with the
+Anthropic Messages API used by the notebook. Run the notebook with this folder as
+its working directory. After changing the configuration, restart the kernel and
+rerun from the top.
+
+Model JSON is parsed by [response_utils.py](response_utils.py), which accepts
+plain JSON, Markdown fences, or surrounding text. Judge results must contain
+every required check with a `pass` or `fail` value. Malformed, incomplete, or
+truncated responses stop the run with a diagnostic instead of producing a score.
+
 ## Scenario 1: Product Catalog Enrichment Pipeline
 
 ### Context
