@@ -1,0 +1,14 @@
+{
+  "name": "eval-builder",
+  "displayName": "Eval Builder",
+  "version": "0.1.0",
+  "description": "Build, run, and review evaluations for your own GenAI workload (agent, RAG, chatbot, tool calling, coding assistant, IDP) using the AWS GenAI Evaluations Workshop's failure-first, binary pass/fail approach.",
+  "author": {
+    "name": "AWS GenAI Evaluations Workshop",
+    "url": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop"
+  },
+  "homepage": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop",
+  "repository": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop",
+  "license": "MIT-0",
+  "keywords": ["evals", "evaluation", "llm-as-judge", "agents", "rag", "bedrock"]
+}

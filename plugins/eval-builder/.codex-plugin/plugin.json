@@ -1,0 +1,28 @@
+{
+  "name": "eval-builder",
+  "version": "0.1.0",
+  "description": "Build, run, and review evaluations for your own GenAI workload (agent, RAG, chatbot, tool calling, coding assistant, IDP) using the AWS GenAI Evaluations Workshop's failure-first, binary pass/fail approach.",
+  "author": {
+    "name": "AWS GenAI Evaluations Workshop",
+    "url": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop"
+  },
+  "homepage": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop",
+  "repository": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop",
+  "license": "MIT-0",
+  "keywords": ["evals", "evaluation", "llm-as-judge", "agents", "rag", "bedrock"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Eval Builder",
+    "shortDescription": "Build and review evals for your GenAI app",
+    "longDescription": "Inspects your repository, samples real outputs to find what is failing, maps failures to the AWS GenAI Evaluations Workshop modules, and after your approval scaffolds binary pass/fail judges under evals/ and an HTML report. Review mode grades existing evals against the workshop's practices.",
+    "developerName": "AWS GenAI Evaluations Workshop",
+    "category": "Coding",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop",
+    "defaultPrompt": [
+      "Build evals for my app",
+      "Review my existing evals",
+      "What is failing in my agent?"
+    ]
+  }
+}

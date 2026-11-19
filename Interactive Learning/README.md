@@ -19,15 +19,31 @@ teach through questions, small implementation steps, and applied challenges.
 
 ## Build mode: `eval-builder`
 
-[`eval-builder/`](eval-builder/) is a portable skill for Claude Code and Kiro. It runs in **your own** workload repo (not this one), reads the workshop's live module content as its source of truth, and produces an interactive HTML report.
+[`eval-builder`](../plugins/eval-builder/) is a plugin for Kiro, Claude Code, and Codex. It runs in **your own** workload repo (not this one), reads the workshop's live module content as its source of truth, and produces an interactive HTML report.
 
-**Install (agent-driven — no manual file moving, no script):**
+**Install:**
 
-1. Clone this workshop repo and open it with your AI assistant (Kiro or Claude Code).
-2. Say: **"install the eval-builder skill."**
-3. The assistant copies `Interactive Learning/eval-builder/` into your global skills directory:
-   - Kiro → `~/.kiro/skills/eval-builder/`
-   - Claude Code → `~/.claude/skills/eval-builder/`
+- **Claude Code**
+  ```bash
+  claude plugin marketplace add aws-samples/sample-gen-ai-evaluations-workshop
+  claude plugin install eval-builder@genai-evals-workshop
+  ```
+- **Codex**
+  ```bash
+  codex plugin marketplace add aws-samples/sample-gen-ai-evaluations-workshop
+  codex plugin add eval-builder@genai-evals-workshop
+  ```
+- **Kiro** — clone this repo, then either run `kiro-cli powers install <clone>/plugins/eval-builder`, or in the Kiro IDE open **Powers → Add Custom Power → Import power from a folder** and select `plugins/eval-builder`.
+
+Start a new session after installing. The plugin needs AWS credentials with Amazon Bedrock access in the account and Region of the workload you evaluate.
+
+**Notes by tool:**
+
+- **Kiro** asks once for permission to load the Power the first time you use it. Approve it. In headless runs (`kiro-cli chat --no-interactive`), add `--trust-tools=kiro_powers` or the Power can't load and Kiro answers without it.
+- **Codex:** run the skill in an interactive session. In `codex exec`, Codex tends to work through the whole flow without stopping at the approval gates.
+- **Any tool:** set `EVAL_WORKSHOP_DIR` to a local clone of this workshop to skip the clone the skill otherwise makes in `/tmp`.
+
+**Plugin manifests:** `plugins/eval-builder/plugin.json` is the portable [Agent Plugins](https://agent-plugins.org/) manifest; Kiro reads it. `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` are optional and only add each tool's display metadata (name, description, and Codex's prompt suggestions). All three tools find the skill in `skills/` without them. One marketplace file, `.claude-plugin/marketplace.json` at the repository root, serves both Claude Code and Codex.
 
 **Use it:**
 

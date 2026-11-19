@@ -1,0 +1,15 @@
+{
+  "name": "genai-evals-workshop",
+  "description": "Plugins from the AWS GenAI Evaluations Workshop",
+  "owner": {
+    "name": "AWS GenAI Evaluations Workshop",
+    "url": "https://github.com/aws-samples/sample-gen-ai-evaluations-workshop"
+  },
+  "plugins": [
+    {
+      "name": "eval-builder",
+      "source": "./plugins/eval-builder",
+      "description": "Build, run, and review evaluations for your own GenAI workload using the workshop's failure-first, binary pass/fail approach."
+    }
+  ]
+}
