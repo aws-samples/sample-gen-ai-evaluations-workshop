@@ -43,6 +43,8 @@ Start a new session after installing. The plugin needs AWS credentials with Amaz
 - **Codex:** run the skill in an interactive session. In `codex exec`, Codex tends to work through the whole flow without stopping at the approval gates.
 - **Any tool:** set `EVAL_WORKSHOP_DIR` to a local clone of this workshop to skip the clone the skill otherwise makes in `/tmp`.
 
+**Plugin manifests:** `plugins/eval-builder/plugin.json` is the portable [Agent Plugins](https://agent-plugins.org/) manifest; Kiro reads it. `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` are optional and only add each tool's display metadata (name, description, and Codex's prompt suggestions). All three tools find the skill in `skills/` without them. One marketplace file, `.claude-plugin/marketplace.json` at the repository root, serves both Claude Code and Codex.
+
 **Use it:**
 
 1. `cd` into the repository containing the workload you want to evaluate.
