@@ -220,7 +220,9 @@ def call_judge_model(prompt: str, model_id: str = JUDGE_MODEL_ID, max_retries: i
             response = bedrock.converse(
                 modelId=model_id,
                 messages=[{"role": "user", "content": [{"text": prompt}]}],
-                inferenceConfig={"maxTokens": 1000}
+                # Reasoning models spend part of maxTokens on thinking before the verdict,
+                # so leave plenty of headroom or the verdict can be cut off.
+                inferenceConfig={"maxTokens": 4000}
             )
             return extract_response_text(response)
         except Exception as e:
