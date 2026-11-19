@@ -1,0 +1,215 @@
+diff --git a/src/strands_evals/extractors/trace_extractor.py b/src/strands_evals/extractors/trace_extractor.py
+index 2a4e996..0958a7e 100644
+--- a/src/strands_evals/extractors/trace_extractor.py
++++ b/src/strands_evals/extractors/trace_extractor.py
+@@ -1,4 +1,5 @@
+ import logging
++from datetime import datetime, timezone
+ 
+ from ..types.trace import (
+     AgentInvocationSpan,
+@@ -20,6 +21,13 @@ from ..types.trace import (
+ logger = logging.getLogger(__name__)
+ 
+ 
++def _utc_time(value: datetime) -> datetime:
++    """Treat naive span timestamps as UTC for chronological comparisons."""
++    if value.tzinfo is None:
++        return value.replace(tzinfo=timezone.utc)
++    return value.astimezone(timezone.utc)
++
++
+ class TraceExtractor:
+     """Extracts structured evaluation inputs from Session traces."""
+ 
+@@ -85,9 +93,9 @@ class TraceExtractor:
+         return evaluation_inputs
+ 
+     def _extract_tool_level(self, session: Session) -> list[ToolLevelInput]:
+-        """Extract tool-level inputs with session and tool context."""
++        """Extract tool-level inputs with only results available when each call started."""
+         evaluator_inputs: list[ToolLevelInput] = []
+-        session_history: list[UserMessage | list[ToolExecution] | AssistantMessage] = []
++        session_history: list[UserMessage | list[ToolExecutionSpan] | AssistantMessage] = []
+         available_tools: list[ToolConfig] = []
+ 
+         for trace in session.traces:
+@@ -100,21 +108,41 @@ class TraceExtractor:
+             if agent_span and agent_span.user_prompt:
+                 session_history.append(UserMessage(content=[TextContent(text=agent_span.user_prompt)]))
+ 
++            tool_spans = sorted(tool_spans, key=lambda span: _utc_time(span.span_info.start_time))
++            completed_spans = sorted(tool_spans, key=lambda span: _utc_time(span.span_info.end_time))
++
+             for tool_span in tool_spans:
++                call_start = _utc_time(tool_span.span_info.start_time)
++                prior_executions = [
++                    ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result)
++                    for span in completed_spans
++                    if span is not tool_span and _utc_time(span.span_info.end_time) <= call_start
++                ]
++                tool_history: list[UserMessage | list[ToolExecution] | AssistantMessage] = []
++                for entry in session_history:
++                    if isinstance(entry, list):
++                        available_results = [
++                            ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result)
++                            for span in entry
++                            if _utc_time(span.span_info.end_time) <= call_start
++                        ]
++                        if available_results:
++                            tool_history.append(available_results)
++                    else:
++                        tool_history.append(entry)
++                if prior_executions:
++                    tool_history.append(prior_executions)
+                 evaluator_inputs.append(
+                     ToolLevelInput(
+                         span_info=tool_span.span_info,
+                         available_tools=available_tools,
+                         tool_execution_details=tool_span,
+-                        session_history=list(session_history),
++                        session_history=tool_history,
+                     )
+                 )
+ 
+             if tool_spans:
+-                tool_executions = [
+-                    ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result) for span in tool_spans
+-                ]
+-                session_history.append(tool_executions)
++                session_history.append(completed_spans)
+ 
+             if agent_span and agent_span.agent_response:
+                 session_history.append(AssistantMessage(content=[TextContent(text=agent_span.agent_response)]))
+diff --git a/tests/strands_evals/extractors/test_trace_extractor.py b/tests/strands_evals/extractors/test_trace_extractor.py
+index cafb624..dc94268 100644
+--- a/tests/strands_evals/extractors/test_trace_extractor.py
++++ b/tests/strands_evals/extractors/test_trace_extractor.py
+@@ -1,7 +1,8 @@
+-from datetime import datetime
++from datetime import datetime, timedelta, timezone
+ 
+ import pytest
+ 
++from strands_evals.evaluators import ToolParameterAccuracyEvaluator, ToolSelectionAccuracyEvaluator
+ from strands_evals.extractors import TraceExtractor
+ from strands_evals.types.trace import (
+     AgentInvocationSpan,
+@@ -11,6 +12,7 @@ from strands_evals.types.trace import (
+     SpanInfo,
+     ToolCall,
+     ToolConfig,
++    ToolExecution,
+     ToolExecutionSpan,
+     ToolLevelInput,
+     ToolResult,
+@@ -102,6 +104,109 @@ def test_extract_tool_level(session_with_tools):
+     assert result[0].tool_execution_details.tool_result.content == "4"
+ 
+ 
++def test_extract_tool_level_uses_results_available_at_each_call_start():
++    offset = timezone(timedelta(hours=2))
++
++    def tool_span(name, start, end, result, arguments=None):
++        return ToolExecutionSpan(
++            span_info=SpanInfo(session_id="test", start_time=start, end_time=end),
++            tool_call=ToolCall(name=name, arguments=arguments or {}, tool_call_id=name),
++            tool_result=ToolResult(content=result, tool_call_id=name),
++        )
++
++    previous = tool_span("previous_turn", datetime(2026, 1, 1, 9), datetime(2026, 1, 1, 9, 1), "prior")
++    agent = AgentInvocationSpan(
++        span_info=SpanInfo(
++            session_id="test",
++            start_time=datetime(2026, 1, 1, 10),
++            end_time=datetime(2026, 1, 1, 10, 6),
++        ),
++        user_prompt="What is (3 + 4) * 5?",
++        agent_response="35",
++        available_tools=[],
++    )
++    add = tool_span(
++        "add_numbers",
++        datetime(2026, 1, 1, 12, 1, tzinfo=offset),
++        datetime(2026, 1, 1, 12, 3, tzinfo=offset),
++        "7",
++        {"a": 3, "b": 4},
++    )
++    running = tool_span(
++        "still_running",
++        datetime(2026, 1, 1, 12, 1, 30, tzinfo=offset),
++        datetime(2026, 1, 1, 12, 5, tzinfo=offset),
++        "late result",
++    )
++    multiply = tool_span(
++        "multiply_numbers",
++        datetime(2026, 1, 1, 10, 3),
++        datetime(2026, 1, 1, 10, 3, 30),
++        "35",
++        {"a": 7, "b": 5},
++    )
++    later = tool_span("later_call", datetime(2026, 1, 1, 10, 4), datetime(2026, 1, 1, 10, 4, 30), "later")
++    session = Session(
++        traces=[
++            Trace(spans=[previous], trace_id="previous", session_id="test"),
++            Trace(spans=[agent, later, multiply, running, add], trace_id="current", session_id="test"),
++        ],
++        session_id="test",
++    )
++
++    inputs = TraceExtractor(EvaluationLevel.TOOL_LEVEL).extract(session)
++
++    assert [item.tool_execution_details.tool_call.name for item in inputs] == [
++        "previous_turn",
++        "add_numbers",
++        "still_running",
++        "multiply_numbers",
++        "later_call",
++    ]
++    histories = [
++        [execution.tool_call.name for entry in item.session_history if isinstance(entry, list) for execution in entry]
++        for item in inputs
++    ]
++    assert histories == [
++        [],
++        ["previous_turn"],
++        ["previous_turn"],
++        ["previous_turn", "add_numbers"],
++        ["previous_turn", "add_numbers", "multiply_numbers"],
++    ]
++    assert inputs[3].session_history[-1] == [ToolExecution(tool_call=add.tool_call, tool_result=add.tool_result)]
++    for evaluator in (ToolParameterAccuracyEvaluator(), ToolSelectionAccuracyEvaluator()):
++        prompt = evaluator._format_tool_level_prompt(inputs[3])
++        assert "Tool result: 7" in prompt
++        assert "Tool result: 35" not in prompt
++        assert "late result" not in prompt
++        assert "Tool call: multiply_numbers({'a': 7, 'b': 5})" in prompt
++
++
++def test_extract_tool_level_filters_results_from_overlapping_previous_trace():
++    def tool_span(name, start, end):
++        return ToolExecutionSpan(
++            span_info=SpanInfo(session_id="test", start_time=start, end_time=end),
++            tool_call=ToolCall(name=name, arguments={}),
++            tool_result=ToolResult(content=name),
++        )
++
++    early = tool_span("early", datetime(2026, 1, 1, 10), datetime(2026, 1, 1, 10, 1))
++    pending = tool_span("pending", datetime(2026, 1, 1, 10), datetime(2026, 1, 1, 10, 5))
++    target = tool_span("target", datetime(2026, 1, 1, 10, 3), datetime(2026, 1, 1, 10, 4))
++    session = Session(
++        traces=[
++            Trace(spans=[early, pending], trace_id="previous", session_id="test"),
++            Trace(spans=[target], trace_id="current", session_id="test"),
++        ],
++        session_id="test",
++    )
++
++    inputs = TraceExtractor(EvaluationLevel.TOOL_LEVEL).extract(session)
++
++    assert inputs[2].session_history == [[ToolExecution(tool_call=early.tool_call, tool_result=early.tool_result)]]
++
++
+ def test_extract_session_level(session_with_conversation):
+     extractor = TraceExtractor(EvaluationLevel.SESSION_LEVEL)
+     result = extractor.extract(session_with_conversation)

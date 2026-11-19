@@ -79,6 +79,7 @@ Start a new session after installing. The plugin needs AWS credentials with Amaz
 | [SKILL-chatbot](workload%20evals/SKILL-chatbot.md) | Multi-turn simulation, binary evaluators, and synthetic test data |
 | [SKILL-red-teaming](workload%20evals/SKILL-red-teaming.md) | Adversarial testing for LLM apps, guardrails, RAG, and agents |
 | [SKILL-multiagent-context](workload%20evals/SKILL-multiagent-context.md) | Shared-context quality across hub-spoke and peer-to-peer agents |
+| [SKILL-coding-assistant](workload%20evals/SKILL-coding-assistant.md) | Sealed PR review and coding datapoints from git history, oracles, and binary pass/fail gates |
 | [CHALLENGE-capstone](workload%20evals/CHALLENGE-capstone.md) | **Capstone:** integrate several workload evaluation techniques |
 
 ### Framework-Specific Evaluations

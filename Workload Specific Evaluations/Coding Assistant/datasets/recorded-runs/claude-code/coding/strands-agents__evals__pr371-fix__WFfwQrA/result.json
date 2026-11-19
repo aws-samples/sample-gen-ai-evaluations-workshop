@@ -1,0 +1,31 @@
+{
+ "task_name": "strands-agents/evals__pr371-fix",
+ "trial_name": "strands-agents__evals__pr371-fix__WFfwQrA",
+ "agent_info": {
+  "name": "claude-code",
+  "version": "2.1.327",
+  "model_info": {
+   "name": "us.anthropic.claude-sonnet-5-5",
+   "provider": "harbor-skip-parsing"
+  }
+ },
+ "agent_result": {
+  "n_input_tokens": 367961,
+  "n_cache_tokens": 325902,
+  "n_output_tokens": 3096,
+  "cost_usd": 0.1686877,
+  "model_usage": {
+   "claude-sonnet-5-5": {
+    "n_input_tokens": 367961,
+    "n_cache_tokens": 325902,
+    "n_output_tokens": 3096,
+    "cost_usd": 0.1686877
+   }
+  },
+  "rollout_details": null,
+  "metadata": null
+ },
+ "exception_info": null,
+ "started_at": "2026-11-18T06:05:29.280239Z",
+ "finished_at": "2026-11-18T06:10:58.355296Z"
+}

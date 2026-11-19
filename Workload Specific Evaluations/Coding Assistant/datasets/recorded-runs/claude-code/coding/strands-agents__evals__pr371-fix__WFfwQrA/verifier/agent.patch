@@ -1,0 +1,80 @@
+diff --git a/src/strands_evals/types/trace.py b/src/strands_evals/types/trace.py
+index 600de26..2bad13f 100644
+--- a/src/strands_evals/types/trace.py
++++ b/src/strands_evals/types/trace.py
+@@ -136,17 +136,23 @@ def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentIn
+     """Search for a trace's root agent span.
+ 
+     Prefers a parentless agent that has content, then any parentless agent,
+-    then the earliest by `start_time`. Returns `None` for an empty sequence.
++    then any agent; the earliest by `start_time` wins within each tier, so the
++    result does not depend on span order. Returns `None` for an empty sequence.
+     """
+     if not agent_spans:
+         return None
+-    for span in agent_spans:
+-        if span.span_info.parent_span_id is None and (span.user_prompt or span.agent_response):
+-            return span
+-    for span in agent_spans:
+-        if span.span_info.parent_span_id is None:
+-            return span
+-    return min(agent_spans, key=lambda s: _to_aware_utc(s.span_info.start_time))
++
++    def earliest(spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan:
++        # min() is stable, so ties keep the original list order
++        return min(spans, key=lambda s: _to_aware_utc(s.span_info.start_time))
++
++    parentless = [s for s in agent_spans if s.span_info.parent_span_id is None]
++    with_content = [s for s in parentless if s.user_prompt or s.agent_response]
++    if with_content:
++        return earliest(with_content)
++    if parentless:
++        return earliest(parentless)
++    return earliest(agent_spans)
+ 
+ 
+ class Trace(BaseModel):
+diff --git a/tests/strands_evals/extractors/test_trace_extractor.py b/tests/strands_evals/extractors/test_trace_extractor.py
+index 1307206..ec97fdd 100644
+--- a/tests/strands_evals/extractors/test_trace_extractor.py
++++ b/tests/strands_evals/extractors/test_trace_extractor.py
+@@ -453,3 +453,39 @@ def test_span_id_none_does_not_collide():
+     result_b = next(r for r in result if r.tool_execution_details.tool_call.name == "tool_b")
+     assert [t.name for t in result_a.available_tools] == ["tool_a"]
+     assert [t.name for t in result_b.available_tools] == ["tool_b"]
++
++
++@pytest.mark.parametrize("coordinator_first", [True, False])
++def test_tool_level_root_is_earliest_agent_when_all_parentless(coordinator_first):
++    """Session history uses the earliest parentless agent regardless of span order."""
++
++    def info(span_id: str, second: int) -> SpanInfo:
++        t = datetime(2026, 1, 1, 0, 0, second, tzinfo=timezone.utc)
++        return SpanInfo(session_id="test", span_id=span_id, start_time=t, end_time=t)
++
++    coordinator = AgentInvocationSpan(
++        span_info=info("coordinator", 0),
++        user_prompt="temperature difference between Paris and Tokyo",
++        agent_response="done",
++        available_tools=[],
++    )
++    sub = AgentInvocationSpan(
++        span_info=info("sub", 1),
++        user_prompt="temperature in Tokyo",
++        agent_response="20",
++        available_tools=[ToolConfig(name="calculate")],
++    )
++    tool = ToolExecutionSpan(
++        span_info=info("tool", 2),
++        tool_call=ToolCall(name="calculate", arguments={"expr": "25-20"}),
++        tool_result=ToolResult(content="5"),
++        agent_span_id="sub",
++    )
++    spans = [coordinator, sub, tool] if coordinator_first else [sub, coordinator, tool]
++    session = Session(traces=[Trace(spans=spans, trace_id="t", session_id="test")], session_id="test")
++
++    inputs = TraceExtractor(EvaluationLevel.TOOL_LEVEL).extract(session)
++
++    assert len(inputs) == 1
++    first = inputs[0].session_history[0]
++    assert first.content[0].text == "temperature difference between Paris and Tokyo"

@@ -1,0 +1,31 @@
+{
+ "task_name": "awslabs/mcp__pr4615-reject",
+ "trial_name": "awslabs__mcp__pr4615-reject__fYwKLGy",
+ "agent_info": {
+  "name": "codex",
+  "version": "0.162.1",
+  "model_info": {
+   "name": "openai.gpt-6-sol",
+   "provider": "harbor-skip-parsing"
+  }
+ },
+ "agent_result": {
+  "n_input_tokens": 170099,
+  "n_cache_tokens": 139529,
+  "n_output_tokens": 2414,
+  "cost_usd": 0.12846380000000002,
+  "model_usage": {
+   "openai.gpt-6-sol": {
+    "n_input_tokens": 170099,
+    "n_cache_tokens": 139529,
+    "n_output_tokens": 2414,
+    "cost_usd": 0.12846380000000002
+   }
+  },
+  "rollout_details": null,
+  "metadata": null
+ },
+ "exception_info": null,
+ "started_at": "2026-11-18T02:57:28.404155Z",
+ "finished_at": "2026-11-18T02:58:38.026325Z"
+}

@@ -1,4 +1,4 @@
-harbor>=0.24.0
+harbor==0.26.0  # the tested version. The Codex cells pass --skip-model-parsing-and-provider-mapping, which 0.26 needs for a Bedrock model ID
 pandas
 boto3
 python-dotenv

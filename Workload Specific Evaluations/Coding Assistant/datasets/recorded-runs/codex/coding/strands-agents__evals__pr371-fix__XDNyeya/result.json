@@ -1,0 +1,31 @@
+{
+ "task_name": "strands-agents/evals__pr371-fix",
+ "trial_name": "strands-agents__evals__pr371-fix__XDNyeya",
+ "agent_info": {
+  "name": "codex",
+  "version": "0.162.1",
+  "model_info": {
+   "name": "openai.gpt-6-sol",
+   "provider": "harbor-skip-parsing"
+  }
+ },
+ "agent_result": {
+  "n_input_tokens": 579173,
+  "n_cache_tokens": 539815,
+  "n_output_tokens": 4418,
+  "cost_usd": 0.25051999999999996,
+  "model_usage": {
+   "openai.gpt-6-sol": {
+    "n_input_tokens": 579173,
+    "n_cache_tokens": 539815,
+    "n_output_tokens": 4418,
+    "cost_usd": 0.25051999999999996
+   }
+  },
+  "rollout_details": null,
+  "metadata": null
+ },
+ "exception_info": null,
+ "started_at": "2026-11-18T17:05:18.199410Z",
+ "finished_at": "2026-11-18T17:10:57.037913Z"
+}

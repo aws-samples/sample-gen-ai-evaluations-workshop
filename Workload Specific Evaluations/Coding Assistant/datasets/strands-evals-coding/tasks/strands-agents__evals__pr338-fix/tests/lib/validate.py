@@ -1,3 +1,4 @@
+# Shared file. Edit datasets/_shared/coding/tests/lib/validate.py, then run `python datasets/_shared/sync.py`.
 """Validation agent: write behavioral tests adapted to the agent's patch, run them, and judge them.
 
 Procedure (after Senior SWE-Bench):

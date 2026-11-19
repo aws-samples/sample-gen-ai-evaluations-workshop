@@ -1,0 +1,55 @@
+{
+  "rubric_score": 1.0,
+  "fail_to_pass_score": 1.0,
+  "pass_to_pass_score": 1.0,
+  "criteria": [
+    {
+      "id": "root_is_earliest_agent",
+      "kind": "fail_to_pass",
+      "text": "In a flat trace where several agents have no parent, the root agent is the one that started first, not the one that is first in the span list.",
+      "score": 1,
+      "reason": "Among parentless agents with content (or, failing that, all parentless agents), the function returns min by start_time, so the earliest-starting agent wins regardless of list position."
+    },
+    {
+      "id": "one_rule_for_root",
+      "kind": "fail_to_pass",
+      "text": "The extractor (user prompt and tools of tool-level inputs) and the assignment of tool spans that no agent owns use the same rule to find the root, so they cannot disagree.",
+      "score": 1,
+      "reason": "Both Trace.model_post_init (assigning unowned tool spans) and the extractor's _extract_tool_level call the same _find_root_agent_span, so they cannot disagree on the root."
+    },
+    {
+      "id": "mixed_timezones",
+      "kind": "fail_to_pass",
+      "text": "Start times that mix naive and timezone-aware datetimes are compared without a TypeError; a naive time is read as UTC, as elsewhere in the module.",
+      "score": 1,
+      "reason": "All comparisons go through _to_aware_utc, which treats naive datetimes as UTC, so mixing naive and aware start times does not raise a TypeError."
+    },
+    {
+      "id": "preferences_kept",
+      "kind": "pass_to_pass",
+      "text": "A parentless agent with a user prompt or a response is still preferred over a parentless agent without content, and a parentless agent over an agent with a parent.",
+      "score": 1,
+      "reason": "The ordering still tries parentless-with-content first, then parentless, then any agent, so content-bearing parentless agents are preferred and parentless agents beat agents with a parent."
+    },
+    {
+      "id": "nested_owner_kept",
+      "kind": "pass_to_pass",
+      "text": "A tool span that a sub-agent owns through parent_span_id keeps that owner.",
+      "score": 1,
+      "reason": "The ownership BFS in model_post_init only sets agent_span_id on tools that lack one, and the root fallback only fills unowned tools, so a sub-agent owner assigned via parent_span_id is preserved."
+    },
+    {
+      "id": "no_interface_change",
+      "kind": "pass_to_pass",
+      "text": "No public type, field, or function signature changes.",
+      "score": 1,
+      "reason": "The function signature and the public types are unchanged; only the private helper's body and docstring changed."
+    }
+  ],
+  "usage": {
+    "input_tokens": 25588,
+    "output_tokens": 1359,
+    "turns": 3,
+    "temperature": null
+  }
+}

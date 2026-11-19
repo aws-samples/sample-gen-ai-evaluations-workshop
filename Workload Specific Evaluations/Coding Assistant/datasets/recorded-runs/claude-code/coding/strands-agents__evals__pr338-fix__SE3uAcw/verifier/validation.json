@@ -1,0 +1,59 @@
+{
+  "status": "accepted",
+  "discard_reason": "",
+  "validation_score": 1.0,
+  "passed_stories": 2,
+  "total_stories": 2,
+  "stories": {
+    "parameter_judge_sees_earlier_results": {
+      "passed": 6,
+      "total": 6,
+      "pass": true,
+      "cases": {
+        "test_parameter_judge_sees_earlier_results[issue_repro]": true,
+        "test_parameter_judge_sees_earlier_results[third_call_sees_two]": true,
+        "test_parameter_judge_sees_earlier_results[first_call_sees_none]": true,
+        "test_parameter_judge_sees_earlier_results[spans_not_in_time_order]": true,
+        "test_parameter_judge_sees_earlier_results[parallel_call_not_visible]": true,
+        "test_parameter_judge_sees_earlier_results[ends_when_next_starts]": true
+      }
+    },
+    "selection_judge_sees_earlier_results": {
+      "passed": 4,
+      "total": 4,
+      "pass": true,
+      "cases": {
+        "test_selection_judge_sees_earlier_results[second_turn_sees_both_turns]": true,
+        "test_selection_judge_sees_earlier_results[issue_repro]": true,
+        "test_selection_judge_sees_earlier_results[naive_and_aware_times]": true,
+        "test_selection_judge_sees_earlier_results[later_call_hidden]": true
+      }
+    }
+  },
+  "reviews": [
+    {
+      "scores": {
+        "behavioral_authenticity": 3,
+        "procedure_fidelity": 3,
+        "story_coverage": 3,
+        "execution_soundness": 3,
+        "assertion_strength": 3
+      },
+      "decision": "accept",
+      "feedback": "Both test files follow their story procedures. They build the session from the case inputs, run the real ToolParameterAccuracyEvaluator / ToolSelectionAccuracyEvaluator evaluate() with only `Agent` patched in the evaluator module (the permitted mock), and locate the recorded prompt for the target call by its \"## Target tool-call to evaluate\" section. They then assert every expected.visible string is present and no expected.hidden string is present. Nothing is hard-coded, skipped, or swallowed. The target-prompt match is strict (exactly one match required). I checked the source: evaluator._format_tool_level_prompt renders session_history (prior-turn and same-turn tool results) and the target section in the format the tests expect, so the tests exercise the real prompt path. The baseline extractor only includes prior-turn results, so the same-turn visible cases would fail without the developer's patch, meaning the tests discriminate. The developer patch (trace_extractor.py, which I confirmed is applied in /work/repo) adds same-turn finished-before-start results and naive/aware datetime normalization. It is consistent with the story rule (finished at or before start; excludes the call itself, parallel, and later calls). The developer's added unit test is separate and does not alter the story tests. No revisions needed.",
+      "usage": {
+        "input_tokens": 42751,
+        "output_tokens": 3238,
+        "turns": 4,
+        "temperature": null
+      }
+    }
+  ],
+  "agent_usage": {
+    "input_tokens": 176214,
+    "output_tokens": 6038,
+    "turns": 11,
+    "temperature": null
+  },
+  "revised": false
+}
