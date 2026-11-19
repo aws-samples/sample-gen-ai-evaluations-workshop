@@ -1,0 +1,806 @@
+{
+  "schema_version": "ATIF-v1.7",
+  "session_id": "994de938-0cae-4050-bd10-14c285eec17a",
+  "agent": {
+    "name": "claude-code",
+    "version": "2.1.327",
+    "model_name": "claude-sonnet-5-5",
+    "extra": {
+      "cwds": [
+        "/work/repo",
+        "/work/repo/src/strands_evals"
+      ],
+      "git_branches": [
+        "main"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-11-18T06:05:39.672Z",
+      "source": "user",
+      "message": "## Task\n\n`ToolSelectionAccuracyEvaluator` gives us false negatives on some multi-agent traces, with no warning.\n\nour setup: a coordinator agent hands parts of the request to sub-agents. in some exports every agent\ninvocation span in the trace has no parent (the trace is flat). on those traces the judge rejects\ntool calls that are correct, for example the `calculate` call that takes the difference of two\ntemperatures. the reason the judge gives makes it look like it thinks the user only asked about one\ncity.\n\nthe coordinator always starts first, but it is not always first in the span list. when we move the\ncoordinator span to the front of the list, the false negatives go away.\n\nthe evaluator must judge each tool call against what the user actually asked, whatever the order of\nthe spans.\n\n## General instructions\n\n- The code repo is at `/work/repo`.\n- You are inside of a Docker container. The Python dependencies of the repository are installed, and\n  `python` and `pytest` are on `PATH`. The network is not available, so you cannot install packages,\n  and you cannot call a model on Amazon Bedrock.\n- You are expected to act autonomously as a software engineer to complete tasks you are given.\n- Do not stop until you feel you have completed the task and your code changes can be merged.\n- You may need to use software engineering skills like analyzing the codebase, running the tests, and\n  building small reproductions to complete the task. Not all tasks will be solvable by reading source\n  code alone.\n",
+      "extra": {
+        "is_sidechain": false
+      }
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-11-18T06:05:41.393Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01GxMsEbxL5GpS2npWyUDWth",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo/src/strands_evals; cat evaluators/tool_selection_accuracy_evaluator.py; grep -n \"def \\|^class \" extractors/tools_use_extractor.py"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo/src/strands_evals; cat evaluators/tool_selection_accuracy_evaluator.py; grep -n \"def \\|^class \" extractors/tools_use_extractor.py"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01GxMsEbxL5GpS2npWyUDWth",
+            "content": "from enum import Enum\nfrom typing import cast\n\nfrom pydantic import BaseModel, Field\nfrom strands import Agent\nfrom strands.models.model import Model\n\nfrom ..types.evaluation import EvaluationData, EvaluationOutput, InputT, OutputT\nfrom ..types.trace import EvaluationLevel\nfrom .evaluator import Evaluator\nfrom .prompt_templates.tool_selection_accuracy import get_template\n\n\nclass ToolSelectionScore(str, Enum):\n    \"\"\"Binary tool selection accuracy ratings.\"\"\"\n\n    YES = \"Yes\"\n    NO = \"No\"\n\n\nclass ToolSelectionRating(BaseModel):\n    \"\"\"Structured output for tool selection accuracy evaluation.\"\"\"\n\n    reasoning: str = Field(description=\"Step by step reasoning to derive the final score\")\n    score: ToolSelectionScore = Field(description=\"Score should be one of 'Yes' or 'No'\")\n\n\nclass ToolSelectionAccuracyEvaluator(Evaluator[InputT, OutputT]):\n    \"\"\"Evaluates whether tool calls are justified at specific points in the conversation.\"\"\"\n\n    evaluation_level = EvaluationLevel.TOOL_LEVEL\n\n    _score_mapping = {\n        ToolSelectionScore.YES: 1.0,\n        ToolSelectionScore.NO: 0.0,\n    }\n\n    def __init__(\n        self,\n        version: str = \"v0\",\n        model: Model | str | None = None,\n        system_prompt: str | None = None,\n        name: str | None = None,\n    ):\n        super().__init__(name=name)\n        self.system_prompt = system_prompt if system_prompt is not None else get_template(version).SYSTEM_PROMPT\n        self.version = version\n        self.model = model\n\n    def evaluate(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = evaluator_agent(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n\n    async def evaluate_async(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = await evaluator_agent.invoke_async(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n9:def extract_agent_tools_used_from_messages(agent_messages):\n67:def extract_agent_tools_used_from_metrics(agent_result):\n99:def extract_agent_tools_used_from_trace(session: Session) -> list[dict]:\n132:def extract_agent_tools_used(source: list | Session) -> list[dict]:\n157:def extract_tools_description(agent: Agent, is_short: bool = True):\n\n[stdout]\nfrom enum import Enum\nfrom typing import cast\n\nfrom pydantic import BaseModel, Field\nfrom strands import Agent\nfrom strands.models.model import Model\n\nfrom ..types.evaluation import EvaluationData, EvaluationOutput, InputT, OutputT\nfrom ..types.trace import EvaluationLevel\nfrom .evaluator import Evaluator\nfrom .prompt_templates.tool_selection_accuracy import get_template\n\n\nclass ToolSelectionScore(str, Enum):\n    \"\"\"Binary tool selection accuracy ratings.\"\"\"\n\n    YES = \"Yes\"\n    NO = \"No\"\n\n\nclass ToolSelectionRating(BaseModel):\n    \"\"\"Structured output for tool selection accuracy evaluation.\"\"\"\n\n    reasoning: str = Field(description=\"Step by step reasoning to derive the final score\")\n    score: ToolSelectionScore = Field(description=\"Score should be one of 'Yes' or 'No'\")\n\n\nclass ToolSelectionAccuracyEvaluator(Evaluator[InputT, OutputT]):\n    \"\"\"Evaluates whether tool calls are justified at specific points in the conversation.\"\"\"\n\n    evaluation_level = EvaluationLevel.TOOL_LEVEL\n\n    _score_mapping = {\n        ToolSelectionScore.YES: 1.0,\n        ToolSelectionScore.NO: 0.0,\n    }\n\n    def __init__(\n        self,\n        version: str = \"v0\",\n        model: Model | str | None = None,\n        system_prompt: str | None = None,\n        name: str | None = None,\n    ):\n        super().__init__(name=name)\n        self.system_prompt = system_prompt if system_prompt is not None else get_template(version).SYSTEM_PROMPT\n        self.version = version\n        self.model = model\n\n    def evaluate(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = evaluator_agent(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n\n    async def evaluate_async(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = await evaluator_agent.invoke_async(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n9:def extract_agent_tools_used_from_messages(agent_messages):\n67:def extract_agent_tools_used_from_metrics(agent_result):\n99:def extract_agent_tools_used_from_trace(session: Session) -> list[dict]:\n132:def extract_agent_tools_used(source: list | Session) -> list[dict]:\n157:def extract_tools_description(agent: Agent, is_short: bool = True):\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "from enum import Enum\nfrom typing import cast\n\nfrom pydantic import BaseModel, Field\nfrom strands import Agent\nfrom strands.models.model import Model\n\nfrom ..types.evaluation import EvaluationData, EvaluationOutput, InputT, OutputT\nfrom ..types.trace import EvaluationLevel\nfrom .evaluator import Evaluator\nfrom .prompt_templates.tool_selection_accuracy import get_template\n\n\nclass ToolSelectionScore(str, Enum):\n    \"\"\"Binary tool selection accuracy ratings.\"\"\"\n\n    YES = \"Yes\"\n    NO = \"No\"\n\n\nclass ToolSelectionRating(BaseModel):\n    \"\"\"Structured output for tool selection accuracy evaluation.\"\"\"\n\n    reasoning: str = Field(description=\"Step by step reasoning to derive the final score\")\n    score: ToolSelectionScore = Field(description=\"Score should be one of 'Yes' or 'No'\")\n\n\nclass ToolSelectionAccuracyEvaluator(Evaluator[InputT, OutputT]):\n    \"\"\"Evaluates whether tool calls are justified at specific points in the conversation.\"\"\"\n\n    evaluation_level = EvaluationLevel.TOOL_LEVEL\n\n    _score_mapping = {\n        ToolSelectionScore.YES: 1.0,\n        ToolSelectionScore.NO: 0.0,\n    }\n\n    def __init__(\n        self,\n        version: str = \"v0\",\n        model: Model | str | None = None,\n        system_prompt: str | None = None,\n        name: str | None = None,\n    ):\n        super().__init__(name=name)\n        self.system_prompt = system_prompt if system_prompt is not None else get_template(version).SYSTEM_PROMPT\n        self.version = version\n        self.model = model\n\n    def evaluate(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = evaluator_agent(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n\n    async def evaluate_async(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = await evaluator_agent.invoke_async(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n9:def extract_agent_tools_used_from_messages(agent_messages):\n67:def extract_agent_tools_used_from_metrics(agent_result):\n99:def extract_agent_tools_used_from_trace(session: Session) -> list[dict]:\n132:def extract_agent_tools_used(source: list | Session) -> list[dict]:\n157:def extract_tools_description(agent: Agent, is_short: bool = True):",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_01GxMsEbxL5GpS2npWyUDWth",
+                  "type": "tool_result",
+                  "content": "from enum import Enum\nfrom typing import cast\n\nfrom pydantic import BaseModel, Field\nfrom strands import Agent\nfrom strands.models.model import Model\n\nfrom ..types.evaluation import EvaluationData, EvaluationOutput, InputT, OutputT\nfrom ..types.trace import EvaluationLevel\nfrom .evaluator import Evaluator\nfrom .prompt_templates.tool_selection_accuracy import get_template\n\n\nclass ToolSelectionScore(str, Enum):\n    \"\"\"Binary tool selection accuracy ratings.\"\"\"\n\n    YES = \"Yes\"\n    NO = \"No\"\n\n\nclass ToolSelectionRating(BaseModel):\n    \"\"\"Structured output for tool selection accuracy evaluation.\"\"\"\n\n    reasoning: str = Field(description=\"Step by step reasoning to derive the final score\")\n    score: ToolSelectionScore = Field(description=\"Score should be one of 'Yes' or 'No'\")\n\n\nclass ToolSelectionAccuracyEvaluator(Evaluator[InputT, OutputT]):\n    \"\"\"Evaluates whether tool calls are justified at specific points in the conversation.\"\"\"\n\n    evaluation_level = EvaluationLevel.TOOL_LEVEL\n\n    _score_mapping = {\n        ToolSelectionScore.YES: 1.0,\n        ToolSelectionScore.NO: 0.0,\n    }\n\n    def __init__(\n        self,\n        version: str = \"v0\",\n        model: Model | str | None = None,\n        system_prompt: str | None = None,\n        name: str | None = None,\n    ):\n        super().__init__(name=name)\n        self.system_prompt = system_prompt if system_prompt is not None else get_template(version).SYSTEM_PROMPT\n        self.version = version\n        self.model = model\n\n    def evaluate(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = evaluator_agent(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n\n    async def evaluate_async(self, evaluation_case: EvaluationData[InputT, OutputT]) -> list[EvaluationOutput]:\n        tool_inputs = self._parse_trajectory(evaluation_case)\n        results = []\n\n        for tool_input in tool_inputs:\n            prompt = self._format_tool_level_prompt(tool_input)\n            evaluator_agent = Agent(model=self.model, system_prompt=self.system_prompt, callback_handler=None)\n            result = await evaluator_agent.invoke_async(prompt, structured_output_model=ToolSelectionRating)\n            rating = cast(ToolSelectionRating, result.structured_output)\n            normalized_score = self._score_mapping[rating.score]\n            results.append(\n                EvaluationOutput(\n                    score=normalized_score,\n                    test_pass=normalized_score == 1.0,\n                    reason=rating.reasoning,\n                    label=rating.score,\n                )\n            )\n\n        return results\n9:def extract_agent_tools_used_from_messages(agent_messages):\n67:def extract_agent_tools_used_from_metrics(agent_result):\n99:def extract_agent_tools_used_from_trace(session: Session) -> list[dict]:\n132:def extract_agent_tools_used(source: list | Session) -> list[dict]:\n157:def extract_tools_description(agent: Agent, is_short: bool = True):",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 29443,
+        "completion_tokens": 112,
+        "cached_tokens": 0,
+        "cost_usd": 0.0747265,
+        "extra": {
+          "cache_creation_input_tokens": 29441,
+          "cache_read_input_tokens": 0,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 29441
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo"
+      }
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-11-18T06:05:42.748Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_013w3nLb1A131vP4b1He8oEo",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo/src/strands_evals; grep -n \"_parse_trajectory\" -r . | head; grep -n \"_parse_trajectory\" -A60 evaluators/evaluator.py | head -150"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo/src/strands_evals; grep -n \"_parse_trajectory\" -r . | head; grep -n \"_parse_trajectory\" -A60 evaluators/evaluator.py | head -150"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_013w3nLb1A131vP4b1He8oEo",
+            "content": "evaluators/evaluator.py:115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\nevaluators/evaluator.py:130:        parsed_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/goal_success_rate_evaluator.py:92:        session_input = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\n115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\n116-        \"\"\"Parse Session trajectory using TraceExtractor.\"\"\"\n117-        if not self._trace_extractor:\n118-            raise ValueError(\"No trace extractor configured. Set evaluation_level or provide trace_extractor.\")\n119-\n120-        trajectory = evaluation_case.actual_trajectory\n121-        if not isinstance(trajectory, Session):\n122-            raise TypeError(\n123-                f\"Trace parsing requires actual_trajectory to be a Session object, got {type(trajectory).__name__}.\"\n124-            )\n125-\n126-        return self._trace_extractor.extract(trajectory)\n127-\n128-    def _get_last_turn(self, evaluation_case: EvaluationData[InputT, OutputT]) -> TraceLevelInput:\n129-        \"\"\"Extract the most recent turn from the conversation for evaluation.\"\"\"\n130:        parsed_inputs = self._parse_trajectory(evaluation_case)\n131-        if not parsed_inputs:\n132-            raise ValueError(\n133-                \"No turn-level inputs could be parsed from the trajectory. \"\n134-                \"Ensure actual_trajectory is a Session with at least one AgentInvocationSpan.\"\n135-            )\n136-        return parsed_inputs[-1]\n137-\n138-    def _extract_user_prompt(self, parsed_input: TraceLevelInput) -> str:\n139-        \"\"\"Extract user prompt from last message in session history.\n140-\n141-        Args:\n142-            parsed_input: Trace-level input containing session history\n143-\n144-        Returns:\n145-            User prompt text, or empty string if not available\n146-        \"\"\"\n147-        if not parsed_input.session_history:\n148-            return \"\"\n149-\n150-        last_msg = parsed_input.session_history[-1]\n151-        if not isinstance(last_msg, list) and self._has_text_content(last_msg):\n152-            first_content = last_msg.content[0]\n153-            if isinstance(first_content, TextContent):\n154-                return first_content.text\n155-\n156-        return \"\"\n157-\n158-    def _format_tools(self, tools: list[ToolConfig]) -> str:\n159-        \"\"\"Format available tools for prompt display, including parameter schemas.\"\"\"\n160-        tool_lines = []\n161-        for tool in tools:\n162-            desc = tool.description or \"No description\"\n163-            if tool.parameters:\n164-                params = tool.parameters\n165-                properties = params.get(\"properties\", {})\n166-                required = params.get(\"required\", [])\n167-                param_details = []\n168-                for param_name, param_info in properties.items():\n169-                    param_type = param_info.get(\"type\", \"any\")\n170-                    param_desc = param_info.get(\"description\", \"\")\n171-                    req_marker = \" (required)\" if param_name in required else \"\"\n172-                    param_details.append(f\"    - {param_name} ({param_type}{req_marker}): {param_desc}\")\n173-                if param_details:\n174-                    params_str = \"\\n\".join(param_details)\n175-                    tool_lines.append(f\"- {tool.name}: {desc}\\n  Parameters:\\n{params_str}\")\n176-                else:\n177-                    tool_lines.append(f\"- {tool.name}: {desc}\")\n178-            else:\n179-                tool_lines.append(f\"- {tool.name}: {desc}\")\n180-        return \"\\n\".join(tool_lines)\n181-\n182-    def _format_session_history(self, contexts: list[Context]) -> str:\n183-        \"\"\"Format session history with tool executions for prompt display.\"\"\"\n184-        lines = []\n185-        for ctx in contexts:\n186-            lines.append(f\"User: {ctx.user_prompt.text}\")\n187-            if ctx.tool_execution_history:\n188-                for tool_exec in ctx.tool_execution_history:\n189-                    lines.append(f\"Action: {tool_exec.tool_call.name}({tool_exec.tool_call.arguments})\")\n190-                    lines.append(f\"Tool: {tool_exec.tool_result.content}\")\n\n[stdout]\nevaluators/evaluator.py:115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\nevaluators/evaluator.py:130:        parsed_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/goal_success_rate_evaluator.py:92:        session_input = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\n115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\n116-        \"\"\"Parse Session trajectory using TraceExtractor.\"\"\"\n117-        if not self._trace_extractor:\n118-            raise ValueError(\"No trace extractor configured. Set evaluation_level or provide trace_extractor.\")\n119-\n120-        trajectory = evaluation_case.actual_trajectory\n121-        if not isinstance(trajectory, Session):\n122-            raise TypeError(\n123-                f\"Trace parsing requires actual_trajectory to be a Session object, got {type(trajectory).__name__}.\"\n124-            )\n125-\n126-        return self._trace_extractor.extract(trajectory)\n127-\n128-    def _get_last_turn(self, evaluation_case: EvaluationData[InputT, OutputT]) -> TraceLevelInput:\n129-        \"\"\"Extract the most recent turn from the conversation for evaluation.\"\"\"\n130:        parsed_inputs = self._parse_trajectory(evaluation_case)\n131-        if not parsed_inputs:\n132-            raise ValueError(\n133-                \"No turn-level inputs could be parsed from the trajectory. \"\n134-                \"Ensure actual_trajectory is a Session with at least one AgentInvocationSpan.\"\n135-            )\n136-        return parsed_inputs[-1]\n137-\n138-    def _extract_user_prompt(self, parsed_input: TraceLevelInput) -> str:\n139-        \"\"\"Extract user prompt from last message in session history.\n140-\n141-        Args:\n142-            parsed_input: Trace-level input containing session history\n143-\n144-        Returns:\n145-            User prompt text, or empty string if not available\n146-        \"\"\"\n147-        if not parsed_input.session_history:\n148-            return \"\"\n149-\n150-        last_msg = parsed_input.session_history[-1]\n151-        if not isinstance(last_msg, list) and self._has_text_content(last_msg):\n152-            first_content = last_msg.content[0]\n153-            if isinstance(first_content, TextContent):\n154-                return first_content.text\n155-\n156-        return \"\"\n157-\n158-    def _format_tools(self, tools: list[ToolConfig]) -> str:\n159-        \"\"\"Format available tools for prompt display, including parameter schemas.\"\"\"\n160-        tool_lines = []\n161-        for tool in tools:\n162-            desc = tool.description or \"No description\"\n163-            if tool.parameters:\n164-                params = tool.parameters\n165-                properties = params.get(\"properties\", {})\n166-                required = params.get(\"required\", [])\n167-                param_details = []\n168-                for param_name, param_info in properties.items():\n169-                    param_type = param_info.get(\"type\", \"any\")\n170-                    param_desc = param_info.get(\"description\", \"\")\n171-                    req_marker = \" (required)\" if param_name in required else \"\"\n172-                    param_details.append(f\"    - {param_name} ({param_type}{req_marker}): {param_desc}\")\n173-                if param_details:\n174-                    params_str = \"\\n\".join(param_details)\n175-                    tool_lines.append(f\"- {tool.name}: {desc}\\n  Parameters:\\n{params_str}\")\n176-                else:\n177-                    tool_lines.append(f\"- {tool.name}: {desc}\")\n178-            else:\n179-                tool_lines.append(f\"- {tool.name}: {desc}\")\n180-        return \"\\n\".join(tool_lines)\n181-\n182-    def _format_session_history(self, contexts: list[Context]) -> str:\n183-        \"\"\"Format session history with tool executions for prompt display.\"\"\"\n184-        lines = []\n185-        for ctx in contexts:\n186-            lines.append(f\"User: {ctx.user_prompt.text}\")\n187-            if ctx.tool_execution_history:\n188-                for tool_exec in ctx.tool_execution_history:\n189-                    lines.append(f\"Action: {tool_exec.tool_call.name}({tool_exec.tool_call.arguments})\")\n190-                    lines.append(f\"Tool: {tool_exec.tool_result.content}\")\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "evaluators/evaluator.py:115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\nevaluators/evaluator.py:130:        parsed_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/goal_success_rate_evaluator.py:92:        session_input = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\n115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\n116-        \"\"\"Parse Session trajectory using TraceExtractor.\"\"\"\n117-        if not self._trace_extractor:\n118-            raise ValueError(\"No trace extractor configured. Set evaluation_level or provide trace_extractor.\")\n119-\n120-        trajectory = evaluation_case.actual_trajectory\n121-        if not isinstance(trajectory, Session):\n122-            raise TypeError(\n123-                f\"Trace parsing requires actual_trajectory to be a Session object, got {type(trajectory).__name__}.\"\n124-            )\n125-\n126-        return self._trace_extractor.extract(trajectory)\n127-\n128-    def _get_last_turn(self, evaluation_case: EvaluationData[InputT, OutputT]) -> TraceLevelInput:\n129-        \"\"\"Extract the most recent turn from the conversation for evaluation.\"\"\"\n130:        parsed_inputs = self._parse_trajectory(evaluation_case)\n131-        if not parsed_inputs:\n132-            raise ValueError(\n133-                \"No turn-level inputs could be parsed from the trajectory. \"\n134-                \"Ensure actual_trajectory is a Session with at least one AgentInvocationSpan.\"\n135-            )\n136-        return parsed_inputs[-1]\n137-\n138-    def _extract_user_prompt(self, parsed_input: TraceLevelInput) -> str:\n139-        \"\"\"Extract user prompt from last message in session history.\n140-\n141-        Args:\n142-            parsed_input: Trace-level input containing session history\n143-\n144-        Returns:\n145-            User prompt text, or empty string if not available\n146-        \"\"\"\n147-        if not parsed_input.session_history:\n148-            return \"\"\n149-\n150-        last_msg = parsed_input.session_history[-1]\n151-        if not isinstance(last_msg, list) and self._has_text_content(last_msg):\n152-            first_content = last_msg.content[0]\n153-            if isinstance(first_content, TextContent):\n154-                return first_content.text\n155-\n156-        return \"\"\n157-\n158-    def _format_tools(self, tools: list[ToolConfig]) -> str:\n159-        \"\"\"Format available tools for prompt display, including parameter schemas.\"\"\"\n160-        tool_lines = []\n161-        for tool in tools:\n162-            desc = tool.description or \"No description\"\n163-            if tool.parameters:\n164-                params = tool.parameters\n165-                properties = params.get(\"properties\", {})\n166-                required = params.get(\"required\", [])\n167-                param_details = []\n168-                for param_name, param_info in properties.items():\n169-                    param_type = param_info.get(\"type\", \"any\")\n170-                    param_desc = param_info.get(\"description\", \"\")\n171-                    req_marker = \" (required)\" if param_name in required else \"\"\n172-                    param_details.append(f\"    - {param_name} ({param_type}{req_marker}): {param_desc}\")\n173-                if param_details:\n174-                    params_str = \"\\n\".join(param_details)\n175-                    tool_lines.append(f\"- {tool.name}: {desc}\\n  Parameters:\\n{params_str}\")\n176-                else:\n177-                    tool_lines.append(f\"- {tool.name}: {desc}\")\n178-            else:\n179-                tool_lines.append(f\"- {tool.name}: {desc}\")\n180-        return \"\\n\".join(tool_lines)\n181-\n182-    def _format_session_history(self, contexts: list[Context]) -> str:\n183-        \"\"\"Format session history with tool executions for prompt display.\"\"\"\n184-        lines = []\n185-        for ctx in contexts:\n186-            lines.append(f\"User: {ctx.user_prompt.text}\")\n187-            if ctx.tool_execution_history:\n188-                for tool_exec in ctx.tool_execution_history:\n189-                    lines.append(f\"Action: {tool_exec.tool_call.name}({tool_exec.tool_call.arguments})\")\n190-                    lines.append(f\"Tool: {tool_exec.tool_result.content}\")",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_013w3nLb1A131vP4b1He8oEo",
+                  "type": "tool_result",
+                  "content": "evaluators/evaluator.py:115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\nevaluators/evaluator.py:130:        parsed_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_selection_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/goal_success_rate_evaluator.py:92:        session_input = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:51:        tool_inputs = self._parse_trajectory(evaluation_case)\nevaluators/tool_parameter_accuracy_evaluator.py:72:        tool_inputs = self._parse_trajectory(evaluation_case)\n115:    def _parse_trajectory(self, evaluation_case: EvaluationData[InputT, OutputT]) -> Any:\n116-        \"\"\"Parse Session trajectory using TraceExtractor.\"\"\"\n117-        if not self._trace_extractor:\n118-            raise ValueError(\"No trace extractor configured. Set evaluation_level or provide trace_extractor.\")\n119-\n120-        trajectory = evaluation_case.actual_trajectory\n121-        if not isinstance(trajectory, Session):\n122-            raise TypeError(\n123-                f\"Trace parsing requires actual_trajectory to be a Session object, got {type(trajectory).__name__}.\"\n124-            )\n125-\n126-        return self._trace_extractor.extract(trajectory)\n127-\n128-    def _get_last_turn(self, evaluation_case: EvaluationData[InputT, OutputT]) -> TraceLevelInput:\n129-        \"\"\"Extract the most recent turn from the conversation for evaluation.\"\"\"\n130:        parsed_inputs = self._parse_trajectory(evaluation_case)\n131-        if not parsed_inputs:\n132-            raise ValueError(\n133-                \"No turn-level inputs could be parsed from the trajectory. \"\n134-                \"Ensure actual_trajectory is a Session with at least one AgentInvocationSpan.\"\n135-            )\n136-        return parsed_inputs[-1]\n137-\n138-    def _extract_user_prompt(self, parsed_input: TraceLevelInput) -> str:\n139-        \"\"\"Extract user prompt from last message in session history.\n140-\n141-        Args:\n142-            parsed_input: Trace-level input containing session history\n143-\n144-        Returns:\n145-            User prompt text, or empty string if not available\n146-        \"\"\"\n147-        if not parsed_input.session_history:\n148-            return \"\"\n149-\n150-        last_msg = parsed_input.session_history[-1]\n151-        if not isinstance(last_msg, list) and self._has_text_content(last_msg):\n152-            first_content = last_msg.content[0]\n153-            if isinstance(first_content, TextContent):\n154-                return first_content.text\n155-\n156-        return \"\"\n157-\n158-    def _format_tools(self, tools: list[ToolConfig]) -> str:\n159-        \"\"\"Format available tools for prompt display, including parameter schemas.\"\"\"\n160-        tool_lines = []\n161-        for tool in tools:\n162-            desc = tool.description or \"No description\"\n163-            if tool.parameters:\n164-                params = tool.parameters\n165-                properties = params.get(\"properties\", {})\n166-                required = params.get(\"required\", [])\n167-                param_details = []\n168-                for param_name, param_info in properties.items():\n169-                    param_type = param_info.get(\"type\", \"any\")\n170-                    param_desc = param_info.get(\"description\", \"\")\n171-                    req_marker = \" (required)\" if param_name in required else \"\"\n172-                    param_details.append(f\"    - {param_name} ({param_type}{req_marker}): {param_desc}\")\n173-                if param_details:\n174-                    params_str = \"\\n\".join(param_details)\n175-                    tool_lines.append(f\"- {tool.name}: {desc}\\n  Parameters:\\n{params_str}\")\n176-                else:\n177-                    tool_lines.append(f\"- {tool.name}: {desc}\")\n178-            else:\n179-                tool_lines.append(f\"- {tool.name}: {desc}\")\n180-        return \"\\n\".join(tool_lines)\n181-\n182-    def _format_session_history(self, contexts: list[Context]) -> str:\n183-        \"\"\"Format session history with tool executions for prompt display.\"\"\"\n184-        lines = []\n185-        for ctx in contexts:\n186-            lines.append(f\"User: {ctx.user_prompt.text}\")\n187-            if ctx.tool_execution_history:\n188-                for tool_exec in ctx.tool_execution_history:\n189-                    lines.append(f\"Action: {tool_exec.tool_call.name}({tool_exec.tool_call.arguments})\")\n190-                    lines.append(f\"Tool: {tool_exec.tool_result.content}\")",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 30965,
+        "completion_tokens": 115,
+        "cached_tokens": 29441,
+        "cost_usd": 0.0079031,
+        "extra": {
+          "cache_creation_input_tokens": 1522,
+          "cache_read_input_tokens": 29441,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1522
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo/src/strands_evals"
+      }
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2026-11-18T06:05:43.953Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01PrmPbjocKWMZMZV8zBfkxh",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo/src/strands_evals; cat extractors/trace_extractor.py; grep -n \"class AgentInvocationSpan\\|class SpanInfo\" -A22 types/trace.py"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo/src/strands_evals; cat extractors/trace_extractor.py; grep -n \"class AgentInvocationSpan\\|class SpanInfo\" -A22 types/trace.py"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01PrmPbjocKWMZMZV8zBfkxh",
+            "content": "import logging\n\nfrom ..types.trace import (\n    AgentInvocationSpan,\n    AssistantMessage,\n    Context,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    TextContent,\n    ToolConfig,\n    ToolExecution,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    TraceLevelInput,\n    UserMessage,\n    _find_root_agent_span,\n    _to_aware_utc,\n)\n\nlogger = logging.getLogger(__name__)\n\n\nclass TraceExtractor:\n    \"\"\"Extracts structured evaluation inputs from Session traces.\"\"\"\n\n    def __init__(self, evaluation_level: EvaluationLevel):\n        self.evaluation_level = evaluation_level\n\n    def extract(self, session: Session) -> list[TraceLevelInput] | list[ToolLevelInput] | SessionLevelInput:\n        \"\"\"Extract evaluation inputs based on configured level.\"\"\"\n        if not isinstance(session, Session):\n            raise TypeError(f\"Expected Session object, got {type(session).__name__}\")\n\n        if self.evaluation_level == EvaluationLevel.TRACE_LEVEL:\n            return self._extract_trace_level(session)\n        elif self.evaluation_level == EvaluationLevel.TOOL_LEVEL:\n            return self._extract_tool_level(session)\n        elif self.evaluation_level == EvaluationLevel.SESSION_LEVEL:\n            return self._extract_session_level(session)\n        else:\n            raise ValueError(f\"Unsupported evaluation level: {self.evaluation_level}\")\n\n    def _extract_trace_level(self, session: Session) -> list[TraceLevelInput]:\n        \"\"\"Extract trace-level inputs with session history up to each turn.\"\"\"\n        evaluation_inputs: list[TraceLevelInput] = []\n        previous_turns: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            for span in agent_spans:\n                try:\n                    text_content = TextContent(text=span.user_prompt)\n                    previous_turns.append(UserMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create user message: {e}\")\n                    continue\n\n                # Include only tool executions owned by this agent\n                ownership_assigned = any(ts.agent_span_id for ts in tool_spans)\n                if len(agent_spans) > 1 and ownership_assigned:\n                    owned_tools = [ts for ts in tool_spans if ts.agent_span_id == span.span_info.span_id]\n                else:\n                    owned_tools = tool_spans\n\n                if owned_tools:\n                    try:\n                        tool_executions = [\n                            ToolExecution(tool_call=ts.tool_call, tool_result=ts.tool_result) for ts in owned_tools\n                        ]\n                        previous_turns.append(tool_executions)\n                    except (AttributeError, TypeError, ValueError) as e:\n                        logger.warning(f\"Failed to create tool executions: {e}\")\n\n                trace_input = TraceLevelInput(\n                    span_info=span.span_info,\n                    agent_response=TextContent(text=span.agent_response),\n                    session_history=list(previous_turns),\n                )\n                evaluation_inputs.append(trace_input)\n\n                try:\n                    text_content = TextContent(text=span.agent_response)\n                    previous_turns.append(AssistantMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create assistant message: {e}\")\n\n        return evaluation_inputs\n\n    def _extract_tool_level(self, session: Session) -> list[ToolLevelInput]:\n        \"\"\"Extract tool-level inputs with session and tool context.\n\n        Note: spans are not scoped by parent_span_id, so nested agent-as-tool traces\n        may leak child-agent internals into the parent's history.\n        \"\"\"\n        evaluator_inputs: list[ToolLevelInput] = []\n        session_history: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n        available_tools: list[ToolConfig] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            # Determine root agent for session history\n            agent_span: AgentInvocationSpan | None = None\n            if agent_spans:\n                agent_span = _find_root_agent_span(agent_spans)\n\n                if agent_span and agent_span.available_tools:\n                    available_tools = agent_span.available_tools\n                if agent_span and agent_span.user_prompt:\n                    session_history.append(UserMessage(content=[TextContent(text=agent_span.user_prompt)]))\n\n            # Build agent lookup for multi-agent scoping\n            agent_by_id = {s.span_info.span_id: s for s in agent_spans if s.span_info.span_id}\n\n            tool_executions = [\n                ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result) for span in tool_spans\n            ]\n            tool_end_times = [\n                max(_to_aware_utc(span.span_info.end_time), _to_aware_utc(span.span_info.start_time))\n                for span in tool_spans\n            ]\n\n            for index, tool_span in enumerate(tool_spans):\n                target_start = _to_aware_utc(tool_span.span_info.start_time)\n                prior_executions = [\n                    tool_executions[position]\n                    for position in range(len(tool_spans))\n                    if position != index\n                    and tool_end_times[position] <= target_start\n                    and (tool_end_times[position] < target_start or position < index)\n                ]\n\n                if tool_span.agent_span_id and len(agent_spans) > 1:\n                    owning_agent = agent_by_id.get(tool_span.agent_span_id)\n                    scoped_tools = owning_agent.available_tools if owning_agent and owning_agent.available_tools else []\n                else:\n                    scoped_tools = available_tools\n\n                evaluator_inputs.append(\n                    ToolLevelInput(\n                        span_info=tool_span.span_info,\n                        available_tools=scoped_tools,\n                        tool_execution_details=tool_span,\n                        session_history=list(session_history) + ([prior_executions] if prior_executions else []),\n                    )\n                )\n\n            if tool_spans:\n                session_history.append(tool_executions)\n\n            if agent_span and agent_span.agent_response:\n                session_history.append(AssistantMessage(content=[TextContent(text=agent_span.agent_response)]))\n\n        return evaluator_inputs\n\n    def _find_agent_invocation_spans(self, trace) -> list[AgentInvocationSpan]:\n        \"\"\"Find all AgentInvocationSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, AgentInvocationSpan)]\n\n    def _find_tool_execution_spans(self, trace) -> list[ToolExecutionSpan]:\n        \"\"\"Find all ToolExecutionSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, ToolExecutionSpan)]\n\n    def _extract_session_level(self, session: Session) -> SessionLevelInput:\n        \"\"\"Extract session-level input with full history.\"\"\"\n        session_history: list[Context] = []\n        available_tools: list[ToolConfig] = []\n        span_info: SpanInfo | None = None\n\n        for trace in session.traces:\n            tool_calls: list[ToolExecutionSpan] = []\n\n            for span in trace.spans:\n                if isinstance(span, ToolExecutionSpan):\n                    tool_calls.append(span)\n\n            for span in trace.spans:\n                if isinstance(span, AgentInvocationSpan):\n                    if not span_info:\n                        span_info = span.span_info\n                    if span.available_tools and not available_tools:\n                        available_tools = span.available_tools\n\n                    tool_executions = (\n                        [ToolExecution(tool_call=tc.tool_call, tool_result=tc.tool_result) for tc in tool_calls]\n                        if tool_calls\n                        else None\n                    )\n\n                    session_history.append(\n                        Context(\n                            user_prompt=TextContent(text=span.user_prompt),\n                            agent_response=TextContent(text=span.agent_response),\n                            tool_execution_history=tool_executions,\n                        )\n                    )\n\n        if not span_info:\n            raise ValueError(\"No AgentInvocationSpan found in session\")\n\n        return SessionLevelInput(\n            span_info=span_info,\n            session_history=session_history,\n            available_tools=available_tools if available_tools else None,\n        )\n80:class SpanInfo(BaseModel):\n81-    trace_id: str | None = None\n82-    span_id: str | None = None\n83-    session_id: str\n84-    parent_span_id: str | None = None\n85-    start_time: datetime\n86-    end_time: datetime\n87-\n88-    @field_serializer(\"start_time\", \"end_time\")\n89-    def serialize_datetime_utc(self, dt: datetime) -> str:\n90-        \"\"\"Serialize datetime fields in UTC timezone with ISO format.\"\"\"\n91-        # Convert to UTC if timezone-aware, otherwise assume it's already UTC\n92-        if dt.tzinfo is not None:\n93-            utc_dt = dt.astimezone(timezone.utc)\n94-        else:\n95-            utc_dt = dt.replace(tzinfo=timezone.utc)\n96-        # Return ISO format string with 'Z' suffix for UTC\n97-        return utc_dt.strftime(\"%Y-%m-%dT%H:%M:%S.%fZ\")\n98-\n99-\n100-class BaseSpan(BaseModel):\n101-    span_info: SpanInfo\n102-    metadata: dict | None = {}\n--\n117:class AgentInvocationSpan(BaseSpan):\n118-    span_type: SpanType = SpanType.AGENT_INVOCATION\n119-    user_prompt: str\n120-    agent_response: str\n121-    available_tools: list[ToolConfig]\n122-    system_prompt: str | None = None\n123-\n124-\n125-SpanUnion: TypeAlias = InferenceSpan | ToolExecutionSpan | AgentInvocationSpan\n126-\n127-\n128-def _to_aware_utc(dt: datetime) -> datetime:\n129-    \"\"\"Normalize a datetime to timezone-aware UTC.\"\"\"\n130-    if dt.tzinfo is None:\n131-        return dt.replace(tzinfo=timezone.utc)\n132-    return dt\n133-\n134-\n135-def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n136-    \"\"\"Search for a trace's root agent span.\n137-\n138-    Prefers a parentless agent that has content, then any parentless agent,\n139-    then the earliest by `start_time`. Returns `None` for an empty sequence.\n\n[stdout]\nimport logging\n\nfrom ..types.trace import (\n    AgentInvocationSpan,\n    AssistantMessage,\n    Context,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    TextContent,\n    ToolConfig,\n    ToolExecution,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    TraceLevelInput,\n    UserMessage,\n    _find_root_agent_span,\n    _to_aware_utc,\n)\n\nlogger = logging.getLogger(__name__)\n\n\nclass TraceExtractor:\n    \"\"\"Extracts structured evaluation inputs from Session traces.\"\"\"\n\n    def __init__(self, evaluation_level: EvaluationLevel):\n        self.evaluation_level = evaluation_level\n\n    def extract(self, session: Session) -> list[TraceLevelInput] | list[ToolLevelInput] | SessionLevelInput:\n        \"\"\"Extract evaluation inputs based on configured level.\"\"\"\n        if not isinstance(session, Session):\n            raise TypeError(f\"Expected Session object, got {type(session).__name__}\")\n\n        if self.evaluation_level == EvaluationLevel.TRACE_LEVEL:\n            return self._extract_trace_level(session)\n        elif self.evaluation_level == EvaluationLevel.TOOL_LEVEL:\n            return self._extract_tool_level(session)\n        elif self.evaluation_level == EvaluationLevel.SESSION_LEVEL:\n            return self._extract_session_level(session)\n        else:\n            raise ValueError(f\"Unsupported evaluation level: {self.evaluation_level}\")\n\n    def _extract_trace_level(self, session: Session) -> list[TraceLevelInput]:\n        \"\"\"Extract trace-level inputs with session history up to each turn.\"\"\"\n        evaluation_inputs: list[TraceLevelInput] = []\n        previous_turns: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            for span in agent_spans:\n                try:\n                    text_content = TextContent(text=span.user_prompt)\n                    previous_turns.append(UserMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create user message: {e}\")\n                    continue\n\n                # Include only tool executions owned by this agent\n                ownership_assigned = any(ts.agent_span_id for ts in tool_spans)\n                if len(agent_spans) > 1 and ownership_assigned:\n                    owned_tools = [ts for ts in tool_spans if ts.agent_span_id == span.span_info.span_id]\n                else:\n                    owned_tools = tool_spans\n\n                if owned_tools:\n                    try:\n                        tool_executions = [\n                            ToolExecution(tool_call=ts.tool_call, tool_result=ts.tool_result) for ts in owned_tools\n                        ]\n                        previous_turns.append(tool_executions)\n                    except (AttributeError, TypeError, ValueError) as e:\n                        logger.warning(f\"Failed to create tool executions: {e}\")\n\n                trace_input = TraceLevelInput(\n                    span_info=span.span_info,\n                    agent_response=TextContent(text=span.agent_response),\n                    session_history=list(previous_turns),\n                )\n                evaluation_inputs.append(trace_input)\n\n                try:\n                    text_content = TextContent(text=span.agent_response)\n                    previous_turns.append(AssistantMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create assistant message: {e}\")\n\n        return evaluation_inputs\n\n    def _extract_tool_level(self, session: Session) -> list[ToolLevelInput]:\n        \"\"\"Extract tool-level inputs with session and tool context.\n\n        Note: spans are not scoped by parent_span_id, so nested agent-as-tool traces\n        may leak child-agent internals into the parent's history.\n        \"\"\"\n        evaluator_inputs: list[ToolLevelInput] = []\n        session_history: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n        available_tools: list[ToolConfig] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            # Determine root agent for session history\n            agent_span: AgentInvocationSpan | None = None\n            if agent_spans:\n                agent_span = _find_root_agent_span(agent_spans)\n\n                if agent_span and agent_span.available_tools:\n                    available_tools = agent_span.available_tools\n                if agent_span and agent_span.user_prompt:\n                    session_history.append(UserMessage(content=[TextContent(text=agent_span.user_prompt)]))\n\n            # Build agent lookup for multi-agent scoping\n            agent_by_id = {s.span_info.span_id: s for s in agent_spans if s.span_info.span_id}\n\n            tool_executions = [\n                ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result) for span in tool_spans\n            ]\n            tool_end_times = [\n                max(_to_aware_utc(span.span_info.end_time), _to_aware_utc(span.span_info.start_time))\n                for span in tool_spans\n            ]\n\n            for index, tool_span in enumerate(tool_spans):\n                target_start = _to_aware_utc(tool_span.span_info.start_time)\n                prior_executions = [\n                    tool_executions[position]\n                    for position in range(len(tool_spans))\n                    if position != index\n                    and tool_end_times[position] <= target_start\n                    and (tool_end_times[position] < target_start or position < index)\n                ]\n\n                if tool_span.agent_span_id and len(agent_spans) > 1:\n                    owning_agent = agent_by_id.get(tool_span.agent_span_id)\n                    scoped_tools = owning_agent.available_tools if owning_agent and owning_agent.available_tools else []\n                else:\n                    scoped_tools = available_tools\n\n                evaluator_inputs.append(\n                    ToolLevelInput(\n                        span_info=tool_span.span_info,\n                        available_tools=scoped_tools,\n                        tool_execution_details=tool_span,\n                        session_history=list(session_history) + ([prior_executions] if prior_executions else []),\n                    )\n                )\n\n            if tool_spans:\n                session_history.append(tool_executions)\n\n            if agent_span and agent_span.agent_response:\n                session_history.append(AssistantMessage(content=[TextContent(text=agent_span.agent_response)]))\n\n        return evaluator_inputs\n\n    def _find_agent_invocation_spans(self, trace) -> list[AgentInvocationSpan]:\n        \"\"\"Find all AgentInvocationSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, AgentInvocationSpan)]\n\n    def _find_tool_execution_spans(self, trace) -> list[ToolExecutionSpan]:\n        \"\"\"Find all ToolExecutionSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, ToolExecutionSpan)]\n\n    def _extract_session_level(self, session: Session) -> SessionLevelInput:\n        \"\"\"Extract session-level input with full history.\"\"\"\n        session_history: list[Context] = []\n        available_tools: list[ToolConfig] = []\n        span_info: SpanInfo | None = None\n\n        for trace in session.traces:\n            tool_calls: list[ToolExecutionSpan] = []\n\n            for span in trace.spans:\n                if isinstance(span, ToolExecutionSpan):\n                    tool_calls.append(span)\n\n            for span in trace.spans:\n                if isinstance(span, AgentInvocationSpan):\n                    if not span_info:\n                        span_info = span.span_info\n                    if span.available_tools and not available_tools:\n                        available_tools = span.available_tools\n\n                    tool_executions = (\n                        [ToolExecution(tool_call=tc.tool_call, tool_result=tc.tool_result) for tc in tool_calls]\n                        if tool_calls\n                        else None\n                    )\n\n                    session_history.append(\n                        Context(\n                            user_prompt=TextContent(text=span.user_prompt),\n                            agent_response=TextContent(text=span.agent_response),\n                            tool_execution_history=tool_executions,\n                        )\n                    )\n\n        if not span_info:\n            raise ValueError(\"No AgentInvocationSpan found in session\")\n\n        return SessionLevelInput(\n            span_info=span_info,\n            session_history=session_history,\n            available_tools=available_tools if available_tools else None,\n        )\n80:class SpanInfo(BaseModel):\n81-    trace_id: str | None = None\n82-    span_id: str | None = None\n83-    session_id: str\n84-    parent_span_id: str | None = None\n85-    start_time: datetime\n86-    end_time: datetime\n87-\n88-    @field_serializer(\"start_time\", \"end_time\")\n89-    def serialize_datetime_utc(self, dt: datetime) -> str:\n90-        \"\"\"Serialize datetime fields in UTC timezone with ISO format.\"\"\"\n91-        # Convert to UTC if timezone-aware, otherwise assume it's already UTC\n92-        if dt.tzinfo is not None:\n93-            utc_dt = dt.astimezone(timezone.utc)\n94-        else:\n95-            utc_dt = dt.replace(tzinfo=timezone.utc)\n96-        # Return ISO format string with 'Z' suffix for UTC\n97-        return utc_dt.strftime(\"%Y-%m-%dT%H:%M:%S.%fZ\")\n98-\n99-\n100-class BaseSpan(BaseModel):\n101-    span_info: SpanInfo\n102-    metadata: dict | None = {}\n--\n117:class AgentInvocationSpan(BaseSpan):\n118-    span_type: SpanType = SpanType.AGENT_INVOCATION\n119-    user_prompt: str\n120-    agent_response: str\n121-    available_tools: list[ToolConfig]\n122-    system_prompt: str | None = None\n123-\n124-\n125-SpanUnion: TypeAlias = InferenceSpan | ToolExecutionSpan | AgentInvocationSpan\n126-\n127-\n128-def _to_aware_utc(dt: datetime) -> datetime:\n129-    \"\"\"Normalize a datetime to timezone-aware UTC.\"\"\"\n130-    if dt.tzinfo is None:\n131-        return dt.replace(tzinfo=timezone.utc)\n132-    return dt\n133-\n134-\n135-def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n136-    \"\"\"Search for a trace's root agent span.\n137-\n138-    Prefers a parentless agent that has content, then any parentless agent,\n139-    then the earliest by `start_time`. Returns `None` for an empty sequence.\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "import logging\n\nfrom ..types.trace import (\n    AgentInvocationSpan,\n    AssistantMessage,\n    Context,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    TextContent,\n    ToolConfig,\n    ToolExecution,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    TraceLevelInput,\n    UserMessage,\n    _find_root_agent_span,\n    _to_aware_utc,\n)\n\nlogger = logging.getLogger(__name__)\n\n\nclass TraceExtractor:\n    \"\"\"Extracts structured evaluation inputs from Session traces.\"\"\"\n\n    def __init__(self, evaluation_level: EvaluationLevel):\n        self.evaluation_level = evaluation_level\n\n    def extract(self, session: Session) -> list[TraceLevelInput] | list[ToolLevelInput] | SessionLevelInput:\n        \"\"\"Extract evaluation inputs based on configured level.\"\"\"\n        if not isinstance(session, Session):\n            raise TypeError(f\"Expected Session object, got {type(session).__name__}\")\n\n        if self.evaluation_level == EvaluationLevel.TRACE_LEVEL:\n            return self._extract_trace_level(session)\n        elif self.evaluation_level == EvaluationLevel.TOOL_LEVEL:\n            return self._extract_tool_level(session)\n        elif self.evaluation_level == EvaluationLevel.SESSION_LEVEL:\n            return self._extract_session_level(session)\n        else:\n            raise ValueError(f\"Unsupported evaluation level: {self.evaluation_level}\")\n\n    def _extract_trace_level(self, session: Session) -> list[TraceLevelInput]:\n        \"\"\"Extract trace-level inputs with session history up to each turn.\"\"\"\n        evaluation_inputs: list[TraceLevelInput] = []\n        previous_turns: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            for span in agent_spans:\n                try:\n                    text_content = TextContent(text=span.user_prompt)\n                    previous_turns.append(UserMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create user message: {e}\")\n                    continue\n\n                # Include only tool executions owned by this agent\n                ownership_assigned = any(ts.agent_span_id for ts in tool_spans)\n                if len(agent_spans) > 1 and ownership_assigned:\n                    owned_tools = [ts for ts in tool_spans if ts.agent_span_id == span.span_info.span_id]\n                else:\n                    owned_tools = tool_spans\n\n                if owned_tools:\n                    try:\n                        tool_executions = [\n                            ToolExecution(tool_call=ts.tool_call, tool_result=ts.tool_result) for ts in owned_tools\n                        ]\n                        previous_turns.append(tool_executions)\n                    except (AttributeError, TypeError, ValueError) as e:\n                        logger.warning(f\"Failed to create tool executions: {e}\")\n\n                trace_input = TraceLevelInput(\n                    span_info=span.span_info,\n                    agent_response=TextContent(text=span.agent_response),\n                    session_history=list(previous_turns),\n                )\n                evaluation_inputs.append(trace_input)\n\n                try:\n                    text_content = TextContent(text=span.agent_response)\n                    previous_turns.append(AssistantMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create assistant message: {e}\")\n\n        return evaluation_inputs\n\n    def _extract_tool_level(self, session: Session) -> list[ToolLevelInput]:\n        \"\"\"Extract tool-level inputs with session and tool context.\n\n        Note: spans are not scoped by parent_span_id, so nested agent-as-tool traces\n        may leak child-agent internals into the parent's history.\n        \"\"\"\n        evaluator_inputs: list[ToolLevelInput] = []\n        session_history: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n        available_tools: list[ToolConfig] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            # Determine root agent for session history\n            agent_span: AgentInvocationSpan | None = None\n            if agent_spans:\n                agent_span = _find_root_agent_span(agent_spans)\n\n                if agent_span and agent_span.available_tools:\n                    available_tools = agent_span.available_tools\n                if agent_span and agent_span.user_prompt:\n                    session_history.append(UserMessage(content=[TextContent(text=agent_span.user_prompt)]))\n\n            # Build agent lookup for multi-agent scoping\n            agent_by_id = {s.span_info.span_id: s for s in agent_spans if s.span_info.span_id}\n\n            tool_executions = [\n                ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result) for span in tool_spans\n            ]\n            tool_end_times = [\n                max(_to_aware_utc(span.span_info.end_time), _to_aware_utc(span.span_info.start_time))\n                for span in tool_spans\n            ]\n\n            for index, tool_span in enumerate(tool_spans):\n                target_start = _to_aware_utc(tool_span.span_info.start_time)\n                prior_executions = [\n                    tool_executions[position]\n                    for position in range(len(tool_spans))\n                    if position != index\n                    and tool_end_times[position] <= target_start\n                    and (tool_end_times[position] < target_start or position < index)\n                ]\n\n                if tool_span.agent_span_id and len(agent_spans) > 1:\n                    owning_agent = agent_by_id.get(tool_span.agent_span_id)\n                    scoped_tools = owning_agent.available_tools if owning_agent and owning_agent.available_tools else []\n                else:\n                    scoped_tools = available_tools\n\n                evaluator_inputs.append(\n                    ToolLevelInput(\n                        span_info=tool_span.span_info,\n                        available_tools=scoped_tools,\n                        tool_execution_details=tool_span,\n                        session_history=list(session_history) + ([prior_executions] if prior_executions else []),\n                    )\n                )\n\n            if tool_spans:\n                session_history.append(tool_executions)\n\n            if agent_span and agent_span.agent_response:\n                session_history.append(AssistantMessage(content=[TextContent(text=agent_span.agent_response)]))\n\n        return evaluator_inputs\n\n    def _find_agent_invocation_spans(self, trace) -> list[AgentInvocationSpan]:\n        \"\"\"Find all AgentInvocationSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, AgentInvocationSpan)]\n\n    def _find_tool_execution_spans(self, trace) -> list[ToolExecutionSpan]:\n        \"\"\"Find all ToolExecutionSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, ToolExecutionSpan)]\n\n    def _extract_session_level(self, session: Session) -> SessionLevelInput:\n        \"\"\"Extract session-level input with full history.\"\"\"\n        session_history: list[Context] = []\n        available_tools: list[ToolConfig] = []\n        span_info: SpanInfo | None = None\n\n        for trace in session.traces:\n            tool_calls: list[ToolExecutionSpan] = []\n\n            for span in trace.spans:\n                if isinstance(span, ToolExecutionSpan):\n                    tool_calls.append(span)\n\n            for span in trace.spans:\n                if isinstance(span, AgentInvocationSpan):\n                    if not span_info:\n                        span_info = span.span_info\n                    if span.available_tools and not available_tools:\n                        available_tools = span.available_tools\n\n                    tool_executions = (\n                        [ToolExecution(tool_call=tc.tool_call, tool_result=tc.tool_result) for tc in tool_calls]\n                        if tool_calls\n                        else None\n                    )\n\n                    session_history.append(\n                        Context(\n                            user_prompt=TextContent(text=span.user_prompt),\n                            agent_response=TextContent(text=span.agent_response),\n                            tool_execution_history=tool_executions,\n                        )\n                    )\n\n        if not span_info:\n            raise ValueError(\"No AgentInvocationSpan found in session\")\n\n        return SessionLevelInput(\n            span_info=span_info,\n            session_history=session_history,\n            available_tools=available_tools if available_tools else None,\n        )\n80:class SpanInfo(BaseModel):\n81-    trace_id: str | None = None\n82-    span_id: str | None = None\n83-    session_id: str\n84-    parent_span_id: str | None = None\n85-    start_time: datetime\n86-    end_time: datetime\n87-\n88-    @field_serializer(\"start_time\", \"end_time\")\n89-    def serialize_datetime_utc(self, dt: datetime) -> str:\n90-        \"\"\"Serialize datetime fields in UTC timezone with ISO format.\"\"\"\n91-        # Convert to UTC if timezone-aware, otherwise assume it's already UTC\n92-        if dt.tzinfo is not None:\n93-            utc_dt = dt.astimezone(timezone.utc)\n94-        else:\n95-            utc_dt = dt.replace(tzinfo=timezone.utc)\n96-        # Return ISO format string with 'Z' suffix for UTC\n97-        return utc_dt.strftime(\"%Y-%m-%dT%H:%M:%S.%fZ\")\n98-\n99-\n100-class BaseSpan(BaseModel):\n101-    span_info: SpanInfo\n102-    metadata: dict | None = {}\n--\n117:class AgentInvocationSpan(BaseSpan):\n118-    span_type: SpanType = SpanType.AGENT_INVOCATION\n119-    user_prompt: str\n120-    agent_response: str\n121-    available_tools: list[ToolConfig]\n122-    system_prompt: str | None = None\n123-\n124-\n125-SpanUnion: TypeAlias = InferenceSpan | ToolExecutionSpan | AgentInvocationSpan\n126-\n127-\n128-def _to_aware_utc(dt: datetime) -> datetime:\n129-    \"\"\"Normalize a datetime to timezone-aware UTC.\"\"\"\n130-    if dt.tzinfo is None:\n131-        return dt.replace(tzinfo=timezone.utc)\n132-    return dt\n133-\n134-\n135-def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n136-    \"\"\"Search for a trace's root agent span.\n137-\n138-    Prefers a parentless agent that has content, then any parentless agent,\n139-    then the earliest by `start_time`. Returns `None` for an empty sequence.",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_01PrmPbjocKWMZMZV8zBfkxh",
+                  "type": "tool_result",
+                  "content": "import logging\n\nfrom ..types.trace import (\n    AgentInvocationSpan,\n    AssistantMessage,\n    Context,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    TextContent,\n    ToolConfig,\n    ToolExecution,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    TraceLevelInput,\n    UserMessage,\n    _find_root_agent_span,\n    _to_aware_utc,\n)\n\nlogger = logging.getLogger(__name__)\n\n\nclass TraceExtractor:\n    \"\"\"Extracts structured evaluation inputs from Session traces.\"\"\"\n\n    def __init__(self, evaluation_level: EvaluationLevel):\n        self.evaluation_level = evaluation_level\n\n    def extract(self, session: Session) -> list[TraceLevelInput] | list[ToolLevelInput] | SessionLevelInput:\n        \"\"\"Extract evaluation inputs based on configured level.\"\"\"\n        if not isinstance(session, Session):\n            raise TypeError(f\"Expected Session object, got {type(session).__name__}\")\n\n        if self.evaluation_level == EvaluationLevel.TRACE_LEVEL:\n            return self._extract_trace_level(session)\n        elif self.evaluation_level == EvaluationLevel.TOOL_LEVEL:\n            return self._extract_tool_level(session)\n        elif self.evaluation_level == EvaluationLevel.SESSION_LEVEL:\n            return self._extract_session_level(session)\n        else:\n            raise ValueError(f\"Unsupported evaluation level: {self.evaluation_level}\")\n\n    def _extract_trace_level(self, session: Session) -> list[TraceLevelInput]:\n        \"\"\"Extract trace-level inputs with session history up to each turn.\"\"\"\n        evaluation_inputs: list[TraceLevelInput] = []\n        previous_turns: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            for span in agent_spans:\n                try:\n                    text_content = TextContent(text=span.user_prompt)\n                    previous_turns.append(UserMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create user message: {e}\")\n                    continue\n\n                # Include only tool executions owned by this agent\n                ownership_assigned = any(ts.agent_span_id for ts in tool_spans)\n                if len(agent_spans) > 1 and ownership_assigned:\n                    owned_tools = [ts for ts in tool_spans if ts.agent_span_id == span.span_info.span_id]\n                else:\n                    owned_tools = tool_spans\n\n                if owned_tools:\n                    try:\n                        tool_executions = [\n                            ToolExecution(tool_call=ts.tool_call, tool_result=ts.tool_result) for ts in owned_tools\n                        ]\n                        previous_turns.append(tool_executions)\n                    except (AttributeError, TypeError, ValueError) as e:\n                        logger.warning(f\"Failed to create tool executions: {e}\")\n\n                trace_input = TraceLevelInput(\n                    span_info=span.span_info,\n                    agent_response=TextContent(text=span.agent_response),\n                    session_history=list(previous_turns),\n                )\n                evaluation_inputs.append(trace_input)\n\n                try:\n                    text_content = TextContent(text=span.agent_response)\n                    previous_turns.append(AssistantMessage(content=[text_content]))\n                except (AttributeError, TypeError, ValueError) as e:\n                    logger.warning(f\"Failed to create assistant message: {e}\")\n\n        return evaluation_inputs\n\n    def _extract_tool_level(self, session: Session) -> list[ToolLevelInput]:\n        \"\"\"Extract tool-level inputs with session and tool context.\n\n        Note: spans are not scoped by parent_span_id, so nested agent-as-tool traces\n        may leak child-agent internals into the parent's history.\n        \"\"\"\n        evaluator_inputs: list[ToolLevelInput] = []\n        session_history: list[UserMessage | list[ToolExecution] | AssistantMessage] = []\n        available_tools: list[ToolConfig] = []\n\n        for trace in session.traces:\n            agent_spans = self._find_agent_invocation_spans(trace)\n            tool_spans = self._find_tool_execution_spans(trace)\n\n            # Determine root agent for session history\n            agent_span: AgentInvocationSpan | None = None\n            if agent_spans:\n                agent_span = _find_root_agent_span(agent_spans)\n\n                if agent_span and agent_span.available_tools:\n                    available_tools = agent_span.available_tools\n                if agent_span and agent_span.user_prompt:\n                    session_history.append(UserMessage(content=[TextContent(text=agent_span.user_prompt)]))\n\n            # Build agent lookup for multi-agent scoping\n            agent_by_id = {s.span_info.span_id: s for s in agent_spans if s.span_info.span_id}\n\n            tool_executions = [\n                ToolExecution(tool_call=span.tool_call, tool_result=span.tool_result) for span in tool_spans\n            ]\n            tool_end_times = [\n                max(_to_aware_utc(span.span_info.end_time), _to_aware_utc(span.span_info.start_time))\n                for span in tool_spans\n            ]\n\n            for index, tool_span in enumerate(tool_spans):\n                target_start = _to_aware_utc(tool_span.span_info.start_time)\n                prior_executions = [\n                    tool_executions[position]\n                    for position in range(len(tool_spans))\n                    if position != index\n                    and tool_end_times[position] <= target_start\n                    and (tool_end_times[position] < target_start or position < index)\n                ]\n\n                if tool_span.agent_span_id and len(agent_spans) > 1:\n                    owning_agent = agent_by_id.get(tool_span.agent_span_id)\n                    scoped_tools = owning_agent.available_tools if owning_agent and owning_agent.available_tools else []\n                else:\n                    scoped_tools = available_tools\n\n                evaluator_inputs.append(\n                    ToolLevelInput(\n                        span_info=tool_span.span_info,\n                        available_tools=scoped_tools,\n                        tool_execution_details=tool_span,\n                        session_history=list(session_history) + ([prior_executions] if prior_executions else []),\n                    )\n                )\n\n            if tool_spans:\n                session_history.append(tool_executions)\n\n            if agent_span and agent_span.agent_response:\n                session_history.append(AssistantMessage(content=[TextContent(text=agent_span.agent_response)]))\n\n        return evaluator_inputs\n\n    def _find_agent_invocation_spans(self, trace) -> list[AgentInvocationSpan]:\n        \"\"\"Find all AgentInvocationSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, AgentInvocationSpan)]\n\n    def _find_tool_execution_spans(self, trace) -> list[ToolExecutionSpan]:\n        \"\"\"Find all ToolExecutionSpans in a trace.\"\"\"\n        return [span for span in trace.spans if isinstance(span, ToolExecutionSpan)]\n\n    def _extract_session_level(self, session: Session) -> SessionLevelInput:\n        \"\"\"Extract session-level input with full history.\"\"\"\n        session_history: list[Context] = []\n        available_tools: list[ToolConfig] = []\n        span_info: SpanInfo | None = None\n\n        for trace in session.traces:\n            tool_calls: list[ToolExecutionSpan] = []\n\n            for span in trace.spans:\n                if isinstance(span, ToolExecutionSpan):\n                    tool_calls.append(span)\n\n            for span in trace.spans:\n                if isinstance(span, AgentInvocationSpan):\n                    if not span_info:\n                        span_info = span.span_info\n                    if span.available_tools and not available_tools:\n                        available_tools = span.available_tools\n\n                    tool_executions = (\n                        [ToolExecution(tool_call=tc.tool_call, tool_result=tc.tool_result) for tc in tool_calls]\n                        if tool_calls\n                        else None\n                    )\n\n                    session_history.append(\n                        Context(\n                            user_prompt=TextContent(text=span.user_prompt),\n                            agent_response=TextContent(text=span.agent_response),\n                            tool_execution_history=tool_executions,\n                        )\n                    )\n\n        if not span_info:\n            raise ValueError(\"No AgentInvocationSpan found in session\")\n\n        return SessionLevelInput(\n            span_info=span_info,\n            session_history=session_history,\n            available_tools=available_tools if available_tools else None,\n        )\n80:class SpanInfo(BaseModel):\n81-    trace_id: str | None = None\n82-    span_id: str | None = None\n83-    session_id: str\n84-    parent_span_id: str | None = None\n85-    start_time: datetime\n86-    end_time: datetime\n87-\n88-    @field_serializer(\"start_time\", \"end_time\")\n89-    def serialize_datetime_utc(self, dt: datetime) -> str:\n90-        \"\"\"Serialize datetime fields in UTC timezone with ISO format.\"\"\"\n91-        # Convert to UTC if timezone-aware, otherwise assume it's already UTC\n92-        if dt.tzinfo is not None:\n93-            utc_dt = dt.astimezone(timezone.utc)\n94-        else:\n95-            utc_dt = dt.replace(tzinfo=timezone.utc)\n96-        # Return ISO format string with 'Z' suffix for UTC\n97-        return utc_dt.strftime(\"%Y-%m-%dT%H:%M:%S.%fZ\")\n98-\n99-\n100-class BaseSpan(BaseModel):\n101-    span_info: SpanInfo\n102-    metadata: dict | None = {}\n--\n117:class AgentInvocationSpan(BaseSpan):\n118-    span_type: SpanType = SpanType.AGENT_INVOCATION\n119-    user_prompt: str\n120-    agent_response: str\n121-    available_tools: list[ToolConfig]\n122-    system_prompt: str | None = None\n123-\n124-\n125-SpanUnion: TypeAlias = InferenceSpan | ToolExecutionSpan | AgentInvocationSpan\n126-\n127-\n128-def _to_aware_utc(dt: datetime) -> datetime:\n129-    \"\"\"Normalize a datetime to timezone-aware UTC.\"\"\"\n130-    if dt.tzinfo is None:\n131-        return dt.replace(tzinfo=timezone.utc)\n132-    return dt\n133-\n134-\n135-def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n136-    \"\"\"Search for a trace's root agent span.\n137-\n138-    Prefers a parentless agent that has content, then any parentless agent,\n139-    then the earliest by `start_time`. Returns `None` for an empty sequence.",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 32809,
+        "completion_tokens": 113,
+        "cached_tokens": 30963,
+        "cost_usd": 0.0088403,
+        "extra": {
+          "cache_creation_input_tokens": 1844,
+          "cache_read_input_tokens": 30963,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1844
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo/src/strands_evals"
+      }
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2026-11-18T06:05:45.036Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01LaSWwgUyEKGn77JHaHXV2i",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo/src/strands_evals; sed -n 135,175p types/trace.py; grep -rn \"_find_root_agent_span\" . | grep -v \"def \""
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo/src/strands_evals; sed -n 135,175p types/trace.py; grep -rn \"_find_root_agent_span\" . | grep -v \"def \""
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01LaSWwgUyEKGn77JHaHXV2i",
+            "content": "def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n    \"\"\"Search for a trace's root agent span.\n\n    Prefers a parentless agent that has content, then any parentless agent,\n    then the earliest by `start_time`. Returns `None` for an empty sequence.\n    \"\"\"\n    if not agent_spans:\n        return None\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None and (span.user_prompt or span.agent_response):\n            return span\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None:\n            return span\n    return min(agent_spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n\nclass Trace(BaseModel):\n    \"\"\"A single trace within a session.\n\n    A Trace may contain multiple ``AgentInvocationSpan`` instances in multi-agent systems.\n    \"\"\"\n\n    spans: list[SpanUnion]\n    trace_id: str\n    session_id: str\n\n    def model_post_init(self, __context: Any) -> None:\n        \"\"\"Assign agent_span_id on tool spans if not already set.\n\n        Note: mutates span objects in place; reusing a span across multiple\n        Trace constructions will keep the first assignment.\n        \"\"\"\n        tool_spans = [s for s in self.spans if isinstance(s, ToolExecutionSpan) and not s.agent_span_id]\n        if not tool_spans:\n            return\n\n        agent_spans = [s for s in self.spans if isinstance(s, AgentInvocationSpan) and s.span_info.span_id]\n        if not agent_spans:\n            return\n\nextractors/trace_extractor.py:18:    _find_root_agent_span,\nextractors/trace_extractor.py:110:                agent_span = _find_root_agent_span(agent_spans)\ntypes/trace.py:202:        root = _find_root_agent_span(agent_spans)\n\n[stdout]\ndef _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n    \"\"\"Search for a trace's root agent span.\n\n    Prefers a parentless agent that has content, then any parentless agent,\n    then the earliest by `start_time`. Returns `None` for an empty sequence.\n    \"\"\"\n    if not agent_spans:\n        return None\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None and (span.user_prompt or span.agent_response):\n            return span\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None:\n            return span\n    return min(agent_spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n\nclass Trace(BaseModel):\n    \"\"\"A single trace within a session.\n\n    A Trace may contain multiple ``AgentInvocationSpan`` instances in multi-agent systems.\n    \"\"\"\n\n    spans: list[SpanUnion]\n    trace_id: str\n    session_id: str\n\n    def model_post_init(self, __context: Any) -> None:\n        \"\"\"Assign agent_span_id on tool spans if not already set.\n\n        Note: mutates span objects in place; reusing a span across multiple\n        Trace constructions will keep the first assignment.\n        \"\"\"\n        tool_spans = [s for s in self.spans if isinstance(s, ToolExecutionSpan) and not s.agent_span_id]\n        if not tool_spans:\n            return\n\n        agent_spans = [s for s in self.spans if isinstance(s, AgentInvocationSpan) and s.span_info.span_id]\n        if not agent_spans:\n            return\n\nextractors/trace_extractor.py:18:    _find_root_agent_span,\nextractors/trace_extractor.py:110:                agent_span = _find_root_agent_span(agent_spans)\ntypes/trace.py:202:        root = _find_root_agent_span(agent_spans)\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n    \"\"\"Search for a trace's root agent span.\n\n    Prefers a parentless agent that has content, then any parentless agent,\n    then the earliest by `start_time`. Returns `None` for an empty sequence.\n    \"\"\"\n    if not agent_spans:\n        return None\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None and (span.user_prompt or span.agent_response):\n            return span\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None:\n            return span\n    return min(agent_spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n\nclass Trace(BaseModel):\n    \"\"\"A single trace within a session.\n\n    A Trace may contain multiple ``AgentInvocationSpan`` instances in multi-agent systems.\n    \"\"\"\n\n    spans: list[SpanUnion]\n    trace_id: str\n    session_id: str\n\n    def model_post_init(self, __context: Any) -> None:\n        \"\"\"Assign agent_span_id on tool spans if not already set.\n\n        Note: mutates span objects in place; reusing a span across multiple\n        Trace constructions will keep the first assignment.\n        \"\"\"\n        tool_spans = [s for s in self.spans if isinstance(s, ToolExecutionSpan) and not s.agent_span_id]\n        if not tool_spans:\n            return\n\n        agent_spans = [s for s in self.spans if isinstance(s, AgentInvocationSpan) and s.span_info.span_id]\n        if not agent_spans:\n            return\n\nextractors/trace_extractor.py:18:    _find_root_agent_span,\nextractors/trace_extractor.py:110:                agent_span = _find_root_agent_span(agent_spans)\ntypes/trace.py:202:        root = _find_root_agent_span(agent_spans)",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_01LaSWwgUyEKGn77JHaHXV2i",
+                  "type": "tool_result",
+                  "content": "def _find_root_agent_span(agent_spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan | None:\n    \"\"\"Search for a trace's root agent span.\n\n    Prefers a parentless agent that has content, then any parentless agent,\n    then the earliest by `start_time`. Returns `None` for an empty sequence.\n    \"\"\"\n    if not agent_spans:\n        return None\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None and (span.user_prompt or span.agent_response):\n            return span\n    for span in agent_spans:\n        if span.span_info.parent_span_id is None:\n            return span\n    return min(agent_spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n\nclass Trace(BaseModel):\n    \"\"\"A single trace within a session.\n\n    A Trace may contain multiple ``AgentInvocationSpan`` instances in multi-agent systems.\n    \"\"\"\n\n    spans: list[SpanUnion]\n    trace_id: str\n    session_id: str\n\n    def model_post_init(self, __context: Any) -> None:\n        \"\"\"Assign agent_span_id on tool spans if not already set.\n\n        Note: mutates span objects in place; reusing a span across multiple\n        Trace constructions will keep the first assignment.\n        \"\"\"\n        tool_spans = [s for s in self.spans if isinstance(s, ToolExecutionSpan) and not s.agent_span_id]\n        if not tool_spans:\n            return\n\n        agent_spans = [s for s in self.spans if isinstance(s, AgentInvocationSpan) and s.span_info.span_id]\n        if not agent_spans:\n            return\n\nextractors/trace_extractor.py:18:    _find_root_agent_span,\nextractors/trace_extractor.py:110:                agent_span = _find_root_agent_span(agent_spans)\ntypes/trace.py:202:        root = _find_root_agent_span(agent_spans)",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 36742,
+        "completion_tokens": 103,
+        "cached_tokens": 32807,
+        "cost_usd": 0.0141472,
+        "extra": {
+          "cache_creation_input_tokens": 3933,
+          "cache_read_input_tokens": 32807,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 3933
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo/src/strands_evals"
+      }
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2026-11-18T06:05:46.475Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01KZ5iT7jjTxH4csdxs2ZHTG",
+          "function_name": "bash",
+          "arguments": {
+            "command": "cd /work/repo/src/strands_evals; python - <<'E'\np='types/trace.py'\ns=open(p).read()\na=s.index(\"    if not agent_spans:\\n        return None\\n    for span in agent_spans:\")\nb=s.index(\"class Trace(BaseModel)\")\nnew='''    if not agent_spans:\n        return None\n\n    def earliest(spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan:\n        # min() is stable, so ties keep the original list order\n        return min(spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n    parentless = [s for s in agent_spans if s.span_info.parent_span_id is None]\n    with_content = [s for s in parentless if s.user_prompt or s.agent_response]\n    if with_content:\n        return earliest(with_content)\n    if parentless:\n        return earliest(parentless)\n    return earliest(agent_spans)\n\n\n'''\ns=s[:a]+new+s[b:]\ns=s.replace(\"Prefers a parentless agent that has content, then any parentless agent,\\n    then the earliest by `start_time`.\",\"Prefers a parentless agent that has content, then any parentless agent,\\n    then any agent; the earliest by `start_time` wins within each tier, so the\\n    result does not depend on span order.\")\nopen(p,'w').write(s)\nE\nsed -n 195,225p types/trace.py; cd /work/repo; python -m pytest tests -q -x 2>&1 | tail -4"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo/src/strands_evals; python - <<'E'\np='types/trace.py'\ns=open(p).read()\na=s.index(\"    if not agent_spans:\\n        return None\\n    for span in agent_spans:\")\nb=s.index(\"class Trace(BaseModel)\")\nnew='''    if not agent_spans:\n        return None\n\n    def earliest(spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan:\n        # min() is stable, so ties keep the original list order\n        return min(spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n    parentless = [s for s in agent_spans if s.span_info.parent_span_id is None]\n    with_content = [s for s in parentless if s.user_prompt or s.agent_response]\n    if with_content:\n        return earliest(with_content)\n    if parentless:\n        return earliest(parentless)\n    return earliest(agent_spans)\n\n\n'''\ns=s[:a]+new+s[b:]\ns=s.replace(\"Prefers a parentless agent that has content, then any parentless agent,\\n    then the earliest by `start_time`.\",\"Prefers a parentless agent that has content, then any parentless agent,\\n    then any agent; the earliest by `start_time` wins within each tier, so the\\n    result does not depend on span order.\")\nopen(p,'w').write(s)\nE\nsed -n 195,225p types/trace.py; cd /work/repo; python -m pytest tests -q -x 2>&1 | tail -4"
+            },
+            "tool_use_name": "bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01KZ5iT7jjTxH4csdxs2ZHTG",
+            "content": "<tool_use_error>Error: No such tool available: bash. Tool names are case-sensitive: call Bash instead.</tool_use_error>\n\n[error] tool reported failure",
+            "extra": {
+              "tool_result_metadata": {
+                "is_error": true,
+                "raw_tool_result": {
+                  "type": "tool_result",
+                  "content": "<tool_use_error>Error: No such tool available: bash. Tool names are case-sensitive: call Bash instead.</tool_use_error>",
+                  "is_error": true,
+                  "tool_use_id": "toolu_bdrk_01KZ5iT7jjTxH4csdxs2ZHTG"
+                }
+              },
+              "tool_result_is_error": true
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 37494,
+        "completion_tokens": 614,
+        "cached_tokens": 36740,
+        "cost_usd": 0.011698,
+        "extra": {
+          "cache_creation_input_tokens": 752,
+          "cache_read_input_tokens": 36740,
+          "output_tokens_details": {
+            "thinking_tokens": 64
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 752
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo/src/strands_evals"
+      }
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2026-11-18T06:05:51.846Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01PcjmJTZFtfo1ZUa2rNVdKw",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo/src/strands_evals; python - <<'E'\np='types/trace.py'\ns=open(p).read()\na=s.index(\"    if not agent_spans:\\n        return None\\n    for span in agent_spans:\")\nb=s.index(\"class Trace(BaseModel)\")\nnew='''    if not agent_spans:\n        return None\n\n    def earliest(spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan:\n        # min() is stable, so ties keep the original list order\n        return min(spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n    parentless = [s for s in agent_spans if s.span_info.parent_span_id is None]\n    with_content = [s for s in parentless if s.user_prompt or s.agent_response]\n    if with_content:\n        return earliest(with_content)\n    if parentless:\n        return earliest(parentless)\n    return earliest(agent_spans)\n\n\n'''\ns=s[:a]+new+s[b:]\ns=s.replace(\"Prefers a parentless agent that has content, then any parentless agent,\\n    then the earliest by `start_time`.\",\"Prefers a parentless agent that has content, then any parentless agent,\\n    then any agent; the earliest by `start_time` wins within each tier, so the\\n    result does not depend on span order.\")\nopen(p,'w').write(s)\nE\nsed -n 195,225p types/trace.py; cd /work/repo; python -m pytest tests -q -x 2>&1 | tail -4"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo/src/strands_evals; python - <<'E'\np='types/trace.py'\ns=open(p).read()\na=s.index(\"    if not agent_spans:\\n        return None\\n    for span in agent_spans:\")\nb=s.index(\"class Trace(BaseModel)\")\nnew='''    if not agent_spans:\n        return None\n\n    def earliest(spans: Sequence[AgentInvocationSpan]) -> AgentInvocationSpan:\n        # min() is stable, so ties keep the original list order\n        return min(spans, key=lambda s: _to_aware_utc(s.span_info.start_time))\n\n    parentless = [s for s in agent_spans if s.span_info.parent_span_id is None]\n    with_content = [s for s in parentless if s.user_prompt or s.agent_response]\n    if with_content:\n        return earliest(with_content)\n    if parentless:\n        return earliest(parentless)\n    return earliest(agent_spans)\n\n\n'''\ns=s[:a]+new+s[b:]\ns=s.replace(\"Prefers a parentless agent that has content, then any parentless agent,\\n    then the earliest by `start_time`.\",\"Prefers a parentless agent that has content, then any parentless agent,\\n    then any agent; the earliest by `start_time` wins within each tier, so the\\n    result does not depend on span order.\")\nopen(p,'w').write(s)\nE\nsed -n 195,225p types/trace.py; cd /work/repo; python -m pytest tests -q -x 2>&1 | tail -4"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01PcjmJTZFtfo1ZUa2rNVdKw",
+            "content": "span = stack.pop()\n                if id(span) in seen:\n                    continue\n                seen.add(id(span))\n                span_id = span.span_info.span_id\n                # Nested agent span owns its subtree\n                if isinstance(span, AgentInvocationSpan):\n                    continue\n                if isinstance(span, ToolExecutionSpan) and not span.agent_span_id:\n                    span.agent_span_id = agent_id\n                if span_id:\n                    stack.extend(spans_by_parent_id.get(span_id, []))\n\n        root = _find_root_agent_span(agent_spans)\n        root_id = root.span_info.span_id if root else None\n        for span in tool_spans:\n            if not span.agent_span_id:\n                span.agent_span_id = root_id\n\n\nclass Session(BaseModel):\n    traces: list[Trace]\n    session_id: str\n\n\nclass BaseEvaluationInput(BaseModel):\n    \"\"\"Base class for all evaluation inputs\"\"\"\n\n    span_info: SpanInfo\n\n\n    self.state_registry.initialize_state_via_description(initial_state_description, state_key)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1864 passed, 24 warnings in 100.20s (0:01:40)\n\n[stdout]\n                span = stack.pop()\n                if id(span) in seen:\n                    continue\n                seen.add(id(span))\n                span_id = span.span_info.span_id\n                # Nested agent span owns its subtree\n                if isinstance(span, AgentInvocationSpan):\n                    continue\n                if isinstance(span, ToolExecutionSpan) and not span.agent_span_id:\n                    span.agent_span_id = agent_id\n                if span_id:\n                    stack.extend(spans_by_parent_id.get(span_id, []))\n\n        root = _find_root_agent_span(agent_spans)\n        root_id = root.span_info.span_id if root else None\n        for span in tool_spans:\n            if not span.agent_span_id:\n                span.agent_span_id = root_id\n\n\nclass Session(BaseModel):\n    traces: list[Trace]\n    session_id: str\n\n\nclass BaseEvaluationInput(BaseModel):\n    \"\"\"Base class for all evaluation inputs\"\"\"\n\n    span_info: SpanInfo\n\n\n    self.state_registry.initialize_state_via_description(initial_state_description, state_key)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1864 passed, 24 warnings in 100.20s (0:01:40)\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "                span = stack.pop()\n                if id(span) in seen:\n                    continue\n                seen.add(id(span))\n                span_id = span.span_info.span_id\n                # Nested agent span owns its subtree\n                if isinstance(span, AgentInvocationSpan):\n                    continue\n                if isinstance(span, ToolExecutionSpan) and not span.agent_span_id:\n                    span.agent_span_id = agent_id\n                if span_id:\n                    stack.extend(spans_by_parent_id.get(span_id, []))\n\n        root = _find_root_agent_span(agent_spans)\n        root_id = root.span_info.span_id if root else None\n        for span in tool_spans:\n            if not span.agent_span_id:\n                span.agent_span_id = root_id\n\n\nclass Session(BaseModel):\n    traces: list[Trace]\n    session_id: str\n\n\nclass BaseEvaluationInput(BaseModel):\n    \"\"\"Base class for all evaluation inputs\"\"\"\n\n    span_info: SpanInfo\n\n\n    self.state_registry.initialize_state_via_description(initial_state_description, state_key)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1864 passed, 24 warnings in 100.20s (0:01:40)",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_01PcjmJTZFtfo1ZUa2rNVdKw",
+                  "type": "tool_result",
+                  "content": "                span = stack.pop()\n                if id(span) in seen:\n                    continue\n                seen.add(id(span))\n                span_id = span.span_info.span_id\n                # Nested agent span owns its subtree\n                if isinstance(span, AgentInvocationSpan):\n                    continue\n                if isinstance(span, ToolExecutionSpan) and not span.agent_span_id:\n                    span.agent_span_id = agent_id\n                if span_id:\n                    stack.extend(spans_by_parent_id.get(span_id, []))\n\n        root = _find_root_agent_span(agent_spans)\n        root_id = root.span_info.span_id if root else None\n        for span in tool_spans:\n            if not span.agent_span_id:\n                span.agent_span_id = root_id\n\n\nclass Session(BaseModel):\n    traces: list[Trace]\n    session_id: str\n\n\nclass BaseEvaluationInput(BaseModel):\n    \"\"\"Base class for all evaluation inputs\"\"\"\n\n    span_info: SpanInfo\n\n\n    self.state_registry.initialize_state_via_description(initial_state_description, state_key)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1864 passed, 24 warnings in 100.20s (0:01:40)",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 38208,
+        "completion_tokens": 550,
+        "cached_tokens": 37492,
+        "cost_usd": 0.011038200000000001,
+        "extra": {
+          "cache_creation_input_tokens": 714,
+          "cache_read_input_tokens": 37492,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 714
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo/src/strands_evals"
+      }
+    },
+    {
+      "step_id": 8,
+      "timestamp": "2026-11-18T06:07:34.725Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "Now a regression test.",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_014KQa6hqTXLar5bX2PS8XgE",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo; ls tests/strands_evals/extractors tests/strands_evals/types; grep -n \"^def \\|^from\\|^import\\|^class \" tests/strands_evals/extractors/test_trace_extractor.py | head -30"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo; ls tests/strands_evals/extractors tests/strands_evals/types; grep -n \"^def \\|^from\\|^import\\|^class \" tests/strands_evals/extractors/test_trace_extractor.py | head -30"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_014KQa6hqTXLar5bX2PS8XgE",
+            "content": "tests/strands_evals/extractors:\n__pycache__\ntest_graph_extractor.py\ntest_swarm_extractor.py\ntest_tools_use_extractor.py\ntest_trace_extractor.py\n\ntests/strands_evals/types:\n__pycache__\ntest_evaluation_report.py\ntest_multimodal.py\ntest_trace.py\n1:from datetime import datetime, timezone\n3:import pytest\n5:from strands_evals.extractors import TraceExtractor\n6:from strands_evals.types.trace import (\n22:def _span_info(\n39:def session_with_conversation():\n58:def session_with_tools():\n77:def multi_agent_session():\n116:def test_trace_extractor_initialization():\n121:def test_extract_trace_level(session_with_conversation):\n132:def test_extract_trace_level_with_session_history(session_with_conversation):\n149:def test_extract_tool_level(session_with_tools):\n161:def test_extract_session_level(session_with_conversation):\n173:def test_extract_raises_on_invalid_session_type():\n180:def test_extract_raises_on_unsupported_level():\n186:def test_composability_multiple_extractors(session_with_conversation):\n198:def test_extract_empty_session_trace_level():\n208:def test_extract_empty_session_tool_level():\n218:def test_extract_tool_level_incremental_session_history():\n302:def test_extract_tool_level_mixed_tz_timestamps():\n375:def test_tool_ownership_resolves_to_nearest_agent(multi_agent_session):\n392:def test_trace_level_scopes_tools_per_agent(multi_agent_session):\n413:def test_span_id_none_does_not_collide():\n\n[stdout]\ntests/strands_evals/extractors:\n__pycache__\ntest_graph_extractor.py\ntest_swarm_extractor.py\ntest_tools_use_extractor.py\ntest_trace_extractor.py\n\ntests/strands_evals/types:\n__pycache__\ntest_evaluation_report.py\ntest_multimodal.py\ntest_trace.py\n1:from datetime import datetime, timezone\n3:import pytest\n5:from strands_evals.extractors import TraceExtractor\n6:from strands_evals.types.trace import (\n22:def _span_info(\n39:def session_with_conversation():\n58:def session_with_tools():\n77:def multi_agent_session():\n116:def test_trace_extractor_initialization():\n121:def test_extract_trace_level(session_with_conversation):\n132:def test_extract_trace_level_with_session_history(session_with_conversation):\n149:def test_extract_tool_level(session_with_tools):\n161:def test_extract_session_level(session_with_conversation):\n173:def test_extract_raises_on_invalid_session_type():\n180:def test_extract_raises_on_unsupported_level():\n186:def test_composability_multiple_extractors(session_with_conversation):\n198:def test_extract_empty_session_trace_level():\n208:def test_extract_empty_session_tool_level():\n218:def test_extract_tool_level_incremental_session_history():\n302:def test_extract_tool_level_mixed_tz_timestamps():\n375:def test_tool_ownership_resolves_to_nearest_agent(multi_agent_session):\n392:def test_trace_level_scopes_tools_per_agent(multi_agent_session):\n413:def test_span_id_none_does_not_collide():\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "tests/strands_evals/extractors:\n__pycache__\ntest_graph_extractor.py\ntest_swarm_extractor.py\ntest_tools_use_extractor.py\ntest_trace_extractor.py\n\ntests/strands_evals/types:\n__pycache__\ntest_evaluation_report.py\ntest_multimodal.py\ntest_trace.py\n1:from datetime import datetime, timezone\n3:import pytest\n5:from strands_evals.extractors import TraceExtractor\n6:from strands_evals.types.trace import (\n22:def _span_info(\n39:def session_with_conversation():\n58:def session_with_tools():\n77:def multi_agent_session():\n116:def test_trace_extractor_initialization():\n121:def test_extract_trace_level(session_with_conversation):\n132:def test_extract_trace_level_with_session_history(session_with_conversation):\n149:def test_extract_tool_level(session_with_tools):\n161:def test_extract_session_level(session_with_conversation):\n173:def test_extract_raises_on_invalid_session_type():\n180:def test_extract_raises_on_unsupported_level():\n186:def test_composability_multiple_extractors(session_with_conversation):\n198:def test_extract_empty_session_trace_level():\n208:def test_extract_empty_session_tool_level():\n218:def test_extract_tool_level_incremental_session_history():\n302:def test_extract_tool_level_mixed_tz_timestamps():\n375:def test_tool_ownership_resolves_to_nearest_agent(multi_agent_session):\n392:def test_trace_level_scopes_tools_per_agent(multi_agent_session):\n413:def test_span_id_none_does_not_collide():",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_014KQa6hqTXLar5bX2PS8XgE",
+                  "type": "tool_result",
+                  "content": "tests/strands_evals/extractors:\n__pycache__\ntest_graph_extractor.py\ntest_swarm_extractor.py\ntest_tools_use_extractor.py\ntest_trace_extractor.py\n\ntests/strands_evals/types:\n__pycache__\ntest_evaluation_report.py\ntest_multimodal.py\ntest_trace.py\n1:from datetime import datetime, timezone\n3:import pytest\n5:from strands_evals.extractors import TraceExtractor\n6:from strands_evals.types.trace import (\n22:def _span_info(\n39:def session_with_conversation():\n58:def session_with_tools():\n77:def multi_agent_session():\n116:def test_trace_extractor_initialization():\n121:def test_extract_trace_level(session_with_conversation):\n132:def test_extract_trace_level_with_session_history(session_with_conversation):\n149:def test_extract_tool_level(session_with_tools):\n161:def test_extract_session_level(session_with_conversation):\n173:def test_extract_raises_on_invalid_session_type():\n180:def test_extract_raises_on_unsupported_level():\n186:def test_composability_multiple_extractors(session_with_conversation):\n198:def test_extract_empty_session_trace_level():\n208:def test_extract_empty_session_tool_level():\n218:def test_extract_tool_level_incremental_session_history():\n302:def test_extract_tool_level_mixed_tz_timestamps():\n375:def test_tool_ownership_resolves_to_nearest_agent(multi_agent_session):\n392:def test_trace_level_scopes_tools_per_agent(multi_agent_session):\n413:def test_span_id_none_does_not_collide():",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 39220,
+        "completion_tokens": 134,
+        "cached_tokens": 38206,
+        "cost_usd": 0.0076946,
+        "extra": {
+          "cache_creation_input_tokens": 1012,
+          "cache_read_input_tokens": 38206,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1012
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo"
+      }
+    },
+    {
+      "step_id": 9,
+      "timestamp": "2026-11-18T06:07:36.555Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01WqY8xxxnSUf2JBQNfqgq4K",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo; sed -n 6,38p tests/strands_evals/extractors/test_trace_extractor.py; sed -n 77,115p tests/strands_evals/extractors/test_trace_extractor.py"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo; sed -n 6,38p tests/strands_evals/extractors/test_trace_extractor.py; sed -n 77,115p tests/strands_evals/extractors/test_trace_extractor.py"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01WqY8xxxnSUf2JBQNfqgq4K",
+            "content": "from strands_evals.types.trace import (\n    AgentInvocationSpan,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    ToolCall,\n    ToolConfig,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    ToolResult,\n    Trace,\n    TraceLevelInput,\n)\n\n\ndef _span_info(\n    span_id: str | None = None,\n    parent_span_id: str | None = None,\n    session_id: str = \"test\",\n) -> SpanInfo:\n    \"\"\"Helper to create a SpanInfo with minimal boilerplate.\"\"\"\n    now = datetime(2026, 1, 1, tzinfo=timezone.utc)\n    return SpanInfo(\n        session_id=session_id,\n        span_id=span_id,\n        parent_span_id=parent_span_id,\n        start_time=now,\n        end_time=now,\n    )\n\n\n@pytest.fixture\ndef multi_agent_session():\n    \"\"\"Coordinator delegates to a specialist with its own tools.\"\"\"\n    coordinator = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"coordinator\", parent_span_id=None),\n        user_prompt=\"sqrt(16) * 2 and weather in Paris\",\n        agent_response=\"8, sunny.\",\n        available_tools=[ToolConfig(name=\"ask_math\"), ToolConfig(name=\"ask_research\")],\n    )\n    math_agent = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"math-agent\", parent_span_id=\"coordinator\"),\n        user_prompt=\"sqrt(16) * 2\",\n        agent_response=\"8\",\n        available_tools=[ToolConfig(name=\"square_root\"), ToolConfig(name=\"multiply\")],\n    )\n    # Tool directly under coordinator (delegation call)\n    tool_delegate = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-delegate\", parent_span_id=\"coordinator\"),\n        tool_call=ToolCall(name=\"ask_math\", arguments={\"query\": \"sqrt(16)*2\"}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"coordinator\",\n    )\n    tool_sqrt = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-sqrt\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"square_root\", arguments={\"n\": 16}),\n        tool_result=ToolResult(content=\"4.0\"),\n        agent_span_id=\"math-agent\",\n    )\n    tool_mult = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-mult\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"multiply\", arguments={\"a\": 4, \"b\": 2}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"math-agent\",\n    )\n    trace = Trace(\n        spans=[coordinator, math_agent, tool_delegate, tool_sqrt, tool_mult], trace_id=\"t1\", session_id=\"test\"\n    )\n    return Session(traces=[trace], session_id=\"test\")\n\n[stdout]\nfrom strands_evals.types.trace import (\n    AgentInvocationSpan,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    ToolCall,\n    ToolConfig,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    ToolResult,\n    Trace,\n    TraceLevelInput,\n)\n\n\ndef _span_info(\n    span_id: str | None = None,\n    parent_span_id: str | None = None,\n    session_id: str = \"test\",\n) -> SpanInfo:\n    \"\"\"Helper to create a SpanInfo with minimal boilerplate.\"\"\"\n    now = datetime(2026, 1, 1, tzinfo=timezone.utc)\n    return SpanInfo(\n        session_id=session_id,\n        span_id=span_id,\n        parent_span_id=parent_span_id,\n        start_time=now,\n        end_time=now,\n    )\n\n\n@pytest.fixture\ndef multi_agent_session():\n    \"\"\"Coordinator delegates to a specialist with its own tools.\"\"\"\n    coordinator = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"coordinator\", parent_span_id=None),\n        user_prompt=\"sqrt(16) * 2 and weather in Paris\",\n        agent_response=\"8, sunny.\",\n        available_tools=[ToolConfig(name=\"ask_math\"), ToolConfig(name=\"ask_research\")],\n    )\n    math_agent = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"math-agent\", parent_span_id=\"coordinator\"),\n        user_prompt=\"sqrt(16) * 2\",\n        agent_response=\"8\",\n        available_tools=[ToolConfig(name=\"square_root\"), ToolConfig(name=\"multiply\")],\n    )\n    # Tool directly under coordinator (delegation call)\n    tool_delegate = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-delegate\", parent_span_id=\"coordinator\"),\n        tool_call=ToolCall(name=\"ask_math\", arguments={\"query\": \"sqrt(16)*2\"}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"coordinator\",\n    )\n    tool_sqrt = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-sqrt\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"square_root\", arguments={\"n\": 16}),\n        tool_result=ToolResult(content=\"4.0\"),\n        agent_span_id=\"math-agent\",\n    )\n    tool_mult = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-mult\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"multiply\", arguments={\"a\": 4, \"b\": 2}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"math-agent\",\n    )\n    trace = Trace(\n        spans=[coordinator, math_agent, tool_delegate, tool_sqrt, tool_mult], trace_id=\"t1\", session_id=\"test\"\n    )\n    return Session(traces=[trace], session_id=\"test\")\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "from strands_evals.types.trace import (\n    AgentInvocationSpan,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    ToolCall,\n    ToolConfig,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    ToolResult,\n    Trace,\n    TraceLevelInput,\n)\n\n\ndef _span_info(\n    span_id: str | None = None,\n    parent_span_id: str | None = None,\n    session_id: str = \"test\",\n) -> SpanInfo:\n    \"\"\"Helper to create a SpanInfo with minimal boilerplate.\"\"\"\n    now = datetime(2026, 1, 1, tzinfo=timezone.utc)\n    return SpanInfo(\n        session_id=session_id,\n        span_id=span_id,\n        parent_span_id=parent_span_id,\n        start_time=now,\n        end_time=now,\n    )\n\n\n@pytest.fixture\ndef multi_agent_session():\n    \"\"\"Coordinator delegates to a specialist with its own tools.\"\"\"\n    coordinator = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"coordinator\", parent_span_id=None),\n        user_prompt=\"sqrt(16) * 2 and weather in Paris\",\n        agent_response=\"8, sunny.\",\n        available_tools=[ToolConfig(name=\"ask_math\"), ToolConfig(name=\"ask_research\")],\n    )\n    math_agent = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"math-agent\", parent_span_id=\"coordinator\"),\n        user_prompt=\"sqrt(16) * 2\",\n        agent_response=\"8\",\n        available_tools=[ToolConfig(name=\"square_root\"), ToolConfig(name=\"multiply\")],\n    )\n    # Tool directly under coordinator (delegation call)\n    tool_delegate = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-delegate\", parent_span_id=\"coordinator\"),\n        tool_call=ToolCall(name=\"ask_math\", arguments={\"query\": \"sqrt(16)*2\"}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"coordinator\",\n    )\n    tool_sqrt = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-sqrt\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"square_root\", arguments={\"n\": 16}),\n        tool_result=ToolResult(content=\"4.0\"),\n        agent_span_id=\"math-agent\",\n    )\n    tool_mult = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-mult\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"multiply\", arguments={\"a\": 4, \"b\": 2}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"math-agent\",\n    )\n    trace = Trace(\n        spans=[coordinator, math_agent, tool_delegate, tool_sqrt, tool_mult], trace_id=\"t1\", session_id=\"test\"\n    )\n    return Session(traces=[trace], session_id=\"test\")",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_01WqY8xxxnSUf2JBQNfqgq4K",
+                  "type": "tool_result",
+                  "content": "from strands_evals.types.trace import (\n    AgentInvocationSpan,\n    EvaluationLevel,\n    Session,\n    SessionLevelInput,\n    SpanInfo,\n    ToolCall,\n    ToolConfig,\n    ToolExecutionSpan,\n    ToolLevelInput,\n    ToolResult,\n    Trace,\n    TraceLevelInput,\n)\n\n\ndef _span_info(\n    span_id: str | None = None,\n    parent_span_id: str | None = None,\n    session_id: str = \"test\",\n) -> SpanInfo:\n    \"\"\"Helper to create a SpanInfo with minimal boilerplate.\"\"\"\n    now = datetime(2026, 1, 1, tzinfo=timezone.utc)\n    return SpanInfo(\n        session_id=session_id,\n        span_id=span_id,\n        parent_span_id=parent_span_id,\n        start_time=now,\n        end_time=now,\n    )\n\n\n@pytest.fixture\ndef multi_agent_session():\n    \"\"\"Coordinator delegates to a specialist with its own tools.\"\"\"\n    coordinator = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"coordinator\", parent_span_id=None),\n        user_prompt=\"sqrt(16) * 2 and weather in Paris\",\n        agent_response=\"8, sunny.\",\n        available_tools=[ToolConfig(name=\"ask_math\"), ToolConfig(name=\"ask_research\")],\n    )\n    math_agent = AgentInvocationSpan(\n        span_info=_span_info(span_id=\"math-agent\", parent_span_id=\"coordinator\"),\n        user_prompt=\"sqrt(16) * 2\",\n        agent_response=\"8\",\n        available_tools=[ToolConfig(name=\"square_root\"), ToolConfig(name=\"multiply\")],\n    )\n    # Tool directly under coordinator (delegation call)\n    tool_delegate = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-delegate\", parent_span_id=\"coordinator\"),\n        tool_call=ToolCall(name=\"ask_math\", arguments={\"query\": \"sqrt(16)*2\"}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"coordinator\",\n    )\n    tool_sqrt = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-sqrt\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"square_root\", arguments={\"n\": 16}),\n        tool_result=ToolResult(content=\"4.0\"),\n        agent_span_id=\"math-agent\",\n    )\n    tool_mult = ToolExecutionSpan(\n        span_info=_span_info(span_id=\"tool-mult\", parent_span_id=\"math-agent\"),\n        tool_call=ToolCall(name=\"multiply\", arguments={\"a\": 4, \"b\": 2}),\n        tool_result=ToolResult(content=\"8\"),\n        agent_span_id=\"math-agent\",\n    )\n    trace = Trace(\n        spans=[coordinator, math_agent, tool_delegate, tool_sqrt, tool_mult], trace_id=\"t1\", session_id=\"test\"\n    )\n    return Session(traces=[trace], session_id=\"test\")",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 39920,
+        "completion_tokens": 119,
+        "cached_tokens": 39218,
+        "cost_usd": 0.006865799999999999,
+        "extra": {
+          "cache_creation_input_tokens": 700,
+          "cache_read_input_tokens": 39218,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 700
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo"
+      }
+    },
+    {
+      "step_id": 10,
+      "timestamp": "2026-11-18T06:07:42.391Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_bdrk_01DJiF5rMQSEf5Y18WtkrCNH",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /work/repo; cat >> tests/strands_evals/extractors/test_trace_extractor.py <<'E'\n\n\n@pytest.mark.parametrize(\"coordinator_first\", [True, False])\ndef test_tool_level_root_is_earliest_agent_when_all_parentless(coordinator_first):\n    \"\"\"Session history uses the earliest parentless agent regardless of span order.\"\"\"\n\n    def info(span_id: str, second: int) -> SpanInfo:\n        t = datetime(2026, 1, 1, 0, 0, second, tzinfo=timezone.utc)\n        return SpanInfo(session_id=\"test\", span_id=span_id, start_time=t, end_time=t)\n\n    coordinator = AgentInvocationSpan(\n        span_info=info(\"coordinator\", 0),\n        user_prompt=\"temperature difference between Paris and Tokyo\",\n        agent_response=\"done\",\n        available_tools=[],\n    )\n    sub = AgentInvocationSpan(\n        span_info=info(\"sub\", 1),\n        user_prompt=\"temperature in Tokyo\",\n        agent_response=\"20\",\n        available_tools=[ToolConfig(name=\"calculate\")],\n    )\n    tool = ToolExecutionSpan(\n        span_info=info(\"tool\", 2),\n        tool_call=ToolCall(name=\"calculate\", arguments={\"expr\": \"25-20\"}),\n        tool_result=ToolResult(content=\"5\"),\n        agent_span_id=\"sub\",\n    )\n    spans = [coordinator, sub, tool] if coordinator_first else [sub, coordinator, tool]\n    session = Session(traces=[Trace(spans=spans, trace_id=\"t\", session_id=\"test\")], session_id=\"test\")\n\n    inputs = TraceExtractor(EvaluationLevel.TOOL_LEVEL).extract(session)\n\n    assert len(inputs) == 1\n    first = inputs[0].session_history[0]\n    assert first.content[0].text == \"temperature difference between Paris and Tokyo\"\nE\npython -m pytest tests/strands_evals/extractors tests/strands_evals/types -q 2>&1 | tail -3; git stash -q -- src; python -m pytest tests/strands_evals/extractors -q 2>&1 | tail -3; git stash pop -q"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /work/repo; cat >> tests/strands_evals/extractors/test_trace_extractor.py <<'E'\n\n\n@pytest.mark.parametrize(\"coordinator_first\", [True, False])\ndef test_tool_level_root_is_earliest_agent_when_all_parentless(coordinator_first):\n    \"\"\"Session history uses the earliest parentless agent regardless of span order.\"\"\"\n\n    def info(span_id: str, second: int) -> SpanInfo:\n        t = datetime(2026, 1, 1, 0, 0, second, tzinfo=timezone.utc)\n        return SpanInfo(session_id=\"test\", span_id=span_id, start_time=t, end_time=t)\n\n    coordinator = AgentInvocationSpan(\n        span_info=info(\"coordinator\", 0),\n        user_prompt=\"temperature difference between Paris and Tokyo\",\n        agent_response=\"done\",\n        available_tools=[],\n    )\n    sub = AgentInvocationSpan(\n        span_info=info(\"sub\", 1),\n        user_prompt=\"temperature in Tokyo\",\n        agent_response=\"20\",\n        available_tools=[ToolConfig(name=\"calculate\")],\n    )\n    tool = ToolExecutionSpan(\n        span_info=info(\"tool\", 2),\n        tool_call=ToolCall(name=\"calculate\", arguments={\"expr\": \"25-20\"}),\n        tool_result=ToolResult(content=\"5\"),\n        agent_span_id=\"sub\",\n    )\n    spans = [coordinator, sub, tool] if coordinator_first else [sub, coordinator, tool]\n    session = Session(traces=[Trace(spans=spans, trace_id=\"t\", session_id=\"test\")], session_id=\"test\")\n\n    inputs = TraceExtractor(EvaluationLevel.TOOL_LEVEL).extract(session)\n\n    assert len(inputs) == 1\n    first = inputs[0].session_history[0]\n    assert first.content[0].text == \"temperature difference between Paris and Tokyo\"\nE\npython -m pytest tests/strands_evals/extractors tests/strands_evals/types -q 2>&1 | tail -3; git stash -q -- src; python -m pytest tests/strands_evals/extractors -q 2>&1 | tail -3; git stash pop -q"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_bdrk_01DJiF5rMQSEf5Y18WtkrCNH",
+            "content": "........................................................................ [ 53%]\n..............................................................           [100%]\n134 passed in 0.67s\n=========================== short test summary info ============================\nFAILED tests/strands_evals/extractors/test_trace_extractor.py::test_tool_level_root_is_earliest_agent_when_all_parentless[False]\n1 failed, 47 passed in 0.59s\n\n[stdout]\n........................................................................ [ 53%]\n..............................................................           [100%]\n134 passed in 0.67s\n=========================== short test summary info ============================\nFAILED tests/strands_evals/extractors/test_trace_extractor.py::test_tool_level_root_is_earliest_agent_when_all_parentless[False]\n1 failed, 47 passed in 0.59s\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "........................................................................ [ 53%]\n..............................................................           [100%]\n134 passed in 0.67s\n=========================== short test summary info ============================\nFAILED tests/strands_evals/extractors/test_trace_extractor.py::test_tool_level_root_is_earliest_agent_when_all_parentless[False]\n1 failed, 47 passed in 0.59s",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_bdrk_01DJiF5rMQSEf5Y18WtkrCNH",
+                  "type": "tool_result",
+                  "content": "........................................................................ [ 53%]\n..............................................................           [100%]\n134 passed in 0.67s\n=========================== short test summary info ============================\nFAILED tests/strands_evals/extractors/test_trace_extractor.py::test_tool_level_root_is_earliest_agent_when_all_parentless[False]\n1 failed, 47 passed in 0.59s",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 41119,
+        "completion_tokens": 796,
+        "cached_tokens": 39918,
+        "cost_usd": 0.0149533,
+        "extra": {
+          "cache_creation_input_tokens": 1199,
+          "cache_read_input_tokens": 39918,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1199
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/work/repo"
+      }
+    },
+    {
+      "step_id": 11,
+      "timestamp": "2026-11-18T06:07:49.610Z",
+      "source": "agent",
+      "model_name": "claude-sonnet-5-5",
+      "message": "I fixed the false negatives. The tool-level extractor now picks the user's original request from the coordinator span, whatever order the spans are in.\n\n**Cause:** `_find_root_agent_span` in `src/strands_evals/types/trace.py` returned the first parentless agent span in list order. On a flat trace every agent span is parentless, so a sub-agent that appeared first became the \"root\". Its narrower prompt, such as one city's temperature, then went to the judge as the user's request. That is why a correct `calculate` call looked unjustified.\n\n**Fix:** within each tier of the lookup, `_find_root_agent_span` now picks the earliest span by `start_time`. The tiers are unchanged: parentless with content, then any parentless, then any span. List order now only breaks exact ties. The same function also assigns tool-span ownership in `Trace.model_post_init`, so that is fixed too.\n\n**Tests:** I added a regression test in `tests/strands_evals/extractors/test_trace_extractor.py`. It runs once with the coordinator first and once with it second. The coordinator-second case fails without the fix and passes with it. The full suite passed (1864 tests) with the fix, before I added the new test. I didn't run `hatch fmt` or the lint check.\n\nIf an export has equal start times on its agent spans, the tie still falls back to list order.",
+      "metrics": {
+        "prompt_tokens": 42041,
+        "completion_tokens": 440,
+        "cached_tokens": 41117,
+        "cost_usd": 0.010820699999999999,
+        "extra": {
+          "cache_creation_input_tokens": 922,
+          "cache_read_input_tokens": 41117,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 922
+          },
+          "inference_geo": "",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "end_turn",
+        "is_sidechain": false,
+        "cwd": "/work/repo"
+      }
+    }
+  ],
+  "final_metrics": {
+    "total_prompt_tokens": 367961,
+    "total_completion_tokens": 3096,
+    "total_cached_tokens": 325902,
+    "total_cost_usd": 0.1686877,
+    "total_steps": 11,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 42039,
+      "total_cache_read_input_tokens": 325902
+    }
+  }
+}

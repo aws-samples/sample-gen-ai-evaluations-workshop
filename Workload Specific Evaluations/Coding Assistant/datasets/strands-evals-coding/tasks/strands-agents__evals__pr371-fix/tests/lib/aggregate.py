@@ -1,9 +1,11 @@
+# Shared file. Edit datasets/_shared/coding/tests/lib/aggregate.py, then run `python datasets/_shared/sync.py`.
 """Combine the stages into reward.json, after the "tasteful solve" of Senior SWE-Bench.
 
 Gates (all must hold for `tasteful_solve`):
 - verifiers: every hidden fail_to_pass and pass_to_pass test, and every base unit test, passes.
 - validation: the validation judge accepted the tests, and every story passes.
-- rubric_score > 0.5, patch_bloat < 2, practice_alignment > 2, relative_taste > 2.
+- rubric_score > 0.5, patch_bloat < 2, and at least 3 of the 5 taste checks pass in each group
+  (relative_taste >= 0.6 and practice_alignment >= 0.6).
 
 `correct` is the first two gates only: the change works. `reward` is `tasteful_solve`.
 `agent_tests_*` are reported, but they do not gate.
@@ -80,8 +82,8 @@ def main(hidden: str) -> None:
         'validation': validation_pass,
         'rubric': (rubric.get('rubric_score') or 0) > GATES['rubric_min'],
         'patch_bloat': bloat_ratio is not None and bloat_ratio < GATES['bloat_max'],
-        'practice_alignment': (taste.get('practice_alignment') or 0) > GATES['taste_min'],
-        'relative_taste': (taste.get('relative_taste') or 0) > GATES['taste_min'],
+        'practice_alignment': (taste.get('practice_alignment') or 0) >= GATES['taste_min_pass_rate'],
+        'relative_taste': (taste.get('relative_taste') or 0) >= GATES['taste_min_pass_rate'],
     }
     tasteful = all(checks.values())
 

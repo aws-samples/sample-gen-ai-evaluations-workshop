@@ -27,11 +27,12 @@ AWS_REGION = "${AWS_REGION:-us-east-1}"
 network_mode = "public"
 os = "linux"
 
-# The agent can reach only the Bedrock endpoint that Codex uses. It cannot reach GitHub.
+# The agent can reach only the Bedrock endpoints that the agents use (Codex: bedrock-mantle, Claude Code:
+# bedrock-runtime). It cannot reach GitHub.
 [environment]
 network_mode = "allowlist"
 os = "linux"
-allowed_hosts = ["bedrock-mantle.us-east-1.api.aws"]
+allowed_hosts = ["bedrock-mantle.us-east-1.api.aws", "bedrock-runtime.us-east-1.amazonaws.com"]  # Codex, Claude Code
 
 [metadata.origin]
 repo = "awslabs/mcp"

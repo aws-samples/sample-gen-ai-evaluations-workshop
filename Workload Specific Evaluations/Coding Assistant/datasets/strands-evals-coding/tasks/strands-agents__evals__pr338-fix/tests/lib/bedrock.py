@@ -1,3 +1,4 @@
+# Shared file. Edit datasets/_shared/coding/tests/lib/bedrock.py, then run `python datasets/_shared/sync.py`.
 """A small tool-use loop on the Amazon Bedrock Converse API, shared by the validation agent and the judges.
 
 The verifier runs this in the agent's container after the agent stops. The verifier phase can reach

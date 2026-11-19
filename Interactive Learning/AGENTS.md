@@ -99,6 +99,7 @@ When learner wants to skip or is stuck:
 | Red Teaming | `Interactive Learning/workload evals/SKILL-red-teaming.md` |
 | Tool Calling | `Interactive Learning/workload evals/SKILL-tool-calling.md` |
 | Multi-Agent Context | `Interactive Learning/workload evals/SKILL-multiagent-context.md` |
+| Coding Assistant | `Interactive Learning/workload evals/SKILL-coding-assistant.md` |
 | Promptfoo | `Interactive Learning/framework evals/SKILL-promptfoo.md` |
 | AgentCore | `Interactive Learning/framework evals/SKILL-agentcore.md` |
 | Strands | `Interactive Learning/framework evals/SKILL-strands.md` |

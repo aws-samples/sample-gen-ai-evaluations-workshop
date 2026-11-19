@@ -1,3 +1,4 @@
+# Shared file. Edit datasets/_shared/coding/tests/lib/agent_tests.py, then run `python datasets/_shared/sync.py`.
 """Tests that the coding agent wrote. Not gating: a senior engineer adds a regression test without being told.
 
 The agent's test files are the test_*.py files under tests/ that the agent added or changed. They run two

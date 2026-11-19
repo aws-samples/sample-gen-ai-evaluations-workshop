@@ -71,3 +71,7 @@ RUN npm install -g @openai/codex@0.162.1 \
  && apt-get update && apt-get install --no-install-recommends --yes ripgrep \
  && apt-get clean && rm -rf /var/lib/apt/lists/* \
  && codex --version
+
+# Claude Code, installed at build time for the same reason. Notebooks 02 and 03 can run Harbor's
+# claude-code agent on Amazon Bedrock (bedrock-runtime), as a second agent under test.
+RUN npm install -g @anthropic-ai/claude-code@2.1.327 && claude --version

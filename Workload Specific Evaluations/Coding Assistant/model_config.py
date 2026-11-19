@@ -6,7 +6,7 @@ then restart your notebook kernel and re-run from the top.
 
 Notebooks import this file with:
 
-    from model_config import CODEX_MODEL_ID, JUDGE_MODEL_ID, VERIFIER_MODEL_ID
+    from model_config import CODEX_MODEL_ID, CLAUDE_CODE_MODEL_ID, JUDGE_MODEL_ID, VERIFIER_MODEL_ID
 
 The judge models also reach the Harbor tasks. The notebooks put JUDGE_MODEL_ID and
 VERIFIER_MODEL_ID in the environment, and each task.toml passes them to its verifier
@@ -22,6 +22,10 @@ model that it used.
 # Codex on Amazon Bedrock, through the Mantle endpoint (bedrock-mantle.<region>.api.aws).
 # Notebooks 01, 02, and 03.
 CODEX_MODEL_ID = "openai.gpt-6-sol"
+
+# Claude Code on Amazon Bedrock, through bedrock-runtime.<region>.amazonaws.com. The optional
+# "Swap the agent" cells of notebooks 02 and 03 run it on the same tasks.
+CLAUDE_CODE_MODEL_ID = "us.anthropic.claude-sonnet-5-5"
 
 # ---------------------------------------------------------------------------
 # Judges (they run in the Harbor verifier and call bedrock-runtime.<region>.amazonaws.com)

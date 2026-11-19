@@ -1,0 +1,55 @@
+{
+  "rubric_score": 1.0,
+  "fail_to_pass_score": 1.0,
+  "pass_to_pass_score": 1.0,
+  "criteria": [
+    {
+      "id": "root_is_earliest_agent",
+      "kind": "fail_to_pass",
+      "text": "In a flat trace where several agents have no parent, the root agent is the one that started first, not the one that is first in the span list.",
+      "score": 1,
+      "reason": "Within the parentless tier, _find_root_agent_span now picks the earliest start_time via min() rather than list order, so in a flat trace the earliest-started agent (the coordinator) wins regardless of span position."
+    },
+    {
+      "id": "one_rule_for_root",
+      "kind": "fail_to_pass",
+      "text": "The extractor (user prompt and tools of tool-level inputs) and the assignment of tool spans that no agent owns use the same rule to find the root, so they cannot disagree.",
+      "score": 1,
+      "reason": "The extractor's session-history user prompt/tools lookup (trace_extractor.py line 110) and Trace.model_post_init's assignment of unowned tool spans both call the same _find_root_agent_span function, so they cannot disagree."
+    },
+    {
+      "id": "mixed_timezones",
+      "kind": "fail_to_pass",
+      "text": "Start times that mix naive and timezone-aware datetimes are compared without a TypeError; a naive time is read as UTC, as elsewhere in the module.",
+      "score": 1,
+      "reason": "The earliest() helper compares start times through _to_aware_utc, which treats naive datetimes as UTC, so mixed naive/aware values do not raise a TypeError."
+    },
+    {
+      "id": "preferences_kept",
+      "kind": "pass_to_pass",
+      "text": "A parentless agent with a user prompt or a response is still preferred over a parentless agent without content, and a parentless agent over an agent with a parent.",
+      "score": 1,
+      "reason": "The function still filters parentless agents first, then prefers parentless agents with content, and only falls back to all agents when no parentless agent exists, preserving the stated preference order."
+    },
+    {
+      "id": "nested_owner_kept",
+      "kind": "pass_to_pass",
+      "text": "A tool span that a sub-agent owns through parent_span_id keeps that owner.",
+      "score": 1,
+      "reason": "model_post_init still assigns owners via parent_span_id traversal before the root fallback, and the root id is only applied to tool spans with no agent_span_id, so sub-agent ownership is kept."
+    },
+    {
+      "id": "no_interface_change",
+      "kind": "pass_to_pass",
+      "text": "No public type, field, or function signature changes.",
+      "score": 1,
+      "reason": "The diff only changes the body of the private helper _find_root_agent_span (adds a nested helper) and adds a test; no public types, fields, or signatures change."
+    }
+  ],
+  "usage": {
+    "input_tokens": 35145,
+    "output_tokens": 1644,
+    "turns": 4,
+    "temperature": null
+  }
+}

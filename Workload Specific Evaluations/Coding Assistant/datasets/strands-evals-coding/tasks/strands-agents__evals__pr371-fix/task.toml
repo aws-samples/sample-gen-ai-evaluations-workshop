@@ -27,12 +27,13 @@ AWS_SESSION_TOKEN = "${AWS_SESSION_TOKEN:-}"
 AWS_REGION = "${AWS_REGION:-us-east-1}"
 AWS_DEFAULT_REGION = "${AWS_REGION:-us-east-1}"
 
-# The agent can reach only the Bedrock endpoint that Codex uses. It cannot reach GitHub or a package
+# The agent can reach only the Bedrock endpoints that the agents use (Codex: bedrock-mantle, Claude Code:
+# bedrock-runtime). It cannot reach GitHub or a package
 # index.
 [environment]
 network_mode = "allowlist"
 os = "linux"
-allowed_hosts = ["bedrock-mantle.us-east-1.api.aws"]
+allowed_hosts = ["bedrock-mantle.us-east-1.api.aws", "bedrock-runtime.us-east-1.amazonaws.com"]  # Codex, Claude Code
 build_timeout_sec = 1800.0
 cpus = 2
 memory_mb = 4096

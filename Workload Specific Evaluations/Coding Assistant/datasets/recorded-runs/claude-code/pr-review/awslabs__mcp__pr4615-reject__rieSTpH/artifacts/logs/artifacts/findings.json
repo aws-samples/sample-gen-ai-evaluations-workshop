@@ -1,0 +1,1 @@
+[{"path":"src/mysql-mcp-server/awslabs/mysql_mcp_server/mutable_sql_detector.py","line":141,"statement":"The statement-start anchor `(?:^|;)` also matches a `;` inside string literals, so benign reads such as SELECT 'a; do x' are falsely rejected (the changelog claims such false positives are avoided).","severity":"low"}]

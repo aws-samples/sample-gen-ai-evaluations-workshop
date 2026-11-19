@@ -12,8 +12,12 @@ it looks like a tool call is judged without the results of the tool calls that t
 it in the same turn. results from earlier turns are there.
 
 a tool call must be judged with the results that the agent had when it made the call: the results of
-the calls that finished before it started. it must not see its own result, or the results of calls
+the calls that finished at or before the moment it started. it must not see its own result, or the results of calls
 that were still running or that came after it.
+
+the spans of one trace do not always use the same kind of time: some have timezone-aware
+datetimes, and some have naive datetimes (no tzinfo), which mean UTC. the order of the calls must
+be right when a trace mixes the two kinds.
 
 ## General instructions
 

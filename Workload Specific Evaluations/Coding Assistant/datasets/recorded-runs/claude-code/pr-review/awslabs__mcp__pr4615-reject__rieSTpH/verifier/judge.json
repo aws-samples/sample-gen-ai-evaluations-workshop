@@ -1,0 +1,1 @@
+{"model": "us.anthropic.claude-haiku-5-5", "temperature_configured": 0.0, "temperature": null, "calls": 6, "votes": 3, "exact_matches": 0, "decisions": [{"oracle_id": 0, "agent_index": 0, "answers": [false, false, false], "accepted": false}, {"oracle_id": 5, "agent_index": 0, "answers": [true, true, true], "accepted": true}]}

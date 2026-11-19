@@ -1,0 +1,58 @@
+{
+  "status": "accepted",
+  "discard_reason": "",
+  "validation_score": 1.0,
+  "passed_stories": 2,
+  "total_stories": 2,
+  "stories": {
+    "judge_sees_coordinator_request": {
+      "passed": 5,
+      "total": 5,
+      "pass": true,
+      "cases": {
+        "test_judge_sees_coordinator_request[sub_agent_listed_first]": true,
+        "test_judge_sees_coordinator_request[coordinator_last_of_three]": true,
+        "test_judge_sees_coordinator_request[coordinator_listed_first]": true,
+        "test_judge_sees_coordinator_request[naive_coordinator_time]": true,
+        "test_judge_sees_coordinator_request[empty_agent_starts_first]": true
+      }
+    },
+    "orphan_tool_owner": {
+      "passed": 4,
+      "total": 4,
+      "pass": true,
+      "cases": {
+        "test_orphan_tool_owner[sub_agent_listed_first]": true,
+        "test_orphan_tool_owner[all_agents_without_content]": true,
+        "test_orphan_tool_owner[child_agent_starts_first]": true,
+        "test_orphan_tool_owner[coordinator_first]": true
+      }
+    }
+  },
+  "reviews": [
+    {
+      "scores": {
+        "behavioral_authenticity": 3,
+        "procedure_fidelity": 3,
+        "story_coverage": 3,
+        "execution_soundness": 3,
+        "assertion_strength": 3
+      },
+      "decision": "accept",
+      "feedback": "Both scripts follow their story procedures and exercise the real code. judge_sees_coordinator_request runs the real evaluate() with only the permitted Agent patch, and its strict prompt assertions fail on the unpatched root-selection logic, so it is discriminating. orphan_tool_owner reads the Trace-computed agent_span_id rather than recomputing ownership, and also fails on unpatched code. The prompt-count check could pass vacuously with zero tool spans, but no stated case has that shape, so this is not blocking.",
+      "usage": {
+        "input_tokens": 42186,
+        "output_tokens": 3538,
+        "turns": 4,
+        "temperature": null
+      }
+    }
+  ],
+  "agent_usage": {
+    "input_tokens": 93939,
+    "output_tokens": 4549,
+    "turns": 7,
+    "temperature": null
+  },
+  "revised": false
+}

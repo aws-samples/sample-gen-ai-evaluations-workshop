@@ -1,10 +1,12 @@
+# Shared file. Edit datasets/_shared/coding/tests/lib/judges.py, then run `python datasets/_shared/sync.py`.
 """LLM judges and patch bloat. Usage: python3 judges.py rubric|taste|bloat
 
 - rubric: the task rubric (tests/judge/rubric.toml). Each criterion is fail_to_pass (the change must do
   this) or pass_to_pass (the change must not break this). The judge reads the patch and the code, and
   scores each criterion 0 or 1. Writes rubric.json.
-- taste: the global taste rubric. Five dimensions relative to the reference patch, and five dimensions of
-  alignment with the practices of the codebase. Each is scored 1-5. Writes taste.json.
+- taste: the global taste rubric. Ten yes/no checks: five compare the change with the reference patch,
+  and five check that it fits the practices of the codebase. Each check passes or fails, with a reason.
+  relative_taste and practice_alignment are the fractions of checks that pass. Writes taste.json.
 - bloat: source lines that the agent's patch changes, divided by the source lines of the reference patch.
   Tests, documentation, and changelogs are not counted. Writes bloat.json.
 """
@@ -66,25 +68,24 @@ works (other checks test that). Before you grade, learn the conventions of the p
 contributing or style guides (for example AGENTS.md, CONTRIBUTING.md, STYLE_GUIDE.md), the code around the
 change, and how the codebase handles the same concerns elsewhere. The change is applied in /work/repo.
 
-Score each dimension as an integer 1-5, with a short reason.
+Answer each check yes (passed: true) or no (passed: false), with a one-sentence reason. Each check is one
+question. Answer yes when a maintainer would accept the change on that point without asking for
+significant changes. A small nit is still yes.
 
-Relative taste: compare with the reference change, which a maintainer merged. 4 = on par with the
-reference. 5 = clearly better than the reference. 3 = acceptable but weaker. 2 = a reviewer would ask for
-significant changes. 1 = a reviewer would reject it.
-- minimality: focused on the task, no unrelated changes or scope creep.
-- approach_quality: the right kind of solution, for example a root-cause fix, not a symptom patch.
-- hygiene: no shortcuts, hard-coded values, dead code, or workarounds.
-- fluency: correct use of the language, libraries, and domain concepts.
-- craftsmanship: makes later work easier, as a senior reviewer would approve.
+Compared with the reference change, which a maintainer merged:
+- minimality: Is the change focused on the task, with no unrelated changes or scope creep?
+- approach_quality: Is it the right kind of solution, for example a root-cause fix and not a symptom patch?
+- hygiene: Is it free of shortcuts, hard-coded values, dead code, and workarounds?
+- fluency: Does it use the language, the libraries, and the domain concepts correctly?
+- craftsmanship: Would a senior reviewer approve it as code that is easy to build on?
 
-Codebase practice alignment (absolute): 5 = reads as if a regular contributor wrote it. 1 = foreign to
-the codebase.
-- style_consistency: formatting, naming, and structure match the surrounding code.
-- pattern_adherence: uses the established patterns and idioms of the project.
-- library_usage: reuses what the project already has, no needless new dependency or hand-rolled helper.
-- abstraction_level: the right level of abstraction for this part of the code.
-- documentation_fit: comments and docstrings match the style and density of the project. Fewer comments is
-  better in a codebase that documents little.'''
+Fit with the codebase:
+- style_consistency: Do the formatting, the naming, and the structure match the surrounding code?
+- pattern_adherence: Does it use the established patterns and idioms of the project?
+- library_usage: Does it reuse what the project already has, with no needless new dependency or hand-rolled helper?
+- abstraction_level: Is the abstraction at the right level for this part of the code?
+- documentation_fit: Do the comments and docstrings match the style and the density of the project? Fewer
+  comments is better in a codebase that documents little.'''
 
 RELATIVE = ('minimality', 'approach_quality', 'hygiene', 'fluency', 'craftsmanship')
 PRACTICE = ('style_consistency', 'pattern_adherence', 'library_usage', 'abstraction_level', 'documentation_fit')
@@ -95,15 +96,15 @@ def taste() -> None:
     if not patch.strip():
         write_json('taste.json', {'status': 'skipped', 'reason': 'empty patch', 'relative_taste': 0, 'practice_alignment': 0})
         return
-    dim = {'type': 'object', 'properties': {'score': {'type': 'integer', 'minimum': 1, 'maximum': 5},
-                                            'reason': {'type': 'string'}}, 'required': ['score', 'reason']}
-    schema = {'type': 'object', 'properties': {k: dim for k in RELATIVE + PRACTICE}, 'required': list(RELATIVE + PRACTICE)}
-    convo = Conversation('taste_judge', TASTE_SYSTEM, read_only_tools([REPO, LOGS]), 'submit_taste_scores', schema)
+    check = {'type': 'object', 'properties': {'passed': {'type': 'boolean'}, 'reason': {'type': 'string'}},
+             'required': ['passed', 'reason']}
+    schema = {'type': 'object', 'properties': {k: check for k in RELATIVE + PRACTICE}, 'required': list(RELATIVE + PRACTICE)}
+    convo = Conversation('taste_judge', TASTE_SYSTEM, read_only_tools([REPO, LOGS]), 'submit_taste_checks', schema)
     result = convo.ask(f'# Task\n{instruction()}\n\n# Agent change\n```diff\n{patch}\n```\n\n'
                        f'# Reference change (merged by a maintainer)\n```diff\n{REFERENCE.read_text()}\n```\n\n'
-                       'Explore the codebase, then submit scores for all ten dimensions.')
-    mean = lambda keys: round(sum(result[k]['score'] for k in keys) / len(keys), 2)
-    write_json('taste.json', {'status': 'scored', 'relative_taste': mean(RELATIVE), 'practice_alignment': mean(PRACTICE),
+                       'Explore the codebase, then answer all ten checks.')
+    pass_rate = lambda keys: round(sum(bool(result[k]['passed']) for k in keys) / len(keys), 2)
+    write_json('taste.json', {'status': 'scored', 'relative_taste': pass_rate(RELATIVE), 'practice_alignment': pass_rate(PRACTICE),
                               'dimensions': result, 'usage': convo.usage})
 
 

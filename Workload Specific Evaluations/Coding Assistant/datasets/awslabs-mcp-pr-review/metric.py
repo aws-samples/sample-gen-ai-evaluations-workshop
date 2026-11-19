@@ -8,6 +8,11 @@ Harbor's default metric template raises on a reward dict with more than one key
 whenever it sees at most one key across all trials (metrics/base.py:14-36). Both would erase the
 separation these dimensions exist to preserve. A missing key counts as 0, matching Harbor's own
 aggregate_reward_dicts, so a failed trial does not silently raise the mean of the trials that ran.
+
+The precision keys are the exception. score.py leaves them out of reward.json (or a caller can give
+null) when the agent submitted no findings: precision is undefined there, not 0. This metric skips an
+undefined precision, and the mean is over the trials where it is defined (null if there is none).
+A failed trial (a null row) still counts as 0 for every key.
 """
 
 import argparse
@@ -15,6 +20,9 @@ import json
 from pathlib import Path
 
 KEYS = ('coverage_all', 'coverage_required', 'credited_all', 'credited_high', 'credited_low', 'credited_medium', 'credited_required', 'oracle_high', 'oracle_low', 'oracle_medium', 'precision_adjudicated', 'precision_strict', 'uncredited')
+
+#: Undefined when the agent submitted no findings (see score.py). Skipped, not counted as 0.
+UNDEFINED_WHEN_EMPTY = ('precision_adjudicated', 'precision_strict')
 
 
 def main(input_path: Path, output_path: Path) -> None:
@@ -25,8 +33,14 @@ def main(input_path: Path, output_path: Path) -> None:
 
     out = {}
     for key in KEYS:
-        values = [0 if row is None else row.get(key, 0) for row in rows]
-        out[f"mean_{key}"] = sum(values) / len(values) if values else 0
+        if key in UNDEFINED_WHEN_EMPTY:
+            values = [0 if row is None else row.get(key) for row in rows]
+            values = [v for v in values if v is not None]
+            out[f"mean_{key}"] = sum(values) / len(values) if values else None
+            out[f"n_{key}"] = len(values)
+        else:
+            values = [0 if row is None else (row.get(key) or 0) for row in rows]
+            out[f"mean_{key}"] = sum(values) / len(values) if values else 0
     out["trials"] = len(rows)
     output_path.write_text(json.dumps(out, sort_keys=True))
 

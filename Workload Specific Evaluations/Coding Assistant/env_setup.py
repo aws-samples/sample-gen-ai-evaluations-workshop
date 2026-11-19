@@ -6,7 +6,9 @@ Editors launched from the macOS Dock/Finder (Kiro, VS Code) do not read
 find docker, gh, codex, or harbor. fix_path() repairs os.environ["PATH"] for
 the current kernel. Child processes inherit it.
 
-load_env() reads AWS_REGION and AWS_PROFILE from the module's .env file.
+load_env() reads AWS_REGION and AWS_PROFILE from the module's .env file. ensure_env_file() makes
+.env from .env.example if .env does not exist, so a notebook that you start without notebook 01
+still uses the Region of the tasks, not a Region from your shell.
 """
 import os
 import subprocess
@@ -55,6 +57,17 @@ def fix_path():
     added = [d for d in merged if d not in current]
     os.environ["PATH"] = os.pathsep.join(merged)
     print(f"fix_path: added {len(added)} dirs to PATH" + (f": {', '.join(added)}" if added else ""))
+
+
+def ensure_env_file(path=".env", example=".env.example"):
+    """Make .env from .env.example if .env does not exist. Return True if the file was made."""
+    import shutil
+
+    if Path(path).exists():
+        return False
+    shutil.copy(example, path)
+    print(f"ensure_env_file: made {path} from {example}. Open {path} and set AWS_PROFILE if you need it.")
+    return True
 
 
 def load_env(path=".env"):

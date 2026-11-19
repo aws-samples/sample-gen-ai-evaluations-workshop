@@ -48,6 +48,7 @@ branch after the foundations.
 | Multi-Turn Chatbot | `../Workload Specific Evaluations/Chatbot/` | `workload evals/SKILL-chatbot.md` |
 | Red Teaming | `../Workload Specific Evaluations/Red Teaming/` | `workload evals/SKILL-red-teaming.md` |
 | Multi-Agent Shared Context | `../Workload Specific Evaluations/Multiagent Shared Context Evaluation/` | `workload evals/SKILL-multiagent-context.md` |
+| Coding Assistant | `../Workload Specific Evaluations/Coding Assistant/` | `workload evals/SKILL-coding-assistant.md` |
 
 The workload capstone is `workload evals/CHALLENGE-capstone.md`.
 

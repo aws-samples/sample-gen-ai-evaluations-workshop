@@ -1,0 +1,229 @@
+{
+  "invalid": [],
+  "models": {
+    "validation_agent": "us.anthropic.claude-haiku-5-5",
+    "validation_judge": "us.anthropic.claude-haiku-5-5",
+    "rubric_judge": "us.anthropic.claude-haiku-5-5",
+    "taste_judge": "us.anthropic.claude-haiku-5-5"
+  },
+  "checks": {
+    "verifiers": true,
+    "validation": true,
+    "rubric": true,
+    "patch_bloat": true,
+    "practice_alignment": true,
+    "relative_taste": true
+  },
+  "flat": {
+    "reward": 1.0,
+    "tasteful_solve": 1.0,
+    "correct": 1.0,
+    "verifiers_pass": 1.0,
+    "fail_to_pass": 1.0,
+    "pass_to_pass": 1.0,
+    "existing_suite": 1.0,
+    "validation_score": 1.0,
+    "rubric_score": 1.0,
+    "relative_taste": 1.0,
+    "practice_alignment": 1.0,
+    "patch_bloat": 1.0,
+    "agent_tests_added": 12.0,
+    "agent_tests_reproduce_bug": 1.0
+  },
+  "verifiers": {
+    "fail_to_pass": 1.0,
+    "pass_to_pass": 1.0,
+    "existing_suite": 1.0,
+    "pass": true,
+    "complete": true
+  },
+  "failed_tests": [],
+  "validation": {
+    "status": "accepted",
+    "discard_reason": "",
+    "validation_score": 1.0,
+    "passed_stories": 2,
+    "total_stories": 2,
+    "stories": {
+      "parameter_judge_sees_earlier_results": {
+        "passed": 6,
+        "total": 6,
+        "pass": true,
+        "cases": {
+          "test_parameter_judge_sees_earlier_results[issue_repro]": true,
+          "test_parameter_judge_sees_earlier_results[third_call_sees_two]": true,
+          "test_parameter_judge_sees_earlier_results[first_call_sees_none]": true,
+          "test_parameter_judge_sees_earlier_results[spans_not_in_time_order]": true,
+          "test_parameter_judge_sees_earlier_results[parallel_call_not_visible]": true,
+          "test_parameter_judge_sees_earlier_results[ends_when_next_starts]": true
+        }
+      },
+      "selection_judge_sees_earlier_results": {
+        "passed": 4,
+        "total": 4,
+        "pass": true,
+        "cases": {
+          "test_selection_judge_sees_earlier_results[second_turn_sees_both_turns]": true,
+          "test_selection_judge_sees_earlier_results[issue_repro]": true,
+          "test_selection_judge_sees_earlier_results[naive_and_aware_times]": true,
+          "test_selection_judge_sees_earlier_results[later_call_hidden]": true
+        }
+      }
+    },
+    "reviews": [
+      {
+        "scores": {
+          "behavioral_authenticity": 3,
+          "procedure_fidelity": 3,
+          "story_coverage": 3,
+          "execution_soundness": 3,
+          "assertion_strength": 3
+        },
+        "decision": "accept",
+        "feedback": "Both scripts follow their stories. Only `Agent` is patched in the evaluator module, and the stub returns a structured rating, so the real extractor, prompt formatting, and scoring run. The target prompt is located by call id through the chronological order, and the target section is checked for an exact match. Visible and hidden strings are asserted on the full prompt.\n\nI checked the patch against the evaluator code. The original extractor appended a turn's tool results only after all of that turn's calls, so the visible-string check for `seven-7` and `total-99`-style cases would fail on the original code. The patch's start/end filtering is what makes the tests pass, so the tests discriminate. The naive-timestamp handling is exercised by the `naive` flag.\n\nMinor notes, not blocking: the ordering used to map prompts to calls is a global sort by start, which matches the extractor's per-trace sort only when turns are time-ordered. The 6 and 4 driver cases were not all visible to me, so coverage is judged from the generic scripts plus the example case. The developer's own added tests are separate from these validation scripts and show no sign of collusion.",
+        "usage": {
+          "input_tokens": 83736,
+          "output_tokens": 3630,
+          "turns": 5,
+          "temperature": null
+        }
+      }
+    ],
+    "agent_usage": {
+      "input_tokens": 179816,
+      "output_tokens": 9402,
+      "turns": 10,
+      "temperature": null
+    },
+    "revised": false
+  },
+  "rubric": {
+    "rubric_score": 1.0,
+    "fail_to_pass_score": 1.0,
+    "pass_to_pass_score": 1.0,
+    "criteria": [
+      {
+        "id": "earlier_results_in_same_turn",
+        "kind": "fail_to_pass",
+        "text": "Each tool-level input includes the results of the tool calls in the same trace that ended before the call started.",
+        "score": 1,
+        "reason": "prior_executions collects the same-trace tool spans whose end_time is at or before the call's start, and appends them as a ToolExecution list to each call's tool_history, so earlier results in the same turn are included."
+      },
+      {
+        "id": "decided_by_time",
+        "kind": "fail_to_pass",
+        "text": "Which results a call sees is decided by the span times (a result ended at or before the call started), not by the order of the spans in the list.",
+        "score": 1,
+        "reason": "Visibility is decided by comparing _utc_time(end_time) <= call_start for every candidate span; spans are sorted by time first and the list order plays no role in the filter."
+      },
+      {
+        "id": "mixed_timezones",
+        "kind": "fail_to_pass",
+        "text": "Span times that mix naive and timezone-aware datetimes are compared without a TypeError; a naive time is read as UTC.",
+        "score": 1,
+        "reason": "_utc_time maps naive datetimes to UTC via replace(tzinfo=utc) and aware ones via astimezone(utc), and all sorting and comparisons go through it, so mixed inputs compare without a TypeError."
+      },
+      {
+        "id": "no_self_parallel_or_later",
+        "kind": "pass_to_pass",
+        "text": "A call never sees its own result, the result of a call that was still running when it started, or the result of a later call.",
+        "score": 1,
+        "reason": "The filter excludes the call itself (span is not tool_span) and any span whose end is after the call start, so running or later calls are never visible; for the earlier-trace entries the same end <= start filter applies."
+      },
+      {
+        "id": "earlier_turns_kept",
+        "kind": "pass_to_pass",
+        "text": "The results and messages of earlier traces stay in the history, as before, and trace-level and session-level inputs do not change.",
+        "score": 1,
+        "reason": "Earlier-trace entries stay in session_history and are included in each call's history when they ended before the call started; the diff leaves the trace-level and session-level extraction paths untouched."
+      },
+      {
+        "id": "existing_history_types",
+        "kind": "pass_to_pass",
+        "text": "session_history keeps its existing types (UserMessage, list of ToolExecution, AssistantMessage), so the existing prompt formatting of the evaluators works without change.",
+        "score": 1,
+        "reason": "The emitted session_history still consists of UserMessage, lists of ToolExecution, and AssistantMessage objects; ToolExecutionSpan lists are only stored internally and converted to ToolExecution before output."
+      }
+    ],
+    "usage": {
+      "input_tokens": 5427,
+      "output_tokens": 1653,
+      "turns": 1,
+      "temperature": null
+    }
+  },
+  "taste": {
+    "status": "scored",
+    "relative_taste": 1.0,
+    "practice_alignment": 1.0,
+    "dimensions": {
+      "minimality": {
+        "passed": true,
+        "reason": "The change stays within the tool-level extraction path and its tests; the re-sorting and cross-trace history filtering are tied to the requested call-time ordering, though they go a bit beyond the reference."
+      },
+      "approach_quality": {
+        "passed": true,
+        "reason": "It fixes the root cause by building each tool call's history from only the results that completed before its start, rather than patching the evaluator prompt."
+      },
+      "hygiene": {
+        "passed": true,
+        "reason": "There are no hard-coded values or workarounds. One edge case remains: two zero-duration spans with identical timestamps can each see the other, because the check is `<=` without a position tiebreaker as in the reference."
+      },
+      "fluency": {
+        "passed": true,
+        "reason": "Timezone handling is correct: naive timestamps are treated as UTC and aware ones are converted with astimezone, so mixed-kind traces compare properly."
+      },
+      "craftsmanship": {
+        "passed": true,
+        "reason": "The code is readable, but it sorts twice, re-filters the whole history for every call, and duplicates ToolExecution construction, so a reviewer might ask to simplify it."
+      },
+      "style_consistency": {
+        "passed": true,
+        "reason": "The formatting, naming, and comprehension style match the surrounding extractor code."
+      },
+      "pattern_adherence": {
+        "passed": true,
+        "reason": "The `_utc_time` helper mirrors the existing naive-to-UTC normalization already used in types/trace.py."
+      },
+      "library_usage": {
+        "passed": true,
+        "reason": "It uses only the standard-library datetime and timezone types already imported elsewhere, with no new dependencies or hand-rolled utilities."
+      },
+      "abstraction_level": {
+        "passed": true,
+        "reason": "The logic stays in the private extractor method with one small helper, which is an appropriate level for this code."
+      },
+      "documentation_fit": {
+        "passed": true,
+        "reason": "The docstrings are brief and match the project's density, though the ToolLevelInput class docstring is not updated to state the new history guarantee."
+      }
+    },
+    "usage": {
+      "input_tokens": 21396,
+      "output_tokens": 3289,
+      "turns": 2,
+      "temperature": null
+    }
+  },
+  "bloat": {
+    "agent_sloc": 39,
+    "reference_sloc": 39,
+    "patch_bloat": 1.0
+  },
+  "agent_tests": {
+    "files": [
+      "tests/strands_evals/extractors/test_trace_extractor.py"
+    ],
+    "tests_added": 12,
+    "on_fix": {
+      "passed": 12,
+      "failed": 0
+    },
+    "on_base": {
+      "passed": 10,
+      "failed": 2
+    },
+    "pass_on_fix": 1,
+    "reproduces_bug": 1
+  }
+}
