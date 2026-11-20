@@ -37,7 +37,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - Red Teaming: systematically probe AI systems with adversarial inputs using Promptfoo across LLM apps, RAG, agents, and guardrails.
   - Multiagent Shared Context Evaluation: measure memory coordination quality in multi-agent systems across hub-spoke and peer-to-peer patterns.
   - Capacity Management: evaluate a workload across a model portfolio, optimize prompts per model with Advanced Prompt Optimization, and route around quota limits.
-  - Coding Assistant: coming soon.
+  - Coding Assistant: evaluate coding agents on two tasks: reviewing pull requests and fixing bugs. Tasks use sealed repositories with a known-good answer (the real PR review or the merged patch), and are graded with hidden tests, LLM judges, and a patch-bloat check. Codex on Amazon Bedrock is the agent under test, run in Harbor on local Docker. A replay notebook lets you inspect recorded runs without Docker or AWS.
   
 - #### [Framework Specific Evaluations](Framework%20Specific%20Evaluations/)
   - Prompt Foo: configure YAML-based evaluations, write assertion test cases, and compare models across providers.
