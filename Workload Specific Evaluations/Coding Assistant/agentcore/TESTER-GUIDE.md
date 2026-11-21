@@ -7,7 +7,7 @@ You are testing a way to run the Coding Assistant module on AWS only. This guide
 | Need | Detail |
 |---|---|
 | Python | 3.10 or later (tested with 3.12) |
-| boto3 | **1.44.7 or later**. Version 1.43.74 has no `platformVersion` for AgentCore and fails at `deploy`. The venv line in the README installs it |
+| boto3 | **1.44.7 or later**. Version 1.43.74 has no `platformVersion` for AgentCore. The runner checks this first and stops with `p2: boto3 ... is too old` before any AWS call (an older runner failed only at `deploy`, after the 2 to 6 minute image build). The default `python3` of your machine may be an old one: use the venv's `.venv/bin/python`. The venv line in the README installs the right version |
 | AWS account | One where you may create IAM roles, ECR, S3, CodeBuild, and AgentCore runtimes. Use a sandbox account, not a shared production one |
 | Region | `us-east-1` only (set in `p2_v2.py`, and in the module's task files) |
 | Credentials | In the terminal: `aws sso login`, `AWS_PROFILE=...`, or access keys. The runner uses the standard boto3 credential chain |
@@ -60,6 +60,8 @@ The cheapest rung is one PR review trial. It builds one image, deploys one runti
 .venv/bin/python p2_v2.py all pr4121:1
 ```
 
+The build is the slow step: no output of its own for the first 2 to 6 minutes except `<task> build started`. If it fails, the runner prints the reason and exits 1 (see section 6, Failures).
+
 Expected (4 min 17 s on the first run of the authors): the log lines `bootstrap done in ~13s, 8 steps`, then `pr4121 build SUCCEEDED`, `pr4121 runtime READY`, and a table with one row. The row has `coverage_required` 1 and `coverage_all` 1 in nearly every trial (this approve task passed in 21 of 21 earlier trials), and the `errors` column is empty. A file `jobs/<time>/summary.md` has the same table. Then try one coding trial: `all pr371:1` (it builds a second image, 6 min).
 
 Two checks that cost almost nothing and prove the grader and the roles:
@@ -97,7 +99,7 @@ The `Expiry` tag is a date two weeks out (or `$P2_EXPIRY`). Nothing deletes a re
 - **PR review `pr4615` (reject).** It passes about 12 % of the time with Codex (23 of 185 trials, 95 % interval 8 % to 18 %), at 1, 5, and 30 trials at once. That is judge and agent variance, not an environment bug: no difference between this mode and the Docker mode was found that would explain a different rate (the Docker mode had 0 of 3 trials passing). Do not report a low pass rate on this task as a bug, report a rate that differs a lot from 12 % over 20 or more trials.
 - **Coding rewards.** Judge fields (`relative_taste`, `validation_score`) vary between runs of the same patch: one reward 0.0 in a trial came from a hidden test that the agent's patch broke, another from `relative_taste` 0.2.
 - **Models and Region.** One agent (Codex) and `us-east-1`. The Claude Code swap of the module's notebooks is not part of this mode.
-- **Not covered here.** A failed image build is printed (the last 80 log lines) but the build failure paths were not tested.
+- **Failures.** A failed image build prints the last 80 log lines, then `p2: image build failed: <task>: ERROR: ... (BUILD phase)`, exits 1, and nothing is deployed or run (checked with a deliberately broken Dockerfile; the failing build takes about 2 minutes to report). `build` and `deploy` also exit 1 on failure. `run` on a task that is not deployed says `p2: no AgentCore runtime ... Run 'deploy <task>' or 'all' first`. Ctrl-C during `run` stops the sessions and exits with code 130 (tested with fake sessions only). `bootstrap` can be interrupted and re-run at any point. `cleanup` continues past a runtime that is still CREATING, UPDATING or DELETING, prints `FAILED runtime ...`, and exits 1: wait a few minutes (a delete takes 3 to 7 minutes) and run it again. A command that runs longer than its timeout (1500 s for the agent) returns exit code -1 in `result.json` (`agent_exit`), with no entry in the `errors` column. Not tested: a caller with restricted permissions, `cleanup` while a runtime is CREATING.
 
 ## 7. What feedback we want
 

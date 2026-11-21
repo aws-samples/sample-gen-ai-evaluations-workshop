@@ -22,6 +22,12 @@ import sys, tarfile, tempfile, time, urllib.parse, uuid, zipfile
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ParamValidationError
+
+MIN_BOTO3 = (1, 44, 7)  # first release whose AgentCore create/update_agent_runtime accept platformVersion
+if tuple(int(x) for x in re.findall(r"\d+", boto3.__version__)[:3]) < MIN_BOTO3:  # before any client or AWS call: an old boto3 would only fail at `deploy`, after the build
+    sys.exit(f"p2: boto3 {boto3.__version__} is too old, need >= {'.'.join(map(str, MIN_BOTO3))}. "
+             f"In a venv: python3 -m pip install -U 'boto3>=1.44.7'  (this python: {sys.executable})")
 
 R = "us-east-1"
 # Expiry is only a tag (nothing deletes on it): a date two weeks out, or $P2_EXPIRY. Run `cleanup` when you are done.
@@ -147,7 +153,8 @@ def retry(fn, errs, what, deadline=240, first=2.0):
             return r
         except Exception as e:
             msg = type(e).__name__ + " " + str(e)
-            if not any(k.lower() in msg.lower() for k in errs) or time.time() - t0 > deadline:
+            # ParamValidationError text lists every valid parameter (roleArn...), so it would match "role" below: never retry it
+            if isinstance(e, ParamValidationError) or not any(k.lower() in msg.lower() for k in errs) or time.time() - t0 > deadline:
                 raise
             n += 1
             time.sleep(min(first * (1.5 ** min(n, 6)), 12))
@@ -378,10 +385,16 @@ def build(task, module):
         tail = "\n".join(mask(e["message"].rstrip()) for e in ev)
     except Exception as e:
         tail = repr(e)
-    res = {"task": task, "status": x["buildStatus"], "secs": round(time.time() - t0), "phases": phases, "log_tail": tail}
+    why = "; ".join(f'{p["phaseType"]}: {c.get("message") or c.get("statusCode")}'
+                    for p in x["phases"] if p.get("phaseStatus") == "FAILED" for c in p.get("contexts", [])[:1])
+    errs = [l for l in tail.splitlines() if l.startswith("ERROR:")]  # the docker/buildkit line that names the failing step
+    if errs and x["buildStatus"] != "SUCCEEDED":
+        why = errs[-1][:300] + " (" + why.split(":")[0] + " phase)"
+    res = {"task": task, "status": x["buildStatus"], "secs": round(time.time() - t0), "phases": phases, "reason": mask(why), "log_tail": tail}
     log(task, "build", x["buildStatus"], res["secs"], "s")
     if x["buildStatus"] != "SUCCEEDED":
         print(tail)
+        log(task, "BUILD FAILED:", res["reason"] or "see the log tail above")
     return res
 
 
@@ -435,11 +448,16 @@ _arn = {}
 def runtime_arn(task):
     if task not in _arn:
         r = find_runtime(task)
+        if not r:
+            sys.exit(f"p2: no AgentCore runtime {runtime_name(task)} (prefix {Names.prefix}). Run 'deploy {task}' or 'all' first.")
         _arn[task] = ctl.get_agent_runtime(agentRuntimeId=r["agentRuntimeId"])["agentRuntimeArn"]
     return _arn[task]
 
 
 # ---------------------------------------------------------------- one session
+SESSIONS = []  # every Session of this process, so Ctrl-C can stop them
+
+
 def shq(s):
     return "'" + s.replace("'", "'\"'\"'") + "'"
 
@@ -452,6 +470,7 @@ class Session:
         self.sid = sid or ("p2-" + uuid.uuid4().hex + uuid.uuid4().hex[:6])
         self.calls = 0
         self.throttles = 0
+        SESSIONS.append(self)
 
     def cmd(self, command, timeout=300, retries=12):
         last = None
@@ -655,8 +674,16 @@ def summarize(rs, job, wall):
 
 def run_batch(tasks, module, job, mode="codex", patch=None, variant=()):
     t0 = time.time()
-    with cf.ThreadPoolExecutor(len(tasks)) as ex:
+    ex = cf.ThreadPoolExecutor(len(tasks))
+    try:
         rs = list(ex.map(lambda t: run_trial(t, module, job, mode=mode, patch=patch, variant=variant), tasks))
+    except KeyboardInterrupt:  # without this, Ctrl-C waits for every trial to finish (up to 25+ min per Codex trial)
+        log(f"interrupted: stopping {len(SESSIONS)} session(s)")
+        for s in SESSIONS:
+            s.stop()
+        ex.shutdown(wait=False, cancel_futures=True)
+        os._exit(130)
+    ex.shutdown()
     summarize(rs, job, time.time() - t0)
     return rs
 
@@ -693,6 +720,10 @@ def main():
             else:
                 rs = list(ex.map(lambda t: deploy(t, a.platform), tasks))
         print(json.dumps(rs, indent=1))
+        if a.cmd == "build" and any(r["status"] != "SUCCEEDED" for r in rs):
+            sys.exit("p2: image build failed: " + " | ".join(f'{r["task"]}: {r["reason"] or "see the log tail above"}' for r in rs if r["status"] != "SUCCEEDED"))
+        if a.cmd == "deploy" and any(r["status"] != "READY" for r in rs):
+            sys.exit("p2: runtime not READY: " + " | ".join(f'{r["task"]}: {r["status"]} {r["reason"] or ""}' for r in rs if r["status"] != "READY"))
     elif a.cmd == "run":
         module = module_dir(a.module)
         tasks = parse_specs(a.tasks or ["pr4121"])
@@ -717,9 +748,9 @@ def main():
             log("building", todo)
             with cf.ThreadPoolExecutor(len(todo)) as ex:
                 bs = list(ex.map(lambda t: build(t, module), todo))
-            bad = [b["task"] for b in bs if b["status"] != "SUCCEEDED"]
-            if bad:
-                sys.exit(f"build failed for {bad}")
+            bad = [b for b in bs if b["status"] != "SUCCEEDED"]
+            if bad:  # no deploy and no run after a failed build
+                sys.exit("p2: image build failed: " + " | ".join(f'{b["task"]}: {b["reason"] or "see the log tail above"}' for b in bad))
         need = [t for t in uniq if t in todo or not find_runtime(t)]
         if need:
             log("deploying", need)
@@ -737,24 +768,41 @@ def main():
             r = find_runtime(t)
             print(t, r and r["status"])
     elif a.cmd == "cleanup":
+        failed = []
+
+        def attempt(what, fn):  # one failing resource must not stop the rest (a half-cleaned prefix is the worst outcome)
+            try:
+                fn()
+            except Exception as e:
+                failed.append(what)
+                print(f"FAILED {what}: {type(e).__name__}: {str(e)[:200]}")
         for t in TASKS:
             r = find_runtime(t)
-            if r:
-                ctl.delete_agent_runtime(agentRuntimeId=r["agentRuntimeId"]); print("deleting runtime", t)
-        try:
-            ecr.delete_repository(repositoryName=Names.repo(), force=True); print("deleted ecr repository", Names.repo())
-        except ecr.exceptions.RepositoryNotFoundException:
-            pass
-        try:
-            cb.delete_project(name=Names.project()); print("deleted codebuild project")
-        except Exception as e:
-            print("codebuild project:", repr(e)[:100])
-        for rn, pn in ((Names.build_role(), "build"), (Names.runtime_role(), "grader"), (Names.agent_role(), "codex-model-only")):
+            if r:  # a runtime that is CREATING/UPDATING/DELETING answers ConflictException; a delete takes several minutes
+                attempt(f"runtime {t} (status {r['status']}; if CREATING/UPDATING/DELETING wait and re-run cleanup)",
+                        lambda r=r, t=t: (ctl.delete_agent_runtime(agentRuntimeId=r["agentRuntimeId"]), print("deleting runtime", t)))
+
+        def del_repo():
             try:
-                iam.delete_role_policy(RoleName=rn, PolicyName=pn)
-                iam.delete_role(RoleName=rn); print("deleted role", rn)
-            except iam.exceptions.NoSuchEntityException:
+                ecr.delete_repository(repositoryName=Names.repo(), force=True); print("deleted ecr repository", Names.repo())
+            except ecr.exceptions.RepositoryNotFoundException:
                 pass
+        attempt("ecr repository", del_repo)
+
+        def del_project():
+            if cb.batch_get_projects(names=[Names.project()])["projects"]:
+                cb.delete_project(name=Names.project()); print("deleted codebuild project", Names.project())
+        attempt("codebuild project", del_project)
+        for rn, pn in ((Names.build_role(), "build"), (Names.runtime_role(), "grader"), (Names.agent_role(), "codex-model-only")):
+            def del_role(rn=rn, pn=pn):
+                try:
+                    iam.delete_role_policy(RoleName=rn, PolicyName=pn)
+                    iam.delete_role(RoleName=rn); print("deleted role", rn)
+                except iam.exceptions.NoSuchEntityException:
+                    pass
+            attempt(f"iam role {rn}", del_role)
+        if failed:
+            sys.exit(f"p2: cleanup incomplete, wait a few minutes and re-run it: {failed}")
         print("not deleted here: S3 bucket", mask(bucket()), "and the log groups; run scripts/teardown.sh (prints the commands) or see agentcore/TESTER-GUIDE.md")
 
 
