@@ -46,11 +46,11 @@ All numbers are from the runs of the authors, us-east-1, list prices, with +-30 
 |---|---|---|
 | First `all` (bootstrap, build, deploy) | 14 s bootstrap, 2 to 6 min build (images build in parallel; pr4121 about 2 min, pr371 about 6 min), 10 s deploy | CodeBuild about $0.12 per image (ARM, large) |
 | One PR review trial (`pr4121`, `pr4615`) | about 40 s | about $0.13 (the agent) |
-| One coding trial (`pr371`, `pr338`) | 6 to 7 min (agent 3 to 4 min, grader 2.5 min) | about $0.30 to $0.45 (the agent) plus $0.03 to $0.04 (the judges) |
+| One coding trial (`pr371`, `pr338`) | 6 to 7 min (agent 3 to 4 min, grader 1.5 to 2.5 min) | about $0.30 to $0.45 (the agent) plus $0.03 to $0.04 (the judges) |
 | Many trials at once | 12 or 24 trials at once took 10 % to 20 % longer than one trial. 30 at once ran without throttling | scales with the number of trials |
 | Idle, between runs | none | the ECR images (about 7 GB for four tasks): about $0.02 per day. Runtimes cost nothing while idle |
 | A first test | about 5 min | **under $0.50** (`all pr4121:1`) |
-| A full first run (`all pr371:3 pr4121:3 pr4615:3`) | about 12 min | about $3 to $4 |
+| A full first run (`all pr371:3 pr4121:3 pr4615:3`) | about 13 min (images build in parallel, the longest takes 6 min; then the trials run at once) | about $3 to $4 |
 
 ## 4. Smoke test first
 
@@ -60,7 +60,7 @@ The cheapest rung is one PR review trial. It builds one image, deploys one runti
 .venv/bin/python p2_v2.py all pr4121:1
 ```
 
-Expected: the log lines `bootstrap done in ~14s, 8 steps`, then `pr4121 build SUCCEEDED`, `pr4121 runtime READY`, and a table with one row. The row has `coverage_required` 1 and `coverage_all` 1 in nearly every trial (this approve task passed in 21 of 21 earlier trials), and the `errors` column is empty. A file `jobs/<time>/summary.md` has the same table. Then try one coding trial: `all pr371:1` (it builds a second image, 6 min).
+Expected (4 min 17 s on the first run of the authors): the log lines `bootstrap done in ~13s, 8 steps`, then `pr4121 build SUCCEEDED`, `pr4121 runtime READY`, and a table with one row. The row has `coverage_required` 1 and `coverage_all` 1 in nearly every trial (this approve task passed in 21 of 21 earlier trials), and the `errors` column is empty. A file `jobs/<time>/summary.md` has the same table. Then try one coding trial: `all pr371:1` (it builds a second image, 6 min).
 
 Two checks that cost almost nothing and prove the grader and the roles:
 
@@ -75,7 +75,7 @@ Two checks that cost almost nothing and prove the grader and the roles:
 PYTHON=.venv/bin/python scripts/teardown.sh                # default prefix evals-p2b-; give another as the first argument
 ```
 
-It runs `p2_v2.py cleanup` (runtimes, ECR repository with its images, CodeBuild project, three roles), then deletes the S3 bucket and the log groups of the prefix, then lists what is left. Every list in the last section must be empty. If your shell may not delete S3 objects or log groups, run `scripts/teardown.sh evals-p2b- --print` and give the printed commands to someone who may.
+It runs `p2_v2.py cleanup` (runtimes, ECR repository with its images, CodeBuild project, three roles), then deletes the S3 bucket and the log groups of the prefix, then lists what is left. Every list in the last section must be empty, with two exceptions. A runtime shows `DELETING` for a few minutes before it is gone (run `p2_v2.py status` again later). And the tag query lists every resource with the tag, including resources of other prefixes and the runtimes that are still deleting; look for your prefix. If your shell may not delete S3 objects or log groups, run `scripts/teardown.sh evals-p2b- --print` and give the printed commands to someone who may.
 
 Everything the runner creates is tagged `Project=evals-streamline-spike` and has the name prefix (`evals-p2b-`, or your `--prefix`). To check by hand:
 
