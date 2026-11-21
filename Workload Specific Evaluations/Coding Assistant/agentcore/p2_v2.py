@@ -12,8 +12,8 @@ No CloudFormation, no local Docker, no Harbor. Everything is created with boto3 
   p2_v2.py cleanup                       delete runtimes, ECR images and repo, CodeBuild project, IAM roles made by this tool
                                          (S3 bucket and log groups: scripts/teardown.sh lists the commands)
 
-TASK is one of pr371, pr338, pr4121, pr4615. The module is found from --module, $P2_MODULE, or by looking for coding_eval.py upwards
-(this file lives in <module>/agentcore/, so the module is its parent). Model IDs come from the module's model_config.py.
+TASK is one of pr371, pr338, pr4121, pr4615. The task data (datasets/, model_config.py, codex-bedrock.toml) is read from the folder of
+this file, or from --module / $P2_MODULE if given. Model IDs come from that folder's model_config.py.
 --variant (coding tasks only, opt-in): par = base+hidden pytest runs at the same time as the LLM stages; hard = that pytest stage runs on a
 fresh root-owned checkout of the sealed repo with the agent's patch applied (see image/variants/).
 """
@@ -36,7 +36,7 @@ TAGS = {"Project": "evals-streamline-spike",
 TAGL = [{"Key": k, "Value": v} for k, v in TAGS.items()]
 HERE = pathlib.Path(__file__).resolve().parent
 IMG = HERE / "image"
-# Defaults; main() replaces them with the values in the module's model_config.py when it finds the module.
+# Defaults; main() replaces them with the values in model_config.py of the task-data folder (module_dir()).
 CODEX_MODEL = "openai.gpt-6-sol"
 JUDGE_MODEL = "us.anthropic.claude-haiku-5-5"      # PR review judge (JUDGE_MODEL_ID)
 VERIFIER_MODEL = "us.anthropic.claude-haiku-5-5"   # coding verifier (VERIFIER_MODEL_ID)
@@ -100,22 +100,18 @@ def log(*a):
 
 
 def module_dir(arg=None, required=True):
-    p = arg or os.environ.get("P2_MODULE")
-    if p:
-        return pathlib.Path(p)
-    for base in (pathlib.Path.cwd(), HERE):
-        for d in [base, *list(base.parents)[:6]]:
-            for c in (d, d / "Coding Assistant", d / "Workload Specific Evaluations" / "Coding Assistant",
-                      *d.glob("*/Workload Specific Evaluations/Coding Assistant")):
-                if (c / "coding_eval.py").exists() and (c / "datasets").is_dir():
-                    return c
+    """The folder with datasets/, model_config.py and codex-bedrock.toml (read only, never written): this file's own folder,
+    unless --module or $P2_MODULE names another."""
+    p = pathlib.Path(arg or os.environ.get("P2_MODULE") or HERE)
+    if (p / "datasets").is_dir():
+        return p
     if not required:
         return None
-    sys.exit("module not found: set --module or $P2_MODULE to the 'Coding Assistant' module directory (read only, never written)")
+    sys.exit(f"task data not found: {p} has no datasets/ folder (set --module or $P2_MODULE to a folder that has one)")
 
 
 def load_models(module):
-    """Read the model IDs from the module's own model_config.py, so the module stays the one place to change them."""
+    """Read the model IDs from model_config.py of the task-data folder, so that file stays the one place to change them."""
     global CODEX_MODEL, JUDGE_MODEL, VERIFIER_MODEL
     f = module / "model_config.py"
     if not f.exists():
@@ -768,7 +764,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["all", "bootstrap", "policies", "setup", "build", "deploy", "run", "cleanup", "status"])
     ap.add_argument("tasks", nargs="*")
-    ap.add_argument("--module")
+    ap.add_argument("--module", help="folder with datasets/, model_config.py, codex-bedrock.toml (default: the folder of this file, or $P2_MODULE)")
     ap.add_argument("--job", default=None)
     ap.add_argument("--agent", default="codex")
     ap.add_argument("--platform", default="V1")

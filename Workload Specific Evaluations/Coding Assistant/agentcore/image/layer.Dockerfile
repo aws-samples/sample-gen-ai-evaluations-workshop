@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 iproute
 RUN useradd -u 2000 -d "$HOME" -s /bin/bash agent \
  && mkdir -p "$HOME" /logs/agent /logs/artifacts \
  && chown -R agent:agent "$HOME" /work /logs/agent /logs/artifacts
-# PR-review verifier needs boto3==1.43.89 (the baseline's separate verifier image, datasets/_shared/pr-review/tests/Dockerfile).
+# PR-review verifier needs boto3==1.43.89 (the task's own verifier image, datasets/_shared/pr-review/tests/Dockerfile).
 RUN UV_OFFLINE=0 uv venv --python 3.12 /opt/verifier-venv && UV_OFFLINE=0 uv pip install --python /opt/verifier-venv/bin/python boto3==1.43.89
-# Hidden verifier files: root-only, copied to /tests by the runner only after the agent has stopped (baseline shared mode).
+# Hidden verifier files: root-only, copied to /tests by the runner only after the agent has stopped (a shared-container verifier).
 COPY hidden/ /opt/hidden/tests/
 RUN chown -R root:root /opt/hidden && chmod -R go-rwx /opt/hidden
-# The Dockerfile ENV values, for as-agent, so the agent sees the same PATH/HOME/VIRTUAL_ENV as in the baseline.
+# The Dockerfile ENV values, for as-agent, so the agent sees the same PATH/HOME/VIRTUAL_ENV as in the task's own image.
 RUN mkdir -p /opt/firewall && printenv | grep -E '^(HOME|PATH|VIRTUAL_ENV|UV_[A-Z_]+|LANG|LC_ALL)=' > /opt/firewall/task.env
 COPY main.py /opt/shim/main.py
 COPY start.sh proxy.py as-agent /opt/firewall/

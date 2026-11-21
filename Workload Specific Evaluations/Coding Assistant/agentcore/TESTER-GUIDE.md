@@ -1,18 +1,18 @@
-# Tester guide: AgentCore mode
+# Tester guide
 
-You are testing a way to run the Coding Assistant module on AWS only. This guide says what you need, what it costs, how to run a first test, how to clean up, what is known to be weak, and what feedback we want. [README.md](README.md) has the four steps and the design.
+You are testing the Coding Assistant evaluation on AWS only (Amazon Bedrock AgentCore Runtime). This guide says what you need, what it costs, how to run a first test, how to clean up, what is known to be weak, and what feedback we want. [README.md](README.md) has the four steps and the design.
 
 ## 1. Prerequisites
 
 | Need | Detail |
 |---|---|
-| Python | 3.10 or later (tested with 3.12) |
+| Python | 3.11 or later (tested with 3.12; the notebook needs `tomllib`) |
 | boto3 | **1.44.7 or later**. Version 1.43.74 has no `platformVersion` for AgentCore. The runner checks this first and stops with `p2: boto3 ... is too old` before any AWS call (an older runner failed only at `deploy`, after the 2 to 6 minute image build). The default `python3` of your machine may be an old one: use the venv's `.venv/bin/python`. The venv line in the README installs the right version |
 | AWS account | One where you may create IAM roles, ECR, S3, CodeBuild, and AgentCore runtimes. Use a sandbox account, not a shared production one |
-| Region | `us-east-1` only (set in `p2_v2.py`, and in the module's task files) |
+| Region | `us-east-1` only (set in `p2_v2.py`, and in the task files in `datasets/`) |
 | Credentials | In the terminal: `aws sso login`, `AWS_PROFILE=...`, or access keys. The runner uses the standard boto3 credential chain |
-| Models | Codex model `openai.gpt-6-sol` on the Bedrock Mantle endpoint (the agent), and `us.anthropic.claude-haiku-5-5` (the judges). Both IDs are read from `../model_config.py`. Your account must be allowed to use them in `us-east-1` |
-| Not needed | Docker, Harbor, Node, the Codex CLI, the AWS CLI (only `scripts/teardown.sh` uses it), CloudFormation |
+| Models | Codex model `openai.gpt-6-sol` on the Bedrock Mantle endpoint (the agent), and `us.anthropic.claude-haiku-5-5` (the judges). Both IDs are read from `model_config.py` in this folder. Your account must be allowed to use them in `us-east-1` |
+| Not needed | A container engine on your machine, Node, the Codex CLI, the AWS CLI (only `scripts/teardown.sh` uses it), CloudFormation |
 
 ## 2. Permissions the caller needs
 
@@ -105,14 +105,14 @@ The `Expiry` tag is a date two weeks out (or `$P2_EXPIRY`). Nothing deletes a re
 
 - **Public network mode.** The runtimes use `networkMode: PUBLIC`, with no VPC. The only control over what the agent can reach is the in-session firewall (empty network namespace, allowlist proxy). Outside the firewall, the microVM has internet access.
 - **Scoped roles.** Each phase has a role for one model. The grader role is the AgentCore execution role, so the grader phase runs with it. The verifier still runs agent-written code as an unprivileged user holding the judge-only credentials. Changing `JUDGE_MODEL_ID` or `VERIFIER_MODEL_ID` in `model_config.py` changes the policy only at the next `bootstrap` (run `p2_v2.py bootstrap`; `all` bootstraps only when something is missing).
-- **Tampering.** A patch that plants a force-pass hook inside the package source (tamper "H") is not blocked by the optional `--variant hard`. The validation agent and its judge catch it in the tests so far (reward 0 or an invalid trial), but only one fake agent per tamper was tried. The default path (the module's `tests/test.sh`) also lets a planted `conftest.py` through stage 1.
+- **Tampering.** A patch that plants a force-pass hook inside the package source (tamper "H") is not blocked by the optional `--variant hard`. The validation agent and its judge catch it in the tests so far (reward 0 or an invalid trial), but only one fake agent per tamper was tried. The default path (the task's own `tests/test.sh`) also lets a planted `conftest.py` through stage 1.
 - **The firewall is not a certified boundary.** 43 scripted probes and two LLM red-team runs (7 and 8 turns), all with honest QA framing, found no break-out. A third run was stopped by the Bedrock content filter. Get an expert review before you run an agent that is trying to escape.
 - **Scale.** Measured on one account, one day, n=60 (two waves of 30 sessions at once, 15 `pr371` + 15 `pr338` each, no Bedrock throttling): 6 of 60 trials (10 %) were lost to the AgentCore side, before the retry and extraction fixes below: 4 `RuntimeClientError` 500s at session start and 2 readbacks that failed on an absolute symlink in the agent's home. One more trial was invalid because the taste judge returned a malformed answer (a judge fault, see "Invalid trials"). The runner now retries the first call of a session up to 3 times on a new session (2 to 10 s apart, with a log line), and a readback skips any archive member it cannot extract safely instead of failing; both are untested at scale, so expect a few percent of lost trials at 30 at once, not zero. **Rerun lost trials**: the summary lists every trial that has no reward, with the reason and the command, for example `.venv/bin/python p2_v2.py run pr371:2` (use `run`, not `all`, once the images and runtimes exist). Batches larger than 30 were not tested; the `--variant par` option adds 2 more concurrent judge calls per trial and was not tested at scale.
-- **Invalid trials.** A trial with no reward is neither a pass nor an agent fail. The `errors` column of the summary says why (`INVALID TRIAL ...` for a judge or grader fault, `RuntimeClientError ...` for a session that did not start, `readback: ...` for an archive problem). Known cause of an invalid trial: the taste judge (a Claude Haiku call in the module's `tests/lib/judges.py`) now and then returns one of its ten checks as a malformed string instead of an object, and the module's code fails with `TypeError: string indices must be integers`. Rerun it.
+- **Invalid trials.** A trial with no reward is neither a pass nor an agent fail. The `errors` column of the summary says why (`INVALID TRIAL ...` for a judge or grader fault, `RuntimeClientError ...` for a session that did not start, `readback: ...` for an archive problem). Known cause of an invalid trial: the taste judge (a Claude Haiku call in the task's `tests/lib/judges.py`) now and then returns one of its ten checks as a malformed string instead of an object, and that code fails with `TypeError: string indices must be integers`. Rerun it.
 - **No fresh-account test.** All runs used one account that had AWS prerequisites from earlier work. Bootstrap from an empty prefix was tested there, not in a different account, and not with a restricted caller (see section 2).
-- **PR review `pr4615` (reject).** It passes about 12 % of the time with Codex (23 of 185 trials, 95 % interval 8 % to 18 %), at 1, 5, and 30 trials at once. That is judge and agent variance, not an environment bug: no difference between this mode and the Docker mode was found that would explain a different rate (the Docker mode had 0 of 3 trials passing). Do not report a low pass rate on this task as a bug, report a rate that differs a lot from 12 % over 20 or more trials.
+- **PR review `pr4615` (reject).** It passes about 12 % of the time with Codex (23 of 185 trials, 95 % interval 8 % to 18 %), at 1, 5, and 30 trials at once. That is judge and agent variance, not an environment bug: no difference in the environment was found that would explain the rate. Do not report a low pass rate on this task as a bug, report a rate that differs a lot from 12 % over 20 or more trials.
 - **Coding rewards.** Judge fields (`relative_taste`, `validation_score`) vary between runs of the same patch: one reward 0.0 in a trial came from a hidden test that the agent's patch broke, another from `relative_taste` 0.2.
-- **Models and Region.** One agent (Codex) and `us-east-1`. The Claude Code swap of the module's notebooks is not part of this mode.
+- **Models and Region.** One agent (Codex) and `us-east-1`. Claude Code as the agent is not supported.
 - **Failures.** A failed image build prints the last 80 log lines, then `p2: image build failed: <task>: ERROR: ... (BUILD phase)`, exits 1, and nothing is deployed or run (checked with a deliberately broken Dockerfile; the failing build takes about 2 minutes to report). `build` and `deploy` also exit 1 on failure. `run` on a task that is not deployed says `p2: no AgentCore runtime ... Run 'deploy <task>' or 'all' first`. The first call of every session is retried up to 3 times on a new session when it fails with `RuntimeClientError` or an HTTP 5xx (a log line says so). Ctrl-C during `run` stops the sessions and exits with code 130 (tested with fake sessions only). `bootstrap` can be interrupted and re-run at any point. `cleanup` continues past a runtime that is still CREATING, UPDATING or DELETING, prints `FAILED runtime ...`, and exits 1: wait a few minutes (a delete takes 3 to 7 minutes) and run it again. A command that runs longer than its timeout (1500 s for the agent) returns exit code -1 in `result.json` (`agent_exit`), with no entry in the `errors` column. Not tested: a caller with restricted permissions, `cleanup` while a runtime is CREATING.
 
 ## 7. What feedback we want
@@ -125,12 +125,12 @@ Things we cannot see from our own account:
 4. Anything the guide got wrong or left out. Steps that you had to guess.
 5. Trials that are invalid, slow, or throttled at your batch size.
 6. Anything left behind after `scripts/teardown.sh`.
-7. Whether you would use this mode over the Docker/Harbor mode, and why not.
+7. Whether you would use this setup for your own evals, and why not.
 
 Send it as an issue on the repository or as a message to the owner, with this template:
 
 ```markdown
-**Mode:** AgentCore (agentcore/)    **Branch/commit:** <sha>
+**Setup:** AgentCore    **Branch/commit:** <sha>
 **Caller:** <sso role / IAM user type; admin or restricted; SCPs?>    **Region:** us-east-1
 **Python / boto3:** <3.x.y / 1.44.x>    **OS:** <macOS/Linux/Windows>
 

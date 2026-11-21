@@ -1,0 +1,117 @@
+# Validation spec: the user stories that the validation agent tests, with a procedure and cases for each.
+# The coding agent does not see this file. The validation agent adapts its tests to the agent's change.
+
+instructions = """
+- Use only the public types of strands_evals.types.trace (AgentInvocationSpan, ToolExecutionSpan,
+  SpanInfo, ToolCall, ToolResult, ToolConfig, Trace, Session) and strands_evals.types.evaluation
+  (EvaluationData). Do not call a model and do not use the network.
+- Times in the cases are seconds after 2026-01-01T00:00:00 UTC. If an agent has "naive": true, give its
+  span a naive datetime (no tzinfo) for the same moment.
+- Each tool span in the cases has no parent_span_id and no agent_span_id: no agent owns it directly.
+- Give each SpanInfo session_id "s" and trace_id "t". The trace_id of the Trace is "t".
+"""
+
+[[stories]]
+id = "judge_sees_coordinator_request"
+description = """
+In a flat multi-agent trace (no agent span has a parent), ToolSelectionAccuracyEvaluator must judge each
+tool call against the request of the agent that started first, with that agent's tools, whatever the
+order of the spans in the trace.
+"""
+procedure = [
+  "Build one AgentInvocationSpan for each entry of inputs.agents, in list order: span_id = id, parent_span_id = None, start and end from the case, user_prompt = prompt, agent_response = response, available_tools = one ToolConfig for each name in tools.",
+  "Build one ToolExecutionSpan for each entry of inputs.tools (name, arguments, result, start, end).",
+  "Make one Trace with the agent spans first, then the tool spans, in list order. Wrap it in a Session and an EvaluationData(input=..., actual_trajectory=session).",
+  "Replace the model of ToolSelectionAccuracyEvaluator with a stub that records each prompt and returns a 'Yes' rating. Patch the name `Agent` in the module of the evaluator; this is the only mock that is permitted. Run evaluate().",
+  "For every recorded prompt: assert that expected.request is in the prompt, that no string of expected.absent is in the prompt, and that every name in expected.tools is in the prompt.",
+  "Assert that the number of recorded prompts equals the number of tool spans.",
+]
+
+[[stories.cases]]
+name = "sub_agent_listed_first"
+inputs = { agents = [
+  { id = "sub", start = 5, end = 10, prompt = "Weather in London", response = "50F", tools = ["get_weather"] },
+  { id = "coord", start = 0, end = 20, prompt = "Weather in New York and London, then calculate the difference.", response = "18F", tools = ["ask_weather", "calculate"] },
+], tools = [{ name = "calculate", arguments = { expr = "68 - 50" }, result = "18", start = 11, end = 12 }] }
+expected = { request = "Weather in New York and London, then calculate the difference.", absent = ["Weather in London"], tools = ["ask_weather", "calculate"] }
+
+[[stories.cases]]
+name = "coordinator_last_of_three"
+inputs = { agents = [
+  { id = "sub_a", start = 2, end = 6, prompt = "Population of Paris", response = "2.1M", tools = ["lookup"] },
+  { id = "sub_b", start = 3, end = 7, prompt = "Population of Rome", response = "2.8M", tools = ["lookup"] },
+  { id = "coord", start = 0, end = 20, prompt = "Which is bigger, Paris or Rome, and by how much?", response = "Rome by 0.7M", tools = ["ask_research", "subtract"] },
+], tools = [{ name = "subtract", arguments = { a = 2.8, b = 2.1 }, result = "0.7", start = 8, end = 9 }] }
+expected = { request = "Which is bigger, Paris or Rome, and by how much?", absent = ["Population of Paris", "Population of Rome"], tools = ["ask_research", "subtract"] }
+
+[[stories.cases]]
+name = "coordinator_listed_first"
+inputs = { agents = [
+  { id = "coord", start = 0, end = 20, prompt = "Book a table for two and send the invite.", response = "Done", tools = ["ask_booking", "send_invite"] },
+  { id = "sub", start = 2, end = 6, prompt = "Find a table for two", response = "Table at 7pm", tools = ["search_tables"] },
+], tools = [{ name = "send_invite", arguments = { time = "19:00" }, result = "sent", start = 7, end = 8 }] }
+expected = { request = "Book a table for two and send the invite.", absent = ["Find a table for two"], tools = ["ask_booking", "send_invite"] }
+
+[[stories.cases]]
+name = "naive_coordinator_time"
+inputs = { agents = [
+  { id = "sub", start = 5, end = 10, prompt = "Price of AAPL", response = "190", tools = ["quote"] },
+  { id = "coord", start = 0, end = 20, naive = true, prompt = "Compare AAPL and MSFT prices.", response = "MSFT is higher", tools = ["ask_quotes", "compare"] },
+], tools = [{ name = "compare", arguments = { a = 190, b = 420 }, result = "MSFT", start = 11, end = 12 }] }
+expected = { request = "Compare AAPL and MSFT prices.", absent = ["Price of AAPL"], tools = ["ask_quotes", "compare"] }
+
+[[stories.cases]]
+name = "empty_agent_starts_first"
+inputs = { agents = [
+  { id = "sub", start = 4, end = 9, prompt = "French for hello", response = "bonjour", tools = ["translate"] },
+  { id = "empty", start = 0, end = 30, prompt = "", response = "", tools = ["noop"] },
+  { id = "coord", start = 1, end = 20, prompt = "Translate hello to French and to German.", response = "bonjour, hallo", tools = ["ask_translator", "format_answer"] },
+], tools = [{ name = "format_answer", arguments = { parts = 2 }, result = "ok", start = 10, end = 11 }] }
+expected = { request = "Translate hello to French and to German.", absent = ["French for hello"], tools = ["ask_translator", "format_answer"] }
+
+[[stories]]
+id = "orphan_tool_owner"
+description = """
+A tool span that no agent owns (no parent, no agent_span_id) belongs to the root agent of the trace: the
+parentless agent with content that started first. If no parentless agent has content, it is the parentless
+agent that started first.
+"""
+procedure = [
+  "Build the agent spans and tool spans of the case as in the story judge_sees_coordinator_request. An agent with a `parent` value gets that parent_span_id.",
+  "Make one Trace with the agent spans first, then the tool spans, in list order.",
+  "Find the agent that owns each tool span after the trace is built (read the diff and the Trace code to find where the owner is recorded, for example ToolExecutionSpan.agent_span_id). Do not compute the owner in the test.",
+  "Assert that the owner of every tool span is expected.owner.",
+]
+
+[[stories.cases]]
+name = "sub_agent_listed_first"
+inputs = { agents = [
+  { id = "sub", start = 5, end = 10, prompt = "Weather in London", response = "50F", tools = ["get_weather"] },
+  { id = "coord", start = 0, end = 20, prompt = "Weather in two cities", response = "done", tools = ["ask_weather"] },
+], tools = [{ name = "calculate", arguments = {}, result = "18", start = 11, end = 12 }] }
+expected = { owner = "coord" }
+
+[[stories.cases]]
+name = "all_agents_without_content"
+inputs = { agents = [
+  { id = "late", start = 5, end = 6, prompt = "", response = "", tools = ["a"] },
+  { id = "early", start = 0, end = 10, prompt = "", response = "", tools = ["b"] },
+], tools = [{ name = "x", arguments = {}, result = "ok", start = 7, end = 8 }] }
+expected = { owner = "early" }
+
+[[stories.cases]]
+name = "child_agent_starts_first"
+inputs = { agents = [
+  { id = "child", parent = "elsewhere", start = 0, end = 5, prompt = "child task", response = "ok", tools = ["c"] },
+  { id = "late_sub", start = 6, end = 9, prompt = "sub task", response = "ok", tools = ["s"] },
+  { id = "coord", start = 1, end = 20, prompt = "main task", response = "ok", tools = ["m"] },
+], tools = [{ name = "m", arguments = {}, result = "ok", start = 10, end = 11 }] }
+expected = { owner = "coord" }
+
+[[stories.cases]]
+name = "coordinator_first"
+inputs = { agents = [
+  { id = "coord", start = 0, end = 20, prompt = "main task", response = "ok", tools = ["m"] },
+  { id = "sub", start = 2, end = 4, prompt = "sub task", response = "ok", tools = ["s"] },
+], tools = [{ name = "m", arguments = {}, result = "ok", start = 5, end = 6 }] }
+expected = { owner = "coord" }

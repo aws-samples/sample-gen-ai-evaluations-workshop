@@ -1,6 +1,6 @@
-# Coding Assistant on Amazon Bedrock AgentCore Runtime (test mode)
+# Coding Assistant Evaluations on Amazon Bedrock AgentCore Runtime
 
-This folder runs the datapoints of the Coding Assistant module without Docker, Harbor, or CloudFormation on your machine. One command creates what it needs in your AWS account, builds the task images on AWS CodeBuild, runs each trial in its own Amazon Bedrock AgentCore Runtime session, and prints a summary table. The runner reads the tasks and verifiers from `../datasets/`, the model IDs from `../model_config.py`, and the Codex settings from `../codex-bedrock.toml`. It uses `../coding_eval.py` only to recognize the module folder. Nothing in the module is copied or changed.
+This folder evaluates a coding agent (Codex on Amazon Bedrock) on four tasks made from real pull requests, on AWS only: nothing runs or builds on your machine except a Python script, and no CloudFormation is used. One command creates what it needs in your AWS account, builds the task images on AWS CodeBuild, runs each trial in its own Amazon Bedrock AgentCore Runtime session, and prints a summary table. The runner reads the tasks and verifiers from `datasets/`, the model IDs from `model_config.py`, and the Codex settings from `codex-bedrock.toml`, all in this folder. It never changes them.
 
 **Status: pre-release, for testers.** Read [TESTER-GUIDE.md](TESTER-GUIDE.md) first. It has the permissions, the cost, the smoke test, the cleanup, the known limits, and the feedback template.
 
@@ -8,10 +8,10 @@ To learn the approach while you run it, open [05 AgentCore walkthrough.ipynb](05
 
 ## The four steps
 
-Run them from this folder (`Workload Specific Evaluations/Coding Assistant/agentcore`).
+Run them from this folder (the one with `p2_v2.py`).
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install "boto3>=1.44.7"     # 1. Python 3.10 or later
+python3 -m venv .venv && .venv/bin/pip install "boto3>=1.44.7"     # 1. Python 3.11 or later
 # 2. MANUAL: put AWS credentials in the terminal (aws sso login, or AWS_PROFILE, or access keys); the Region is us-east-1
 .venv/bin/python p2_v2.py all pr4121:1                               # 3. smoke test: bootstrap + build + deploy + 1 PR review trial (about 5 min)
 .venv/bin/python p2_v2.py all pr371:3 pr4121:3 pr4615:3              # 4. a real run: three trials of each task, all at once
@@ -21,7 +21,7 @@ python3 -m venv .venv && .venv/bin/pip install "boto3>=1.44.7"     # 1. Python 3
 
 More than 30 trials: run waves of 30 (recipe in [TESTER-GUIDE.md](TESTER-GUIDE.md) section 3). A trial with no reward is listed under the summary with its reason; rerun it with `run`.
 
-The tasks are `pr4121` (PR review, approve), `pr4615` (PR review, reject), `pr371` and `pr338` (coding, bug fix). The agent under test is Codex on Amazon Bedrock. The judges are the ones of the module.
+The tasks are `pr4121` (PR review, approve), `pr4615` (PR review, reject), `pr371` and `pr338` (coding, bug fix). The agent under test is Codex on Amazon Bedrock. The judges are the ones in `model_config.py`.
 
 ## What it does
 
@@ -42,7 +42,7 @@ p2_v2.py run        ---- API ---->   one session = one microVM per trial:
                                      | 2. phase switch  agent processes are killed; the proxy        |
                                      |    allowlist changes to the judge endpoint; the hidden tests |
                                      |    are copied in (they are root-only until now)              |
-                                     | 3. grader phase  the module's own tests/test.sh runs.        |
+                                     | 3. grader phase  the task's own tests/test.sh runs.          |
                                      |    Credentials: the grader role (the judge model only)       |
                                      +--------------------------------------------------------------+
                   <---- tar ---    /logs/verifier/reward.json, agent logs, artifacts
@@ -53,15 +53,18 @@ Four points:
 - **One session for each trial.** AgentCore starts a fresh microVM (2 vCPU, 8 GB) for the session, and the session ends when the trial ends. Many trials run at the same time, so a batch takes as long as its slowest trial.
 - **A firewall inside the session.** The microVM gives root no network-admin capability, so nftables and iptables do not load. Instead the agent runs in an empty network namespace, owned by its own user namespace. A relay inside that namespace and an allowlist proxy outside it (unix socket) are the only route out. `image/start.sh` and `image/proxy.py` are the whole firewall.
 - **Two phases, two roles.** The agent phase has credentials for the Codex model and nothing else. The grader phase has credentials for the judge model and nothing else. The hidden tests are in the image (root, mode 0700) and become readable only after the agent's processes are killed.
-- **No images on your machine.** The image of a task is the task's own `environment/Dockerfile`, unchanged, plus `image/layer.Dockerfile`. CodeBuild builds it and pushes it to your ECR repository.
+- **Nothing is built on your machine.** The image of a task is the task's own `environment/Dockerfile`, unchanged, plus `image/layer.Dockerfile`. CodeBuild builds it and pushes it to your ECR repository.
 
 ## Files
 
 ```
-agentcore/
+./
 ├── README.md          this file
 ├── TESTER-GUIDE.md    prerequisites, permissions, cost, smoke test, cleanup, limits, feedback template
-├── 05 AgentCore walkthrough.ipynb   a teaching notebook: the approach, a run of each kind of trial, the controls, the firewall, cleanup
+├── 05 AgentCore walkthrough.ipynb   a teaching notebook: the approach, the task format and datasets, a run of each kind of trial, scoring, the controls, the firewall, parallel trials, cleanup
+├── model_config.py    all model IDs: the agent under test and the judges
+├── codex-bedrock.toml the Codex settings (Bedrock provider), copied into each session
+├── datasets/          the four task directories, the PR-review candidates, rubric.md and risk-map.toml, and _shared/ (one source for the verifier files that are the same in each task: python datasets/_shared/sync.py --check)
 ├── p2_v2.py           the runner (bootstrap, build, deploy, run, all, status, policies, cleanup)
 ├── image/             the files added to every task image
 │   ├── layer.Dockerfile, layer_variants.Dockerfile, buildspec.yml
@@ -74,6 +77,6 @@ agentcore/
     └── test_runner_v2.py  unit tests of the runner (archive extraction, session-start retry, summary); no AWS call
 ```
 
-`p2_v2.py` finds the module by itself: this folder is inside it. Run from elsewhere, give `--module "<repo>/Workload Specific Evaluations/Coding Assistant"` or set `P2_MODULE`. Results go to `jobs/` here (ignored by git).
+`p2_v2.py` reads `datasets/`, `model_config.py` and `codex-bedrock.toml` from its own folder, wherever you run it from. To use another copy of them, give `--module <folder>` or set `P2_MODULE`. Results go to `jobs/` here (ignored by git).
 
 Other commands: `p2_v2.py policies` prints the three IAM policies it installs. `p2_v2.py status` shows the runtimes. `p2_v2.py run pr371:2 --agent empty` runs a trial with no agent (the verifier then scores an unchanged repository, a check that the grader works). `--prefix NAME` (or `$P2_PREFIX`, default `evals-p2b-`) gives a second, independent copy of every resource.

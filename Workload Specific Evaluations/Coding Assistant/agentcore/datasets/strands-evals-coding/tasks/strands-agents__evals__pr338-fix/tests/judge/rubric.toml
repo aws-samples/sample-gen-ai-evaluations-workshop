@@ -1,0 +1,32 @@
+# Task rubric: scored by an LLM judge, 0 or 1 each. It does not gate a solve alone: the rubric score must be
+# above 0.5. Requirements that the tests cannot check at run time, or that are preferences, go here.
+
+[[criteria]]
+id = "earlier_results_in_same_turn"
+kind = "fail_to_pass"
+text = "Each tool-level input includes the results of the tool calls in the same trace that ended before the call started."
+
+[[criteria]]
+id = "decided_by_time"
+kind = "fail_to_pass"
+text = "Which results a call sees is decided by the span times (a result ended at or before the call started), not by the order of the spans in the list."
+
+[[criteria]]
+id = "mixed_timezones"
+kind = "fail_to_pass"
+text = "Span times that mix naive and timezone-aware datetimes are compared without a TypeError; a naive time is read as UTC."
+
+[[criteria]]
+id = "no_self_parallel_or_later"
+kind = "pass_to_pass"
+text = "A call never sees its own result, the result of a call that was still running when it started, or the result of a later call."
+
+[[criteria]]
+id = "earlier_turns_kept"
+kind = "pass_to_pass"
+text = "The results and messages of earlier traces stay in the history, as before, and trace-level and session-level inputs do not change."
+
+[[criteria]]
+id = "existing_history_types"
+kind = "pass_to_pass"
+text = "session_history keeps its existing types (UserMessage, list of ToolExecution, AssistantMessage), so the existing prompt formatting of the evaluators works without change."
