@@ -4,7 +4,7 @@ This folder runs the datapoints of the Coding Assistant module without Docker, H
 
 **Status: pre-release, for testers.** Read [TESTER-GUIDE.md](TESTER-GUIDE.md) first. It has the permissions, the cost, the smoke test, the cleanup, the known limits, and the feedback template.
 
-To learn the approach while you run it, open [05 AgentCore walkthrough.ipynb](05%20AgentCore%20walkthrough.ipynb). It explains each step, runs a PR review trial and a coding trial, shows the controls, the firewall, and a batch of parallel trials, and ends with a cleanup section. It takes about 75 minutes and costs about $3 to $5.
+To learn the approach while you run it, open [05 AgentCore walkthrough.ipynb](05%20AgentCore%20walkthrough.ipynb). It explains each step, runs a PR review trial and a coding trial, shows the controls, the firewall, and a batch of parallel trials, and ends with a cleanup section. It takes about 60 to 75 minutes (about 35 of them run by themselves) and costs about $3 to $5.
 
 ## The four steps
 
