@@ -4,6 +4,8 @@ This folder runs the datapoints of the Coding Assistant module without Docker, H
 
 **Status: pre-release, for testers.** Read [TESTER-GUIDE.md](TESTER-GUIDE.md) first. It has the permissions, the cost, the smoke test, the cleanup, the known limits, and the feedback template.
 
+To learn the approach while you run it, open [05 AgentCore walkthrough.ipynb](05%20AgentCore%20walkthrough.ipynb). It explains each step, runs a PR review trial and a coding trial, shows the controls, the firewall, and a batch of parallel trials, and ends with a cleanup section. It takes about 75 minutes and costs about $3 to $5.
+
 ## The four steps
 
 Run them from this folder (`Workload Specific Evaluations/Coding Assistant/agentcore`).
@@ -59,6 +61,7 @@ Four points:
 agentcore/
 ├── README.md          this file
 ├── TESTER-GUIDE.md    prerequisites, permissions, cost, smoke test, cleanup, limits, feedback template
+├── 05 AgentCore walkthrough.ipynb   a teaching notebook: the approach, a run of each kind of trial, the controls, the firewall, cleanup
 ├── p2_v2.py           the runner (bootstrap, build, deploy, run, all, status, policies, cleanup)
 ├── image/             the files added to every task image
 │   ├── layer.Dockerfile, layer_variants.Dockerfile, buildspec.yml
