@@ -4,7 +4,9 @@ export P1
 export P1_REAL_HOME="${P1_REAL_HOME:-$HOME}"
 export HOME="$P1/home"
 # work dir (sealed clones, trial dirs, verifier copies): no spaces allowed, see runner/p1.py. Delete it to clean up.
-export P1_WORK="${P1_WORK:-$P1_REAL_HOME/.coding-assistant-local/work}"
+# One per checkout: <id> is the first 8 hex digits of the SHA-1 of this folder's path, so two checkouts never share it.
+P1_WORK_ID="$(printf %s "$(cd "$P1" && pwd -P)" | shasum | cut -c1-8)"
+export P1_WORK="${P1_WORK:-$P1_REAL_HOME/.coding-assistant-local/$P1_WORK_ID/work}"
 export UV_CACHE_DIR="$P1/uv-cache"
 export UV_PYTHON_INSTALL_DIR="$P1/uv-python"
 export NPM_CONFIG_PREFIX="$P1/npm"

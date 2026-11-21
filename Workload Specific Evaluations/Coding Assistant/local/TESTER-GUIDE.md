@@ -1,12 +1,8 @@
-# Tester guide: local mode
+# Tester guide
 
-You are testing the host-only mode of the Coding Assistant module: no Docker, no Harbor. Read [README.md](README.md) first for what the mode is. This guide tells you what to install, what to run, what each test stage proves, what it costs, and how to clean up. Numbers marked **measured** come from one laptop (macOS 26.7.3, 11 cores, 18 GiB), one trial at a time, n=3 per task, 20 November 2026. Numbers marked **estimate** were not measured in this mode.
+You are testing the Coding Assistant evaluation that runs on your Mac only: no container, no VM. Read [README.md](README.md) first for what it is. This guide tells you what to install, what to run, what each test stage proves, what it costs, and how to clean up. Numbers marked **measured** come from one laptop (macOS 26.7.3, 11 cores, 18 GiB), one trial at a time, n=3 per task, 20 November 2026. Numbers marked **estimate** were not measured.
 
-All commands start in the module's `local` folder. From the root of the repository:
-
-```bash
-cd "Workload Specific Evaluations/Coding Assistant/local"
-```
+All commands start in this folder (the one with `runner/p1.py`).
 
 ## 1. Prerequisites
 
@@ -22,7 +18,7 @@ cd "Workload Specific Evaluations/Coding Assistant/local"
 | Disk | about 3 GB free (section 4) |
 | Network | one download of about 1 GB during setup (estimate). During a run, only the two Bedrock hosts are used from the sandbox |
 
-You do **not** need Docker, Harbor, `gh`, Jupyter, a system Python or `sudo`.
+You do **not** need a container engine, `gh`, a system Python or `sudo`. Jupyter is needed only for the walkthrough notebook, and its start command installs it with `uv`.
 
 ## 2. AWS permissions
 
@@ -33,7 +29,7 @@ The runner mints two short-lived credentials from your default profile for each 
 | Verifier token | `aws sts get-session-token` | 2 hours | the grader (judge models) |
 | Agent token | `aws sts get-federation-token --name p1-agent --policy scripts/agent-policy.json` | 1 hour | Codex, inside the sandbox |
 
-What your IAM user needs, derived from `runner/p1.py`, `scripts/agent-policy.json` and the module's verifier code (`Converse` calls):
+What your IAM user needs, derived from `runner/p1.py`, `scripts/agent-policy.json` and the tasks' verifier code (`Converse` calls):
 
 - `sts:GetFederationToken`. Without `--federated`, the agent gets the verifier token instead and this one is not needed. `run_all.sh` always uses `--federated`.
 - `sts:GetSessionToken` needs no permission (AWS does not let a policy control it).
@@ -80,7 +76,7 @@ p1 prepare pr371-fix pr338-fix pr4121-approve pr4615-reject      # sealed clones
 p1 base-suite pr371-fix                                          # base tests in a fresh venv: expect 1864 passed
 ```
 
-`source env.sh` changes `HOME` in that shell to `local/home`. Open a new terminal when you are done.
+`source env.sh` changes `HOME` in that shell to `home/` in this folder. Open a new terminal when you are done.
 
 One trial (environment start, Codex inside the sandbox, verifier, record):
 
@@ -121,7 +117,7 @@ Measured on one Mac with 11 cores and 18 GiB, one trial at a time (serial).
 | Environment start per coding trial | 21 to 23 s (venv rebuilt from the cache) | measured |
 | Grader, coding task, oracle patch | 202 s (pr371), 250 s (pr338) | measured, outside the sandbox |
 | Grader, PR-review task | 0.1 s without findings, 18 s with findings | measured |
-| Agent loop (Codex), per trial, mean ± sd of 3 | pr371 85.2 ± 3.4 s, pr338 115.4 ± 3.6 s, pr4121 review 36.5 ± 3.6 s, pr4615 review 48.2 ± 10.6 s (Docker path: 133, 148, 30, 30 s) | measured |
+| Agent loop (Codex), per trial, mean ± sd of 3 | pr371 85.2 ± 3.4 s, pr338 115.4 ± 3.6 s, pr4121 review 36.5 ± 3.6 s, pr4615 review 48.2 ± 10.6 s | measured |
 | Whole trial (environment start, agent, verifier) | pr371 286 s, pr338 327 s, pr4121 52 s, pr4615 63 s | measured |
 | Verifier, coding task | 180 to 192 s (the hidden and base test stage is about 100 s of it) | measured |
 | Time to first agent reward | 48.7 s after the trial starts (pr4121 review); about 3 min from an empty machine | measured |
@@ -129,7 +125,7 @@ Measured on one Mac with 11 cores and 18 GiB, one trial at a time (serial).
 | Disk, steady / peak | about 2.2 GB / 2.8 GB apparent size (the uv cache is 1 GB of that) | measured |
 | Memory and CPU during a run | not measured (nothing runs between trials) | |
 | Judge cost, one coding trial | $0.02 to $0.03 | measured |
-| Agent cost, Codex | $0.21 to $0.30 per coding trial, $0.13 to $0.17 per PR review; $2.46 for the 12 trials (Docker path: $2.33) | estimate: tokens measured, price implied by the Docker runs' `cost_usd` |
+| Agent cost, Codex | $0.21 to $0.30 per coding trial, $0.13 to $0.17 per PR review; $2.46 for the 12 trials | estimate: tokens measured, price $2.50 per 1M uncached input, $0.20 cached, $10.00 output |
 | Cost of `./run_all.sh` | about $3 (L6 $0.41, L7 $2.68 with judges and controls, L5s a few cents) | estimate |
 
 Trial directories are removed after the record is copied, except those of `base-suite` and `sandbox-run` (stages L1 to L4), which stay at 90 to 260 MB each. A long session can use several GB. Section 8 shows how to clear them.
@@ -149,7 +145,7 @@ Trial directories are removed after the record is copied, except those of `base-
 | L6 | two real Codex trials (pr4121 review, pr371 fix) | An agent runs end to end in the sandbox and the grader scores it. Fails if Codex exits non-zero or used 0 tokens | about 6 min (measured: 336 s) |
 | L7 | 4 tasks x 3 Codex trials, then oracle and empty controls | The full set | about 54 min (measured) |
 
-The investigators also ran three stages that are not in this folder because they need files that are not shipped: **L3** (32 scripted break-out probes inside the sandbox), **L3rt** (an LLM red team with Claude Sonnet 5.5 as the attacker) and **L5** (the grader on 22 fixed patches compared with Docker-path reward files). Their results are summarised in README.md. If you want them, ask the maintainers.
+The investigators also ran three stages that are not in this folder because they need files that are not shipped: **L3** (32 scripted break-out probes inside the sandbox), **L3rt** (an LLM red team with Claude Sonnet 5.5 as the attacker) and **L5** (the grader on 22 fixed patches compared with reference reward files made in a Linux container). Their results are summarised in README.md. If you want them, ask the maintainers.
 
 ## 6. How to read the results
 
@@ -166,13 +162,14 @@ Each trial is a folder `jobs/<job>/<trial>/`:
 
 A trial is **valid** only if `agent_result.exit` is 0, `input_tokens` is above 0 and `verifier/reward.json` exists. The runner stops the job with `STOP: the agent did not run` otherwise. A missing `reward.json` is an invalid trial, not a score of 0.
 
-Read the rewards of a job from Python, from the module folder (the helper is the module's own):
+Read the rewards of a job from Python, in this folder (a trial with no `reward.json` prints `None`: it is invalid):
 
 ```bash
-cd ..
-PYTHONDONTWRITEBYTECODE=1 uv run --no-project --python 3.12 python -c \
-  'from pathlib import Path; import coding_eval as ce; print(ce.trial_rewards(Path("local/jobs/L6")))'
-cd local
+PYTHONDONTWRITEBYTECODE=1 uv run --no-project --python 3.12 python -c '
+import json, pathlib
+for t in sorted(pathlib.Path("jobs/L6").glob("*/result.json")):
+    r = t.parent / "verifier" / "reward.json"
+    print(t.parent.name, json.loads(r.read_text()) if r.exists() else None)'
 ```
 
 For the number of trials that matter: judge fields move between runs of the same patch (`relative_taste` varied from 0.8 to 1.0 on one patch), and the PR-review reject task passed 12% of the time in a separate 185-trial study, so one trial per task shows that the pipeline works but does not rank agents.
@@ -185,12 +182,12 @@ For the number of trials that matter: judge fields move between runs of the same
 - **CA file for Codex.** The runner sets `CODEX_CA_CERTIFICATE` and `SSL_CERT_FILE` to `/etc/ssl/cert.pem`, and Codex worked with that setting in all 12 trials. Whether Codex needs it was not tested. If Codex cannot connect, `scripts/diag_codex.sh` (stage L6a) tries alternatives. Turning on `enableWeakerNetworkIsolation` is a real weakening and is never enabled automatically.
 - **Run the stages through `run_all.sh`.** Do not redirect the output of the sandboxed runner to a file under `/Users` yourself.
 - **Keep the repository under your home directory.** The sandbox denies reads of your home, `/Users`, `/Volumes` and `/tmp`. A checkout somewhere else (for example `/opt`) would be readable by the agent, including the hidden tests.
-- **The work directory is outside the module folder** (`~/.coding-assistant-local/work`) and must not contain a space. `env.sh` sets it. The runner refuses to start if the path has a space.
-- **BSD tools.** The agent sees macOS `sed`, `find`, `tar` and bash 3.2. An agent that uses `sed -i` without a suffix or `grep -P` gets errors that it would not get in Docker.
+- **The work directory is outside this folder** (`~/.coding-assistant-local/<id>/work`, `<id>` = the first 8 hex digits of the SHA-1 of this folder's path, so each checkout has its own) and must not contain a space. `env.sh` sets it; set `P1_WORK` to override it. The runner refuses to start if the path has a space.
+- **BSD tools.** The agent sees macOS `sed`, `find`, `tar` and bash 3.2. An agent that uses `sed -i` without a suffix or `grep -P` gets errors that it would not get on Linux.
 - **Isolation limits.** System files outside `/Users` stay readable inside the sandbox. The sandbox is not a certified security boundary: one build, one attacker model, honest QA framing. Do not run an adversarial agent here without a review.
-- **Cheats.** A planted root `conftest.py` that forces tests to pass defeats the hidden-test stage in every mode of this module. A planted `sitecustomize.py` in the venv defeats it and the validation agent in this mode. The final reward stays 0 through the rubric and taste judges.
+- **Cheats.** A planted root `conftest.py` that forces tests to pass defeats the hidden-test stage. A planted `sitecustomize.py` in the venv defeats it and the validation agent. The final reward stays 0 through the rubric and taste judges.
 - **Parallel trials** are not supported (one lock) and not measured.
-- **Linux, Intel Mac, Windows, Claude Code as agent, notebooks 02 and 03** are not supported in this mode.
+- **Linux, Intel Mac, Windows and Claude Code as agent** are not supported.
 
 ## 8. Clean up
 
@@ -200,11 +197,11 @@ Nothing exists in AWS. Delete local files only:
 rm -rf "$P1_WORK"                                      # sealed clones, trial directories, verifier copies (can be several GB)
 rm -rf jobs logs .bedrock.lock                         # records and logs of this folder
 rm -rf node npm npm-cache uv-cache uv-python home bin  # toolchain and caches (uv-cache is about 1 GB)
-rmdir ~/.coding-assistant-local 2>/dev/null            # empty parent of the work directory
+rmdir "$(dirname "$P1_WORK")" ~/.coding-assistant-local 2>/dev/null   # empty parents of the work directory
 rmdir /tmp/claude 2>/dev/null                          # created by the runner for srt, emptied after each run
 ```
 
-To keep the toolchain and only free the space of trials: `rm -rf "$P1_WORK/trials"`. If you never ran `source env.sh` in the shell you clean from, `$P1_WORK` is empty: use `~/.coding-assistant-local/work` instead. All of these paths are ignored by git (`.gitignore` in this folder), so `git status` stays clean. Short-lived AWS credentials expire on their own (1 and 2 hours).
+To keep the toolchain and only free the space of trials: `rm -rf "$P1_WORK/trials"`. If you never ran `source env.sh` in the shell you clean from, `$P1_WORK` is empty: run `source env.sh` first (it prints nothing; `echo "$P1_WORK"` shows the path). All of these paths are ignored by git (`.gitignore` in this folder), so `git status` stays clean. Short-lived AWS credentials expire on their own (1 and 2 hours).
 
 ## 9. Troubleshooting
 
@@ -224,7 +221,7 @@ To keep the toolchain and only free the space of trials: `rm -rf "$P1_WORK/trial
 Send this to the module maintainers (an issue on the repository, or the channel they name). Remove anything you do not want to share. Do not paste credentials or account IDs.
 
 ```markdown
-**Local mode feedback**
+**Coding Assistant (Mac) feedback**
 
 - Date, macOS version, chip, RAM:
 - `uv --version`, `aws --version`, `git --version`:
@@ -243,5 +240,5 @@ Send this to the module maintainers (an issue on the repository, or the channel 
 - For a trial: task, `result.json` agent_result (exit, seconds, tokens, steps), reward.json:
 - Setup time (`setup.sh` seconds, `prepare` seconds), disk used (`du -sh local ~/.coding-assistant-local`):
 - Anything that differs from this guide (a command that did not work, a missing prerequisite, a confusing message):
-- Would you use this mode instead of Docker? Why or why not:
+- Would you use this setup for your own evals? Why or why not:
 ```

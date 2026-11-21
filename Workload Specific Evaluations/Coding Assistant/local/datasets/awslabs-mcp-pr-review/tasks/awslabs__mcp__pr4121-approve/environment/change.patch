@@ -1,0 +1,112 @@
+diff --git a/src/eks-mcp-server/awslabs/eks_mcp_server/k8s_apis.py b/src/eks-mcp-server/awslabs/eks_mcp_server/k8s_apis.py
+index fcfb89b9d..22c53dae0 100644
+--- a/src/eks-mcp-server/awslabs/eks_mcp_server/k8s_apis.py
++++ b/src/eks-mcp-server/awslabs/eks_mcp_server/k8s_apis.py
+@@ -16,11 +16,13 @@
+ 
+ import base64
+ import os
++import ssl
+ import tempfile
+ from awslabs.eks_mcp_server import __version__
+ from awslabs.eks_mcp_server.models import Operation
+ from loguru import logger
+ from typing import Any, Dict, List, Optional
++from urllib3.util import create_urllib3_context
+ 
+ 
+ class K8sApis:
+@@ -85,6 +87,7 @@ class K8sApis:
+ 
+             # Create base API client
+             self.api_client = client.ApiClient(configuration)
++            self._configure_eks_ca_ssl_context(self.api_client)
+ 
+             # Set user-agent directly on the ApiClient
+             self.api_client.user_agent = f'awslabs/mcp/eks-mcp-server/{__version__}'
+@@ -134,6 +137,14 @@ class K8sApis:
+         logger.debug(f'Configuring proxy: {proxy_url}')
+         config.proxy = proxy_url
+ 
++    def _configure_eks_ca_ssl_context(self, api_client):
++        """Configure Kubernetes TLS verification for EKS-generated cluster CAs."""
++        context = create_urllib3_context(cert_reqs=ssl.CERT_REQUIRED)
++        if hasattr(context, 'verify_flags'):
++            context.verify_flags &= ~ssl.VERIFY_X509_STRICT
++
++        api_client.rest_client.pool_manager.connection_pool_kw['ssl_context'] = context
++
+     def _patch_resource(
+         self,
+         resource,
+diff --git a/src/eks-mcp-server/tests/test_k8s_apis.py b/src/eks-mcp-server/tests/test_k8s_apis.py
+index 49d93687e..1b7c283a3 100644
+--- a/src/eks-mcp-server/tests/test_k8s_apis.py
++++ b/src/eks-mcp-server/tests/test_k8s_apis.py
+@@ -17,6 +17,7 @@
+ import base64
+ import os
+ import pytest
++import ssl
+ from awslabs.eks_mcp_server.k8s_apis import K8sApis
+ from awslabs.eks_mcp_server.models import Operation
+ from datetime import datetime
+@@ -134,6 +135,58 @@ class TestK8sApisInitialization:
+             # Verify dynamic client was set
+             assert apis.dynamic_client == mock_dynamic_client
+ 
++    def test_init_keeps_ssl_verification_without_x509_strict(self):
++        """Test EKS CA verification avoids strict AKI enforcement."""
++        strict_context = ssl.create_default_context()
++        strict_context.verify_flags |= ssl.VERIFY_X509_STRICT
++        original_flags = strict_context.verify_flags
++
++        with (
++            patch('kubernetes.dynamic.DynamicClient'),
++            patch(
++                'awslabs.eks_mcp_server.k8s_apis.create_urllib3_context',
++                return_value=strict_context,
++            ),
++        ):
++            ca_data = base64.b64encode(b'test-ca-data').decode('utf-8')
++
++            apis = K8sApis('https://test-endpoint', 'test-token', ca_data)
++
++            pool_kwargs = apis.api_client.rest_client.pool_manager.connection_pool_kw
++            ssl_context = pool_kwargs['ssl_context']
++            connection_pool = apis.api_client.rest_client.pool_manager.connection_from_url(
++                'https://test-endpoint/version'
++            )
++
++            assert apis.api_client.configuration.verify_ssl is True
++            assert apis.api_client.configuration.ssl_ca_cert
++            assert pool_kwargs['cert_reqs'] == ssl.CERT_REQUIRED
++            assert pool_kwargs['ca_certs'] == apis.api_client.configuration.ssl_ca_cert
++            assert ssl_context is strict_context
++            assert ssl_context.verify_mode == ssl.CERT_REQUIRED
++            assert ssl_context.verify_flags == original_flags & ~ssl.VERIFY_X509_STRICT
++            assert connection_pool.cert_reqs == ssl.CERT_REQUIRED
++            assert connection_pool.ca_certs == apis.api_client.configuration.ssl_ca_cert
++            assert connection_pool.conn_kw['ssl_context'] is strict_context
++
++    def test_init_accepts_ssl_context_without_verify_flags(self):
++        """Test compatibility with urllib3 contexts without verify_flags."""
++        context = object()
++
++        with (
++            patch('kubernetes.dynamic.DynamicClient'),
++            patch(
++                'awslabs.eks_mcp_server.k8s_apis.create_urllib3_context',
++                return_value=context,
++            ),
++        ):
++            ca_data = base64.b64encode(b'test-ca-data').decode('utf-8')
++
++            apis = K8sApis('https://test-endpoint', 'test-token', ca_data)
++
++            pool_kwargs = apis.api_client.rest_client.pool_manager.connection_pool_kw
++            assert pool_kwargs['ssl_context'] is context
++
+     @pytest.mark.parametrize(
+         'mock_version,expected_api_key,expected_prefix',
+         [

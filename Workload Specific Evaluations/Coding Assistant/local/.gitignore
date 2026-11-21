@@ -12,3 +12,9 @@
 /.bedrock.lock/
 *.srt.json
 __pycache__/
+
+# Python, Jupyter and local settings
+.venv/
+.ipynb_checkpoints/
+.env
+.agents/

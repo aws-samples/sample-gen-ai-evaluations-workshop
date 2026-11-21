@@ -6,7 +6,7 @@
   p1.py job   --tasks T1,T2 --n 3 --agent codex --job J      serial trials (takes the Bedrock lock)
   p1.py base-suite TASK                     G9: base test suite pass count in a fresh trial env
 
-Layout (all under local/): the module is the parent directory (read-only use), $P1_WORK/base/<task>/ (sealed clone),
+Layout (all under this folder): datasets/, codex-bedrock.toml and model_config.py (read-only use), $P1_WORK/base/<task>/ (sealed clone),
 work/trials/<trial>/ (repo, venv, home, logs: the only directory the agent can read or write),
 work/verifier/<trial>/ (rendered verifier files, created after the agent stops), jobs/<job>/<trial>/ (Harbor-like record).
 Credentials are minted per run by `aws sts` and passed only in the environment of child processes.
@@ -18,9 +18,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 P1 = Path(__file__).resolve().parent.parent
-MODULE, DS, JOBS = P1.parent, P1.parent / "datasets", P1 / "jobs"
+DS, JOBS = P1 / "datasets", P1 / "jobs"
 # The verifier scripts get host paths substituted for /work/repo, /tests, /logs, /tmp, and test.sh uses them unquoted
-# (`L=/logs/verifier`, `cd /work/repo`). The module path has spaces ("Workload Specific Evaluations"), so the work
+# (`L=/logs/verifier`, `cd /work/repo`). The folder path may have spaces ("Workload Specific Evaluations"), so the work
 # dir must live elsewhere: env.sh sets P1_WORK to a space-free path under the real home.
 WORK = Path(os.environ["P1_WORK"]) if os.environ.get("P1_WORK") else P1 / "work"
 if " " in str(WORK):
@@ -144,7 +144,7 @@ def verifier_venv() -> Path:
     """python 3.12 + boto3 (the PR-review verifier image: python:3.12-slim + boto3==1.43.89)."""
     v = WORK / "verifier-venv"
     py, own = v / "bin/python", (P1 / "uv-python").resolve()
-    # WORK is shared by every checkout, but the venv's python is a symlink into the uv-python/ of the checkout that built it.
+    # WORK can be shared by checkouts (P1_WORK set by hand), but the venv's python is a symlink into the uv-python/ of the checkout that built it.
     # srt lets the verifier read only this checkout's uv-python/, so a venv built by another checkout (or one whose checkout
     # was deleted) cannot start: test.sh's `python3` then falls through to /usr/bin/python3 (3.9, no tomllib), score.py dies
     # on import and test.sh writes an all-zero reward. Rebuild it here instead.
@@ -231,7 +231,7 @@ def run_codex(t: Task, W: Path, creds: dict, sandbox: bool, timeout: float) -> d
     prompt, diff = render_instruction(t, W)
     (W / "logs/agent/instruction.rendered.md").write_text(prompt)
     (W / "logs/agent/instruction.diff").write_text("\n".join(diff) + "\n")
-    shutil.copy(MODULE / "codex-bedrock.toml", W / "codex-home/config.toml")
+    shutil.copy(P1 / "codex-bedrock.toml", W / "codex-home/config.toml")
     (W / "codex-home/auth.json").write_text('{\n  "OPENAI_API_KEY": ""\n}\n')       # Harbor wrote an (empty) key here
     env = agent_env(W, creds)
     argv = ["codex", "exec", *CODEX_FLAGS, prompt]
@@ -471,7 +471,7 @@ def main():
             W = new_trial_dir(t, a.tag); start_env(t, W, venv=False)
         argv = cmd_argv
         creds = mint("federated", P1 / "scripts/agent-policy.json") if a.creds == "federated" else (mint() if a.creds == "session" else None)
-        shutil.copy(MODULE / "codex-bedrock.toml", W / "codex-home/config.toml"); (W / "codex-home/auth.json").write_text('{"OPENAI_API_KEY": ""}')
+        shutil.copy(P1 / "codex-bedrock.toml", W / "codex-home/config.toml"); (W / "codex-home/auth.json").write_text('{"OPENAI_API_KEY": ""}')
         env = agent_env(W, creds)
         env["P1_ROOT"], env["P1_REAL_HOME"] = str(P1), os.environ.get("P1_REAL_HOME", str(Path.home()))
         env["P1_PY"] = str(next((P1 / "uv-python").glob("cpython-3.12*/bin/python3")))

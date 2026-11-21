@@ -1,0 +1,128 @@
+# Validation spec: the user stories that the validation agent tests, with a procedure and cases for each.
+# The coding agent does not see this file. The validation agent adapts its tests to the agent's change.
+
+instructions = """
+- Use only the public types of strands_evals.types.trace (AgentInvocationSpan, ToolExecutionSpan,
+  SpanInfo, ToolCall, ToolResult, ToolConfig, Trace, Session) and strands_evals.types.evaluation
+  (EvaluationData). Do not call a model and do not use the network.
+- Times in the cases are seconds after 2026-01-01T00:00:00 UTC. If a tool has "naive": true, give its span
+  naive datetimes (no tzinfo) for the same moments.
+- Each turn of a case is one Trace with one AgentInvocationSpan (span_id = the turn id, no parent, the
+  turn's prompt, response "done", and one ToolConfig for each tool name of the case), then its tool spans,
+  in list order. Each tool span has parent_span_id = the turn id, and tool_call_id = the tool id. The
+  result strings are unique, so a test can search for them in a prompt.
+"""
+
+[[stories]]
+id = "parameter_judge_sees_earlier_results"
+description = """
+When ToolParameterAccuracyEvaluator judges a tool call, the judge must see the results of the tool calls
+that finished before the call started, in the same turn and in earlier turns. It must not see the results
+of calls that were still running, or that came later.
+"""
+procedure = [
+  "Build the session of the case (see the instructions) and an EvaluationData(input=..., actual_trajectory=session).",
+  "Replace the model of ToolParameterAccuracyEvaluator with a stub that records each prompt and returns a passing rating. Patch the name `Agent` in the module of the evaluator; this is the only mock that is permitted. Run evaluate().",
+  "Find the recorded prompt of the tool call with id inputs.target. Use the target section of the prompt (the call and its arguments) to identify it, or the order of the calls if the prompts are recorded in span order.",
+  "Assert that every string of expected.visible is in that prompt, and that no string of expected.hidden is in it.",
+]
+
+[[stories.cases]]
+name = "issue_repro"
+inputs = { target = "mul", turns = [{ id = "t1", prompt = "what is (3 + 4) * 5?", tools = [
+  { id = "add", name = "add_numbers", arguments = { a = 3, b = 4 }, result = "seven-7", start = 1, end = 2 },
+  { id = "mul", name = "multiply_numbers", arguments = { a = 7, b = 5 }, result = "thirty-five-35", start = 3, end = 4 },
+] }] }
+expected = { visible = ["seven-7"], hidden = ["thirty-five-35"] }
+
+[[stories.cases]]
+name = "third_call_sees_two"
+inputs = { target = "c", turns = [{ id = "t1", prompt = "plan the trip", tools = [
+  { id = "a", name = "find_flights", arguments = { to = "LIS" }, result = "flight-TP123", start = 1, end = 2 },
+  { id = "b", name = "find_hotel", arguments = { city = "Lisbon" }, result = "hotel-Alfama", start = 3, end = 4 },
+  { id = "c", name = "book", arguments = { flight = "TP123", hotel = "Alfama" }, result = "booking-XYZ", start = 5, end = 6 },
+] }] }
+expected = { visible = ["flight-TP123", "hotel-Alfama"], hidden = ["booking-XYZ"] }
+
+[[stories.cases]]
+name = "first_call_sees_none"
+inputs = { target = "a", turns = [{ id = "t1", prompt = "plan the trip", tools = [
+  { id = "a", name = "find_flights", arguments = { to = "LIS" }, result = "flight-TP123", start = 1, end = 2 },
+  { id = "b", name = "find_hotel", arguments = { city = "Lisbon" }, result = "hotel-Alfama", start = 3, end = 4 },
+] }] }
+expected = { visible = [], hidden = ["flight-TP123", "hotel-Alfama"] }
+
+[[stories.cases]]
+name = "spans_not_in_time_order"
+inputs = { target = "b", turns = [{ id = "t1", prompt = "convert and round", tools = [
+  { id = "c", name = "round", arguments = { x = 12.7 }, result = "rounded-13", start = 5, end = 6 },
+  { id = "a", name = "convert", arguments = { usd = 10 }, result = "converted-12.7", start = 1, end = 2 },
+  { id = "b", name = "format", arguments = { x = 12.7 }, result = "formatted-12.70", start = 3, end = 4 },
+] }] }
+expected = { visible = ["converted-12.7"], hidden = ["rounded-13", "formatted-12.70"] }
+
+[[stories.cases]]
+name = "parallel_call_not_visible"
+inputs = { target = "b", turns = [{ id = "t1", prompt = "get both quotes", tools = [
+  { id = "a", name = "quote", arguments = { s = "AAPL" }, result = "quote-190", start = 1, end = 4 },
+  { id = "b", name = "quote", arguments = { s = "MSFT" }, result = "quote-420", start = 2, end = 3 },
+] }] }
+expected = { visible = [], hidden = ["quote-190", "quote-420"] }
+
+[[stories.cases]]
+name = "ends_when_next_starts"
+inputs = { target = "b", turns = [{ id = "t1", prompt = "go", tools = [
+  { id = "a", name = "step_one", arguments = {}, result = "one-done", start = 1, end = 3 },
+  { id = "b", name = "step_two", arguments = {}, result = "two-done", start = 3, end = 4 },
+] }] }
+expected = { visible = ["one-done"], hidden = ["two-done"] }
+
+[[stories]]
+id = "selection_judge_sees_earlier_results"
+description = """
+ToolSelectionAccuracyEvaluator follows the same rule as ToolParameterAccuracyEvaluator: the judge of a
+tool call sees the results of the calls that finished before it started, including earlier turns, and
+not the results of the call itself, of parallel calls, or of later calls.
+"""
+procedure = [
+  "Build the session of the case as in the story parameter_judge_sees_earlier_results.",
+  "Replace the model of ToolSelectionAccuracyEvaluator with a stub that records each prompt and returns a 'Yes' rating. Patch the name `Agent` in the module of the evaluator; this is the only mock that is permitted. Run evaluate().",
+  "Find the recorded prompt of the tool call with id inputs.target, as in the other story.",
+  "Assert that every string of expected.visible is in that prompt, and that no string of expected.hidden is in it.",
+]
+
+[[stories.cases]]
+name = "second_turn_sees_both_turns"
+inputs = { target = "c", turns = [
+  { id = "t1", prompt = "look up the user", tools = [{ id = "a", name = "get_user", arguments = { name = "ana" }, result = "user-id-42", start = 1, end = 2 }] },
+  { id = "t2", prompt = "now get their orders and the total", tools = [
+    { id = "b", name = "get_orders", arguments = { user = 42 }, result = "orders-3", start = 21, end = 22 },
+    { id = "c", name = "sum_orders", arguments = { user = 42 }, result = "total-99", start = 23, end = 24 },
+  ] },
+] }
+expected = { visible = ["user-id-42", "orders-3"], hidden = ["total-99"] }
+
+[[stories.cases]]
+name = "issue_repro"
+inputs = { target = "mul", turns = [{ id = "t1", prompt = "what is (3 + 4) * 5?", tools = [
+  { id = "add", name = "add_numbers", arguments = { a = 3, b = 4 }, result = "seven-7", start = 1, end = 2 },
+  { id = "mul", name = "multiply_numbers", arguments = { a = 7, b = 5 }, result = "thirty-five-35", start = 3, end = 4 },
+] }] }
+expected = { visible = ["seven-7"], hidden = ["thirty-five-35"] }
+
+[[stories.cases]]
+name = "naive_and_aware_times"
+inputs = { target = "b", turns = [{ id = "t1", prompt = "go", tools = [
+  { id = "a", name = "step_one", arguments = {}, result = "naive-one", start = 1, end = 2, naive = true },
+  { id = "b", name = "step_two", arguments = {}, result = "aware-two", start = 3, end = 4 },
+] }] }
+expected = { visible = ["naive-one"], hidden = ["aware-two"] }
+
+[[stories.cases]]
+name = "later_call_hidden"
+inputs = { target = "a", turns = [{ id = "t1", prompt = "go", tools = [
+  { id = "a", name = "step_one", arguments = {}, result = "first-r", start = 1, end = 2 },
+  { id = "b", name = "step_two", arguments = {}, result = "second-r", start = 3, end = 4 },
+  { id = "c", name = "step_three", arguments = {}, result = "third-r", start = 5, end = 6 },
+] }] }
+expected = { visible = [], hidden = ["first-r", "second-r", "third-r"] }

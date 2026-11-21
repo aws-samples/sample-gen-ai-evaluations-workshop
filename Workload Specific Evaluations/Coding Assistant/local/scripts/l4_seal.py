@@ -1,12 +1,39 @@
 #!/usr/bin/env python3
-"""L4: seal check on the host clones, hidden-test reachability, leakage scan (module's own scan, no Docker)."""
-import json, os, subprocess, sys
+"""L4: seal check on the host clones, hidden-test reachability, leakage scan (the notebook's scan, inlined below)."""
+import json, os, shutil, subprocess, sys, tempfile, tomllib
 from pathlib import Path
 P1 = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(P1.parent)); sys.path.insert(0, str(P1 / "runner"))
+sys.path.insert(0, str(P1 / "runner"))
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
-import coding_eval as ce
 import p1
+
+
+class ce:
+    """The leakage scan: search the agent-visible files of a task (instruction.md, environment/) for each needle,
+    after a self-test that plants a canary in a temporary copy of the task (the task files never change)."""
+    CANARY = "CANARY-7f3a91"
+
+    @staticmethod
+    def read_toml(path): return tomllib.loads(Path(path).read_text())
+
+    @staticmethod
+    def _scan(task_dir, needles):
+        task_dir = Path(task_dir)
+        files = [task_dir / "instruction.md"] + [p for p in sorted((task_dir / "environment").rglob("*")) if p.is_file()]
+        return [(str(f.relative_to(task_dir)), n) for f in files for n in needles
+                if n and n.lower() in f.read_text(errors="ignore").lower()]
+
+    @staticmethod
+    def leakage_scan(task_dir, needles):
+        with tempfile.TemporaryDirectory(prefix="leakage-canary-") as tmp:
+            copy = Path(tmp) / Path(task_dir).name
+            shutil.copytree(task_dir, copy)
+            (copy / "environment" / "canary.txt").write_text(ce.CANARY)
+            if not ce._scan(copy, [ce.CANARY]):
+                raise AssertionError("The scan did not find the canary. The scan has a defect.")
+        return ce._scan(task_dir, needles)
+
+
 out = {}
 def git(repo, *a): return subprocess.run(["git", *a], cwd=repo, capture_output=True, text=True).stdout.strip()
 for name in ("pr371-fix", "pr338-fix", "pr4121-approve", "pr4615-reject"):
