@@ -610,7 +610,7 @@ def run_trial(task, module, job_dir, mode="codex", patch=None, script=None, labe
         out.mkdir(parents=True, exist_ok=True)
         try:
             raw = base64.b64decode(o.strip())
-            tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz").extractall(out)
+            tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz").extractall(out, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))  # the archive comes from the session: no absolute paths, no links out
         except Exception as e:
             res["errors"].append(f"readback: {e!r}")
     except Exception as e:
