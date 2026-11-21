@@ -143,7 +143,15 @@ def start_env(t: Task, W: Path, venv: bool = True) -> dict:
 def verifier_venv() -> Path:
     """python 3.12 + boto3 (the PR-review verifier image: python:3.12-slim + boto3==1.43.89)."""
     v = WORK / "verifier-venv"
-    if not (v / "bin/python").exists():
+    py, own = v / "bin/python", (P1 / "uv-python").resolve()
+    # WORK is shared by every checkout, but the venv's python is a symlink into the uv-python/ of the checkout that built it.
+    # srt lets the verifier read only this checkout's uv-python/, so a venv built by another checkout (or one whose checkout
+    # was deleted) cannot start: test.sh's `python3` then falls through to /usr/bin/python3 (3.9, no tomllib), score.py dies
+    # on import and test.sh writes an all-zero reward. Rebuild it here instead.
+    if py.exists() and not py.resolve().is_relative_to(own):
+        print(f"[p1] {v} runs {py.resolve()}, outside this checkout's {own}: rebuilding it", file=sys.stderr, flush=True)
+    if not (py.exists() and py.resolve().is_relative_to(own)):
+        shutil.rmtree(v, ignore_errors=True)
         env = tool_env({"VIRTUAL_ENV": str(v)})
         sh(["uv", "venv", "--python", "3.12", str(v)], env=env)
         sh(["uv", "pip", "install", "boto3==1.43.89"], env=env)
@@ -279,7 +287,10 @@ def apply_fake(t: Task, W: Path, agent: str) -> None:
         if t.kind == "coding":
             sh(["git", "apply", "--whitespace=nowarn", str(t.dir / "solution/oracle.patch")], cwd=repo, env=env)
         else:
-            sh(["sh", str(t.dir / "solution/solve.sh")], env={**env, "EVAL_HARVEST_AGENT_FINDINGS": str(W / "logs/artifacts/findings.json")})
+            fp = W / "logs/artifacts/findings.json"
+            sh(["sh", str(t.dir / "solution/solve.sh")], env={**env, "EVAL_HARVEST_AGENT_FINDINGS": str(fp)})
+            if not fp.is_file():      # an approve task's oracle writes [] (no findings), so only a missing file is an error
+                raise SystemExit(f"STOP: the oracle (solution/solve.sh) wrote no findings file at {fp}. The control would score 0 for the wrong reason.")
     elif agent.startswith("patch:"):
         sh(["git", "apply", "--whitespace=nowarn", agent[6:]], cwd=repo, env=env)
     elif agent.startswith("findings:"):
@@ -364,7 +375,11 @@ def run_verifier(t: Task, W: Path, creds: dict, sandbox: bool, timeout: float) -
             stages[name] = round(max(0, f.stat().st_mtime - prev), 1)
             prev = max(prev, f.stat().st_mtime)
     pb = (W / "logs/verifier/agent.patch")
-    return {"exit": rc, "seconds": round(t1 - t0, 1), "stages": stages, "render_diff_lines": len(diffs), "patch_bytes": pb.stat().st_size if pb.exists() else None}
+    out = {"exit": rc, "seconds": round(t1 - t0, 1), "stages": stages, "render_diff_lines": len(diffs), "patch_bytes": pb.stat().st_size if pb.exists() else None}
+    # score.py writes reward_details.json on every path it finishes; without it, the reward.json is test.sh's all-zero fallback
+    if t.kind == "pr" and not (W / "logs/verifier/reward_details.json").exists():
+        out["scorer_crashed"] = True
+    return out
 
 
 # ---------------------------------------------------------------- one trial
@@ -495,6 +510,13 @@ def main():
                     r = trial(t, a.agent, a.job, (a.tag if a.cmd == "trial" and a.tag else f"r{i+1}"),
                               sandbox=not getattr(a, "no_sandbox", False), verify=not getattr(a, "no_verify", False), agent_creds=ac, ver_creds=vc)
                     print(json.dumps({k: r.get(k) for k in ("trial_name", "agent_result", "reward")}), flush=True)
+                    if (r.get("verifier") or {}).get("scorer_crashed"):
+                        log = JOBS / a.job / r["trial_name"] / "verifier/test.sh.out"
+                        tail = log.read_text(errors="replace").strip().splitlines()[-1:] if log.exists() else ["(no test.sh.out)"]
+                        msg = f"score.py did not finish ({tail[0][:300]}); the zero reward is test.sh's fallback, not a score. See {log}"
+                        if a.agent != "codex":          # a control must be scored; a Codex trial may crash it with malformed findings
+                            sys.exit("STOP: " + msg)
+                        print("[p1] WARNING: " + msg, file=sys.stderr, flush=True)
                     ar = r.get("agent_result") or {}
                     if a.agent == "codex" and (ar.get("exit") != 0 or not ar.get("input_tokens")):
                         sys.exit(f"STOP: the agent did not run (exit {ar.get('exit')}, {ar.get('input_tokens')} input tokens). Rewards of this trial are invalid. See jobs/{a.job}/{r['trial_name']}/agent/codex.txt")
