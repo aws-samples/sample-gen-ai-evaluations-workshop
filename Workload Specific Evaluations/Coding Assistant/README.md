@@ -18,7 +18,7 @@ In this workshop, the tasks run on local Docker. In practice, run them on a comp
 |---|---|---|---|
 | **Baseline: Docker and Harbor** | Local Docker, with Harbor | Docker, Python 3.12, Codex CLI, GitHub CLI, AWS credentials | The notebooks below |
 | **AgentCore** (pre-release, for testers) | Amazon Bedrock AgentCore Runtime, one session per trial. Images are built on AWS CodeBuild | Python 3.10 and `boto3>=1.44.7`, AWS credentials that may create IAM, ECR, S3, CodeBuild, and AgentCore resources. No Docker | [agentcore/README.md](agentcore/README.md) |
-| **Local** (coming on this branch) | Your machine only | Not decided yet | Not available yet |
+| **Local** (preview, for testers) | Your Mac only: a sandboxed agent (`srt`) and a `uv` environment per trial. Apple silicon only | `uv`, AWS CLI v2, `git`, and an IAM user key with Bedrock access. No Docker, no Harbor | [local/README.md](local/README.md) |
 
 ## Notebooks
 
