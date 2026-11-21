@@ -11,6 +11,8 @@ This folder runs the same tasks, the same agent (Codex CLI on Amazon Bedrock) an
 
 Start with notebook 04 of this module if you only want to look at recorded runs. Use this folder if you want to run an agent on the tasks and do not want to install Docker (about 15 GB of images).
 
+To walk through this mode step by step in Jupyter (setup, the sandbox checks, one trial of each kind, the controls and clean-up), open the notebook [05 Local mode walkthrough](05%20Local%20mode%20walkthrough.ipynb). It runs the same commands as the [tester guide](TESTER-GUIDE.md).
+
 ## How it differs from the Docker and Harbor path
 
 | Job | Docker and Harbor path | Local mode |
