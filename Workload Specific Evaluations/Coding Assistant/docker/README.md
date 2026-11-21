@@ -12,16 +12,6 @@ Harbor is not necessary. But its task format keeps the agent files and the verif
 
 In this workshop, the tasks run on local Docker. In practice, run them on a compute substrate, for example Amazon EC2 or Lambda MicroVMs.
 
-## Choose a mode
-
-| Mode | Where the tasks run | You need | Start |
-|---|---|---|---|
-| **Baseline: Docker and Harbor** | Local Docker, with Harbor | Docker, Python 3.12, Codex CLI, GitHub CLI, AWS credentials | The notebooks below |
-| **AgentCore** (pre-release, for testers) | Amazon Bedrock AgentCore Runtime, one session per trial. Images are built on AWS CodeBuild | Python 3.10 and `boto3>=1.44.7`, AWS credentials that may create IAM, ECR, S3, CodeBuild, and AgentCore resources. No Docker | [agentcore/README.md](agentcore/README.md) |
-| **Local** (preview, for testers) | Your Mac only: a sandboxed agent (`srt`) and a `uv` environment per trial. Apple silicon only | `uv`, AWS CLI v2, `git`, and an IAM user key with Bedrock access. No Docker, no Harbor | [local/README.md](local/README.md) |
-
-For measured setup time, cost, speed, rewards, and security gates of the three modes, see [docs/lite-modes-comparison.md](docs/lite-modes-comparison.md).
-
 ## Notebooks
 
 | Notebook | Content | Time |

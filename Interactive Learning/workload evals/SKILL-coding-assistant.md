@@ -15,7 +15,7 @@ The module has two paths:
 ## Prerequisites
 
 - Python 3.11 or later (for `tomllib`). Path A needs nothing else.
-- Run the code from the repository root. The module is in `Workload Specific Evaluations/Coding Assistant/`.
+- Run the code from the repository root. The module is in `Workload Specific Evaluations/Coding Assistant/docker/`.
 - Completed SKILL-quality (binary LLM judges) and SKILL-agentic (agent trajectories), or equivalent understanding.
 - Path B only: Docker with approximately 15 GB of free disk space, Python 3.12, Harbor, the Codex CLI, and AWS credentials with Amazon Bedrock access in `us-east-1`.
 
@@ -39,7 +39,7 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-MODULE = Path("Workload Specific Evaluations/Coding Assistant")
+MODULE = Path("Workload Specific Evaluations/Coding Assistant/docker")
 assert MODULE.is_dir(), "Run this from the repository root."
 
 PR_TASKS = MODULE / "datasets/awslabs-mcp-pr-review/tasks"
@@ -366,7 +366,7 @@ print("oracle:", calibration_ok("oracle", oracle_run), " no-op:", calibration_ok
 | The scorer | A correct finding is one line outside the span; a hidden test checks one design | Widen the span; rewrite the test on the public API |
 | The environment | A tool is missing in the image | Repair the Dockerfile and rebuild |
 
-**Path B (optional, needs Docker and AWS):** open the notebooks in `Workload Specific Evaluations/Coding Assistant/` in order. Notebook 01 does the setup checks. Notebooks 02 and 03 build the images (an image that exists is skipped), check the seal, run the oracle, and run Codex. The helpers are in `coding_eval.py`. The verifier files that every task shares are in `datasets/_shared/`; after you edit one, run `python datasets/_shared/sync.py` from the module directory. To check the module code without Docker, run `python -m pytest tests_local` there.
+**Path B (optional, needs Docker and AWS):** open the notebooks in `Workload Specific Evaluations/Coding Assistant/docker/` in order. Notebook 01 does the setup checks. Notebooks 02 and 03 build the images (an image that exists is skipped), check the seal, run the oracle, and run Codex. The helpers are in `coding_eval.py`. The verifier files that every task shares are in `datasets/_shared/`; after you edit one, run `python datasets/_shared/sync.py` from the module directory. To check the module code without Docker, run `python -m pytest tests_local` there.
 
 **Tutor questions:** Ask the learner what the no-op `fail_to_pass = 0.17` above means, and which file they would open first. Then ask how many trials per task they need before they call a difference between two agents real, with two tasks and pass@1.
 
