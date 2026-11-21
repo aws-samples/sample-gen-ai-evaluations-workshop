@@ -25,7 +25,7 @@ for o in docker local agentcore; do [ "$o" = "$KEEP" ] || git rm -r -q "$o"; don
 git rm -r -q README.md docs tools PRUNING.md
 git -C "$KEEP" ls-files | cut -d/ -f1 | sort -u | while IFS= read -r f; do git mv "$KEEP/$f" "./$f"; done
 ls -A "$KEEP"                                              # only ignored, generated files are left (toolchain, jobs/, logs/)
-git status --short | grep -v '^R' | head                   # expect only the deletions (D) of step 2
+git status --short | grep -vE '^(R|D) '                    # expect one line: M README.md (the survivor's README replaces the chooser)
 ```
 
 The last `git mv` moves every tracked top-level entry of the survivor, hidden files included (`.gitignore`, and `.env.example` for docker). Files that git ignores stay in `$KEEP/`. Delete them, or move what you want to keep (for example `local/jobs/`), then `rmdir "$KEEP"`.
@@ -35,7 +35,7 @@ Check the result before you commit:
 | Survivor | Check (from the module folder) |
 |---|---|
 | docker | `python -m pytest -q tests_local`; `python datasets/_shared/sync.py --check`; open notebook 04 (no Docker, no AWS) |
-| local | `uv run --no-project --python 3.12 runner/p1.py --help`; `LOCAL_NB_DRY_RUN=1` run of the notebook (see local/README.md); `python3 datasets/_shared/sync.py --check` |
+| local | `source ./env.sh && uv run --no-project --python 3.12 runner/p1.py --help` (the runner refuses to start without `env.sh`, which sets `P1_WORK`); `LOCAL_NB_DRY_RUN=1` run of the notebook (see local/README.md); `python3 datasets/_shared/sync.py --check` |
 | agentcore | `python3 -m py_compile p2_v2.py`; `python3 p2_v2.py policies`; `python3 scripts/test_runner_v2.py` |
 
 Then commit, for example `git commit -m "Coding Assistant: keep the $KEEP option"`.

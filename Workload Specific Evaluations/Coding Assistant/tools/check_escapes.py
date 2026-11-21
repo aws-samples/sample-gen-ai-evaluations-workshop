@@ -157,7 +157,7 @@ def main(argv=None) -> int:
     for root, name in targets:
         n = sum(1 for _ in files(root))
         found = scan(root, name)
-        print(f"== {name}: {root.name}/ ({n} files): " + ("clean" if not found else f"{len(found)} finding(s)"))
+        print(f"== {name}: {root.resolve().name}/ ({n} files): " + ("clean" if not found else f"{len(found)} finding(s)"))
         for f, kind, text, line in found:
             print(f"   {kind:8} {f}: {text!r}   | {line}")
         bad += len(found)
