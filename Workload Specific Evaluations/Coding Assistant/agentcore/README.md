@@ -17,6 +17,8 @@ python3 -m venv .venv && .venv/bin/pip install "boto3>=1.44.7"     # 1. Python 3
 
 `all` creates what is missing, builds the images that are missing (2 to 6 minutes, in parallel), deploys one runtime per task, runs every trial at the same time, and writes `jobs/<time>/summary.md` with one row per trial. A second `all` on the same account starts its trials after about 10 seconds. When you are done, run [scripts/teardown.sh](scripts/teardown.sh).
 
+More than 30 trials: run waves of 30 (recipe in [TESTER-GUIDE.md](TESTER-GUIDE.md) section 3). A trial with no reward is listed under the summary with its reason; rerun it with `run`.
+
 The tasks are `pr4121` (PR review, approve), `pr4615` (PR review, reject), `pr371` and `pr338` (coding, bug fix). The agent under test is Codex on Amazon Bedrock. The judges are the ones of the module.
 
 ## What it does
@@ -65,7 +67,8 @@ agentcore/
 │   └── variants/      the optional grader variants (--variant par|hard), coding tasks only
 └── scripts/
     ├── teardown.sh        cleanup of one prefix, and a check that nothing is left
-    └── scope_test_v2.py   negative test of the scoped roles, from inside a session
+    ├── scope_test_v2.py   negative test of the scoped roles, from inside a session
+    └── test_runner_v2.py  unit tests of the runner (archive extraction, session-start retry, summary); no AWS call
 ```
 
 `p2_v2.py` finds the module by itself: this folder is inside it. Run from elsewhere, give `--module "<repo>/Workload Specific Evaluations/Coding Assistant"` or set `P2_MODULE`. Results go to `jobs/` here (ignored by git).

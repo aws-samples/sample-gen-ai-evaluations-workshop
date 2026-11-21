@@ -18,7 +18,7 @@ TASK is one of pr371, pr338, pr4121, pr4615. The module is found from --module, 
 fresh root-owned checkout of the sealed repo with the agent's patch applied (see image/variants/).
 """
 import argparse, base64, concurrent.futures as cf, datetime, importlib.util, io, json, os, pathlib, re, shutil
-import sys, tarfile, tempfile, time, urllib.parse, uuid, zipfile
+import collections, random, sys, tarfile, tempfile, time, urllib.parse, uuid, zipfile
 
 import boto3
 from botocore.config import Config
@@ -454,6 +454,41 @@ def runtime_arn(task):
     return _arn[task]
 
 
+def extract_session_tar(raw, out):
+    """Extract the archive that came out of the session. It is untrusted: path traversal and links out of `out` are never written, but one
+    bad member (Codex leaves an absolute symlink under agent/codex-home/tmp/arg0) must not cost the graded reward.json, so every member is
+    extracted on its own. Returns (skipped member names, a note when the archive ended early or None).
+    shortcut: needs tarfile.data_filter (Python 3.10.12+, 3.11.4+, 3.12+); older Pythons only get the plain-file check below."""
+    skipped, note = [], None
+
+    def flt(member, dest):  # a closure: 30 trials extract at the same time in threads
+        try:
+            if hasattr(tarfile, "data_filter"):
+                return tarfile.data_filter(member, dest)
+            if (member.isreg() or member.isdir()) and not os.path.isabs(member.name) and \
+                    os.path.realpath(os.path.join(dest, member.name)).startswith(os.path.realpath(dest) + os.sep):
+                return member
+            raise tarfile.FilterError(member)
+        except tarfile.FilterError as e:
+            skipped.append(f"{member.name}: {type(e).__name__}")
+            return None
+    n = 0
+    with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tf:
+        try:
+            for m in tf:
+                try:
+                    m2 = flt(m, str(out))
+                    if m2 is None:
+                        continue
+                    tf.extract(m2, out, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))  # the filter runs twice: the second is the stock one
+                    n += 1
+                except (OSError, tarfile.TarError) as e:  # one member that cannot be written: skip it, keep the rest
+                    skipped.append(f"{m.name}: {type(e).__name__}")
+        except (EOFError, tarfile.TarError, OSError) as e:  # truncated or corrupt tail: keep what came before
+            note = f"archive ended early after {n} members: {e!r}"[:300]
+    return skipped, note
+
+
 # ---------------------------------------------------------------- one session
 SESSIONS = []  # every Session of this process, so Ctrl-C can stop them
 
@@ -470,6 +505,7 @@ class Session:
         self.sid = sid or ("p2-" + uuid.uuid4().hex + uuid.uuid4().hex[:6])
         self.calls = 0
         self.throttles = 0
+        self.start_attempts = 1
         SESSIONS.append(self)
 
     def cmd(self, command, timeout=300, retries=12):
@@ -500,6 +536,24 @@ class Session:
                     continue
                 raise
         raise last
+
+    def start(self, command, attempts=3):
+        """The first call of a session (a read-only probe: no agent work has run yet). A 5xx or RuntimeClientError here means the microVM did
+        not come up: stop that session and retry on a fresh one, with 2 to 10 s of backoff and jitter. Later calls are never retried this way,
+        because they may already have run agent work."""
+        for i in range(attempts):
+            try:
+                return self.cmd(command)
+            except Exception as e:
+                code = (getattr(e, "response", None) or {}).get("ResponseMetadata", {}).get("HTTPStatusCode") or 0
+                if i == attempts - 1 or not ("RuntimeClientError" in type(e).__name__ + str(e) or code >= 500):
+                    raise
+                wait = min(10.0, 2.0 * 2 ** i) * random.uniform(0.75, 1.25)
+                log(self.task, f"session start failed ({type(e).__name__}); retry {i + 2} of {attempts} in {wait:.0f} s on a new session")
+                self.stop()
+                self.sid = "p2-" + uuid.uuid4().hex + uuid.uuid4().hex[:6]
+                self.start_attempts = i + 2
+                time.sleep(wait)
 
     def agent(self, command, timeout=300):
         return self.cmd("/opt/firewall/as-agent " + shq(command), timeout)
@@ -564,7 +618,9 @@ def run_trial(task, module, job_dir, mode="codex", patch=None, script=None, labe
     tm = res["timings"]
     out = pathlib.Path(job_dir) / trial
     try:
-        o, c, secs = s.cmd("cat /run/fw.status; id -u; date +%s.%N; df -BM --output=avail / | tail -1")
+        o, c, secs = s.start("cat /run/fw.status; id -u; date +%s.%N; df -BM --output=avail / | tail -1")
+        if s.start_attempts > 1:
+            res["start_attempts"] = s.start_attempts
         tm["session_start"] = secs
         res["start_probe"] = o.strip().replace("\n", " | ")
         if not o.startswith("OK"):
@@ -628,8 +684,12 @@ def run_trial(task, module, job_dir, mode="codex", patch=None, script=None, labe
         res["end_probe"] = o2.strip().replace("\n", " | ")
         out.mkdir(parents=True, exist_ok=True)
         try:
-            raw = base64.b64decode(o.strip())
-            tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz").extractall(out, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))  # the archive comes from the session: no absolute paths, no links out
+            skipped, note = extract_session_tar(base64.b64decode(o.strip()), out)
+            if skipped:
+                res["readback_skipped"] = skipped[:20]
+                log(task, trial[-7:], f"readback: skipped {len(skipped)} unsafe archive member(s), e.g. {skipped[0]}")
+            if note:
+                res["errors"].append("readback: " + note)
         except Exception as e:
             res["errors"].append(f"readback: {e!r}")
     except Exception as e:
@@ -642,6 +702,17 @@ def run_trial(task, module, job_dir, mode="codex", patch=None, script=None, labe
     (out / "result.json").write_text(json.dumps(res, indent=1))
     rf = out / "verifier" / "reward.json"
     res["reward"] = json.loads(rf.read_text()) if rf.exists() else None
+    if res["reward"] is None:  # no reward: say why in the summary row, not just an empty cell
+        try:
+            inv = json.loads((out / "verifier" / "reward_details.json").read_text()).get("invalid") or []
+        except (OSError, ValueError):
+            inv = []
+        if inv:
+            res["errors"].append("INVALID TRIAL (judge or grader infrastructure, not an agent fail): " + "; ".join(map(str, inv)))
+        elif not res["errors"]:
+            res["errors"].append(f"no reward.json (verifier exit {res.get('verifier_exit')}); see {out.name}/verifier/stages.log")
+    if res["errors"]:
+        log(task, trial[-7:], "NO REWARD:" if res["reward"] is None else "ERRORS:", " | ".join(res["errors"])[:300])
     (out / "result.json").write_text(json.dumps(res, indent=1))
     return res
 
@@ -663,7 +734,12 @@ def summarize(rs, job, wall):
         w = r.get("reward") or {}
         t = r["timings"]
         lines.append(f"| {r['task']} | {r['trial_name'][-7:]} | {t.get('total')} | {t.get('agent_loop')} | {t.get('verifier')} | "
-                     + " | ".join(str(w.get(k, "")) for k in keys) + f" | {'; '.join(r['errors'])[:80]} |")
+                     + " | ".join(str(w.get(k, "")) for k in keys) + f" | {'; '.join(r['errors']).replace('|', '/').replace(chr(10), ' ')[:200]} |")
+    lost = [r for r in rs if r.get("reward") is None]
+    if lost:  # a trial without a reward is not a pass and not an agent fail: list it in full, with the way to rerun it
+        lines.append(f"\n{len(lost)} of {len(rs)} trials have no reward (invalid or errored). Rerun them with the same command, e.g. `run "
+                     + " ".join(f"{t}:{n}" for t, n in sorted(collections.Counter(r['task'] for r in lost).items())) + "`:")
+        lines += [f"- {r['task']} {r['trial_name'][-7:]}: " + ("; ".join(r["errors"]) or "no error text")[:400] for r in lost]
     lines.append(f"\nbatch wall clock {wall:.0f} s, {len(rs)} trials, jobs dir {job}")
     txt = "\n".join(lines)
     pathlib.Path(job).mkdir(parents=True, exist_ok=True)
