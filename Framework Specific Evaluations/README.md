@@ -38,6 +38,16 @@ Key topics: AgentCore CLI project workflow, Runtime deployment, CloudWatch Trans
 
 ---
 
+### [Bedrock Evaluations](Bedrock%20Evaluations/)
+
+**Managed LLM-as-a-judge evaluation jobs in Amazon Bedrock**
+
+Amazon Bedrock runs evaluations as a managed service: put a dataset in Amazon S3, choose metrics, and an evaluation job runs a judge model over every record and stores per-record scores and explanations. This module grades responses you generate yourself ("bring your own inference responses"), so the same job works for any application. It combines built-in metrics with a custom binary metric and then validates the managed judge against a programmatic ground-truth check with TPR and TNR.
+
+Key topics: `CreateEvaluationJob`, prompt dataset format, `precomputedInferenceSource`, built-in metrics (`Builtin.Correctness`, `Builtin.Completeness`, `Builtin.FollowingInstructions`), custom metrics with a rating scale, least-privilege service role, reading results from S3, judge validation, cleanup.
+
+---
+
 ### [DSPy](DSPy/)
 
 **Prompt optimization as an evaluation loop**
