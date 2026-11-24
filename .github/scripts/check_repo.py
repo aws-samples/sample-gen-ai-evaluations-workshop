@@ -7,7 +7,7 @@ Usage, from the repository root:
     python .github/scripts/check_repo.py aws-ids       # no real AWS account IDs in ARNs
 
 CONTRIBUTING.md asks that Bedrock model IDs live in Foundational Evaluations/model_config.py
-(or a module's own model_config.py). Files that already hard-code IDs are listed in
+or a module's own config file. Files named model_config.py or *_config.py are config files. Files that already hard-code IDs are listed in
 .github/model-id-baseline.txt so this check can block new ones without breaking existing
 modules. When you move a file to the shared config, delete its line from the baseline.
 """
@@ -69,7 +69,7 @@ def check_model_ids() -> int:
     }
     errors, seen = 0, set()
     for path, rel in files(".py", ".ipynb"):
-        if path.name == "model_config.py":
+        if path.name.endswith("_config.py"):
             continue
         ids = sorted({m.strip("\"'") for m in MODEL_ID.findall(code_text(path))})
         if not ids:
