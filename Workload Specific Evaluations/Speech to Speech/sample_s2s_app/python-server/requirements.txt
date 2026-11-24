@@ -7,7 +7,7 @@ requests==2.32.3
 aws_sdk_bedrock_runtime==0.2.0
 #>=0.1.0,<0.2.0
 mcp==1.13.1
-strands-agents==1.17.0
+strands-agents==1.48.0
 
 # Telemetry and observability
 aws-opentelemetry-distro~=0.10.1
