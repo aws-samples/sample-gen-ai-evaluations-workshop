@@ -11,14 +11,18 @@
 # Settings (environment variables):
 #   PROFILE   how the repository's tests run (default: step1-build-tasks/coding-profile.toml)
 #   DATASET   where the tasks go (default: step1-build-tasks/work/dataset); they land in $DATASET/tasks/
-#   PYTHON    a Python 3.11 or later (default: Step 2's .venv/bin/python, else python3)
+#   PYTHON    a Python 3.11 or later (default: Step 2's .venv in step2-run-evals/, else python3)
 set -euo pipefail
 [ $# -ge 2 ] || { sed -n '4p' "$0" | sed 's/^# *//' >&2; exit 2; }
 SOURCE=$1
 shift
 PROFILE=${PROFILE:-step1-build-tasks/coding-profile.toml}
 DATASET=${DATASET:-step1-build-tasks/work/dataset}
-PYTHON=${PYTHON:-$( [ -x .venv/bin/python ] && echo .venv/bin/python || echo python3 )}
+if [ -z "${PYTHON:-}" ]; then
+  for candidate in step2-run-evals/.venv/bin/python .venv/bin/python python3; do
+    command -v "$candidate" > /dev/null 2>&1 && { PYTHON=$candidate; break; }
+  done
+fi
 "$PYTHON" -c 'import sys; sys.exit(sys.version_info < (3, 11))' \
   || { echo "needs Python 3.11 or later (tomllib): make Step 2's .venv, or set PYTHON" >&2; exit 2; }
 
