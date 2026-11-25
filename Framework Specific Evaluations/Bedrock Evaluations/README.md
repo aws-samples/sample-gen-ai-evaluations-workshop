@@ -31,7 +31,7 @@ This module runs one LLM-as-a-judge **model evaluation job** with your own infer
 ## Models
 
 - **Generator:** `NOVA_2_LITE_MODEL_ID` from [`Foundational Evaluations/model_config.py`](../../Foundational%20Evaluations/model_config.py). The notebook generates the responses itself; the job only grades them.
-- **Evaluator:** `EVALUATOR_MODEL_ID` in `evaluation_config.py`, Claude Opus 4.8 by default. Evaluation jobs accept only the [supported evaluator models](https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation-judge.html#evaluation-judge-supported), and a custom metric needs a model on the custom-metrics list too. That is why this module does not use the workshop's shared `JUDGE_MODEL_ID`.
+- **Evaluator:** `EVALUATOR_MODEL_ID` in `evaluation_config.py`, Claude Haiku 4.5 by default to keep costs low. The notebook measures how well it agrees with a programmatic check; change it only if those results show you need a different judge. Evaluation jobs accept only the [supported evaluator models](https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation-judge.html#evaluation-judge-supported), and a custom metric needs a model on the custom-metrics list too. That is why this module does not use the workshop's shared `JUDGE_MODEL_ID`.
 
 ## AWS resources and permissions
 
