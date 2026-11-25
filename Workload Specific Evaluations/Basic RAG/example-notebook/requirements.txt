@@ -1,4 +1,4 @@
-datasets==4.4.0
+datasets==5.0.1
 ragas
 langchain_community
 langchain_aws
