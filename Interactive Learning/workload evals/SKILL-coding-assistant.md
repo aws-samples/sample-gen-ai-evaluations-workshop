@@ -15,7 +15,7 @@ The module has two paths:
 ## Prerequisites
 
 - Python 3.11 or later (for `tomllib`). Path A needs nothing else.
-- Run the code from the repository root. The module is in `Workload Specific Evaluations/Coding Assistant/`.
+- Run the code from the repository root. The module is in `Workload Specific Evaluations/Coding Assistant/`; its tasks and scripts are in `step2-run-evals/`.
 - Completed SKILL-quality (binary LLM judges) and SKILL-agentic (agent trajectories), or equivalent understanding.
 - Path B only: Python 3.12, `uv`, Harbor 0.26.0, and AWS credentials in `us-east-1` that may create IAM roles, ECR, S3, CodeBuild, and AgentCore runtimes (see the module's README, Permissions). No Docker.
 
@@ -39,7 +39,7 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-MODULE = Path("Workload Specific Evaluations/Coding Assistant")
+MODULE = Path("Workload Specific Evaluations/Coding Assistant/step2-run-evals")
 assert MODULE.is_dir(), "Run this from the repository root."
 
 PR_TASKS = MODULE / "datasets/awslabs-mcp-pr-review/tasks"
@@ -361,7 +361,7 @@ print("oracle:", calibration_ok("oracle", oracle_run), " no-op:", calibration_ok
 | The scorer | A correct finding is one line outside the span; a hidden test checks one design | Widen the span; rewrite the test on the public API |
 | The environment | A tool is missing in the image | Repair the Dockerfile and rebuild |
 
-**Path B (optional, needs AWS):** follow the Quick start of `Workload Specific Evaluations/Coding Assistant/README.md`: bootstrap, build the images, run the oracle and a no-op agent, then Codex, Claude Code, or OpenCode, and read the results with `harbor_env/summary.py`. The verifier files that every task shares are in `datasets/_shared/`; after you edit one, run `python datasets/_shared/sync.py` from the module directory.
+**Path B (optional, needs AWS):** follow the notebook `Workload Specific Evaluations/Coding Assistant/step2-run-evals.ipynb`, or the Quick start of `step2-run-evals/README.md`: bootstrap, build the images, run the oracle and a no-op agent, then Codex, Claude Code, or OpenCode, and read the results with `harbor_env/summary.py`. The verifier files that every task shares are in `datasets/_shared/`; after you edit one, run `python datasets/_shared/sync.py` in `step2-run-evals/`.
 
 **Tutor questions:** Ask the learner what the no-op `fail_to_pass = 0.17` above means, and which file they would open first. Then ask how many trials per task they need before they call a difference between two agents real, with two tasks and pass@1.
 

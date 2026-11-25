@@ -21,7 +21,13 @@ AGENT_POLICY_NAME = "harbor-agent-models"
 
 
 def model_arns(model):
-    p = aws.bedrock.get_inference_profile(inferenceProfileIdentifier=model)
+    """An inference profile and its models, or one on-demand model (for example moonshotai.kimi-k2.5)."""
+    try:
+        p = aws.bedrock.get_inference_profile(inferenceProfileIdentifier=model)
+    except ClientError as e:
+        if e.response["Error"]["Code"] != "ResourceNotFoundException":
+            raise
+        return [aws.bedrock.get_foundation_model(modelIdentifier=model)["modelDetails"]["modelArn"]]
     return [p["inferenceProfileArn"]] + [m["modelArn"] for m in p["models"]]
 
 
