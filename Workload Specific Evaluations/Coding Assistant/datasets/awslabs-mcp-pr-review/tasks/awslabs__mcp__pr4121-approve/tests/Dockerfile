@@ -9,3 +9,4 @@ COPY --chmod=755 score.py /tests/score.py
 COPY --chmod=644 oracle.json /tests/oracle.json
 COPY --chmod=644 rubric.md /tests/rubric.md
 COPY --chmod=644 judge.toml /tests/judge.toml
+COPY --chmod=644 verdict.json /tests/verdict.json

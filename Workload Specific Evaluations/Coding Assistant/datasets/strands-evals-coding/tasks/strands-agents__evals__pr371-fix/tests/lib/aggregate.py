@@ -8,7 +8,7 @@ Gates (all must hold for `tasteful_solve`):
   (relative_taste >= 0.6 and practice_alignment >= 0.6).
 
 `correct` is the first two gates only: the change works. `reward` is `tasteful_solve`.
-`agent_tests_*` are reported, but they do not gate.
+`agent_tests_*` are reported, but they do not gate (`agent_tests_pass_rate` only when the agent added tests).
 
 If an LLM stage failed (for example, Bedrock throttling) or the validation judge discarded the trial, the
 trial is invalid: there is no reward.json, so Harbor reports a reward-file error and the trial is not
@@ -26,7 +26,7 @@ import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-LOGS = Path('/logs/verifier')
+LOGS = Path(os.environ.get('VERIFIER_LOGS') or '/logs/verifier')  # test.sh --stage sets it; else the default
 MODELS = tomllib.loads(Path('/tests/judge/models.toml').read_text())
 GATES = MODELS['gates']
 
@@ -99,6 +99,9 @@ def main(hidden: str) -> None:
         'agent_tests_added': float(agent_tests.get('tests_added') or 0),
         'agent_tests_reproduce_bug': float(agent_tests.get('reproduces_bug') or 0),
     }
+    added, on_fix = agent_tests.get('tests_added'), agent_tests.get('on_fix')
+    if isinstance(added, (int, float)) and added > 0 and isinstance(on_fix, dict) and isinstance(on_fix.get('passed'), (int, float)):
+        flat['agent_tests_pass_rate'] = round(min(max(on_fix['passed'] / added, 0.0), 1.0), 3)
     models = {role: os.environ.get('VERIFIER_MODEL_ID') or MODELS[role]['model']
               for role in ('validation_agent', 'validation_judge', 'rubric_judge', 'taste_judge')}
     details = {'invalid': invalid, 'models': models, 'checks': checks, 'flat': flat, 'verifiers': verify, 'failed_tests': failed,

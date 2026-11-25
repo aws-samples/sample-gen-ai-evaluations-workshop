@@ -1,5 +1,5 @@
 # Codex settings for the agent under test. Harbor uploads this file to $CODEX_HOME/config.toml in
-# the task container. The AWS credentials come from the host shell (harbor run --ae).
+# the task container. The AWS credentials are the agent role's, from AgentCoreEnvironment (not --ae).
 model_provider = "amazon-bedrock"
 check_for_update_on_startup = false
 

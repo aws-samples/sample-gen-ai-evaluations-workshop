@@ -23,7 +23,7 @@ from botocore.exceptions import ClientError
 
 TESTS = Path('/tests')
 REPO = Path('/work/repo')
-LOGS = Path('/logs/verifier')
+LOGS = Path(os.environ.get('VERIFIER_LOGS') or '/logs/verifier')  # test.sh --stage sets it; else the default
 MAX_TOOL_OUTPUT = 12_000
 
 MODELS = tomllib.loads((TESTS / 'judge' / 'models.toml').read_text())
@@ -80,7 +80,9 @@ def read_only_tools(roots: list[Path]) -> list[Tool]:
 
     def search_code(args: dict) -> str:
         path = _inside(args.get('path', '.'), roots)
-        cmd = ['rg', '--line-number', '--max-count', '20', '--glob', '!.git', args['pattern'], str(path)]
+        # no ignore file or rg config of the agent's tree applies: a .gitignore or .rgignore that the agent wrote hides nothing
+        cmd = ['rg', '--no-ignore', '--no-config', '--hidden', '--line-number', '--max-count', '20', '--glob', '!.git',
+               args['pattern'], str(path)]
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=60).stdout
         return out or '[no matches]'
 
