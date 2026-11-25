@@ -1,0 +1,24 @@
+# Files that hard-coded Bedrock model IDs when the model-ids check was added.
+# The check fails on any other file that hard-codes one. Delete a line when its
+# file moves to Foundational Evaluations/model_config.py. Do not add new lines.
+Framework Specific Evaluations/AgentCore/04-custom-evaluators.ipynb
+Framework Specific Evaluations/AgentCore/06-simulation-and-optimization.ipynb
+Framework Specific Evaluations/AgentCore/app/CityAnalyst/main.py
+Industry Specific Evaluations/Financial Services and Insurance/01_authenticated_servicing_agent.ipynb
+Industry Specific Evaluations/Financial Services and Insurance/02_real_time_agent_assist.ipynb
+Industry Specific Evaluations/Financial Services and Insurance/03_escalation_and_handoff.ipynb
+Industry Specific Evaluations/Financial Services and Insurance/fsi_eval/converse_agent.py
+Workload Specific Evaluations/Basic RAG/example-notebook/01 Basic RAG Evaluation.ipynb
+Workload Specific Evaluations/Capacity Management/capacity.py
+Workload Specific Evaluations/Red Teaming/01 LLM App Red Teaming/01 llm app red teaming.ipynb
+Workload Specific Evaluations/Red Teaming/02 Testing Bedrock Guardrails/01 testing bedrock guardrails.ipynb
+Workload Specific Evaluations/Red Teaming/03 RAG Red Teaming/01 RAG red teaming.ipynb
+Workload Specific Evaluations/Red Teaming/04 Agent Red Teaming/01 agent red teaming.ipynb
+Workload Specific Evaluations/Speech to Speech/auto_classifier.py
+Workload Specific Evaluations/Speech to Speech/s2s_evaluator.py
+Workload Specific Evaluations/Speech to Speech/sample_s2s_app/python-server/integration/strands_agent.py
+Workload Specific Evaluations/Speech to Speech/sample_s2s_app/python-server/opentelemetry_span_manager.py
+Workload Specific Evaluations/Speech to Speech/sample_s2s_app/python-server/s2s_session_manager.py
+Workload Specific Evaluations/Speech to Speech/sample_s2s_app/python-server/server.py
+Workload Specific Evaluations/Speech to Speech/sample_s2s_app/python-server/session_transition_manager.py
+plugins/eval-builder/tests/test_build_report.py

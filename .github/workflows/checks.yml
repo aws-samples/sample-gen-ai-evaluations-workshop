@@ -1,0 +1,76 @@
+name: Repository checks
+
+# Checks that need no AWS account or Bedrock access, so they run on every pull
+# request, including pull requests from forks.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Notebooks, model IDs, and Python syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install nbformat==5.10.4 ruff==0.14.2
+
+      - name: Notebooks are valid nbformat
+        run: python .github/scripts/check_repo.py notebooks
+
+      - name: No new hard-coded Bedrock model IDs (CONTRIBUTING.md, "Model IDs")
+        run: python .github/scripts/check_repo.py model-ids
+
+      - name: No real AWS account IDs in ARNs
+        run: python .github/scripts/check_repo.py aws-ids
+
+      # Only checks for code that cannot run: syntax errors and undefined names.
+      # --isolated ignores per-module ruff settings, which choose style rules.
+      - name: Python and notebook code compiles and has no undefined names
+        run: >-
+          ruff check --isolated --output-format github
+          --select E9,F63,F7,F82
+          --extend-exclude "**/node_modules"
+          --per-file-ignores "Workload Specific Evaluations/MultiModal RAG/utils.py:F821"
+          .
+
+  tests:
+    name: Offline unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest==8.4.2 pandas boto3 python-dotenv
+
+      - name: eval-builder plugin
+        run: python -m pytest -q plugins/eval-builder/tests
+
+      - name: Coding Assistant module (no Docker, Harbor, or AWS needed)
+        working-directory: Workload Specific Evaluations/Coding Assistant
+        run: python -m pytest -q tests_local
+
+  skills:
+    name: Interactive Learning skill files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate SKILL and CHALLENGE files
+        working-directory: Interactive Learning
+        run: bash meta/validate_skills.sh
