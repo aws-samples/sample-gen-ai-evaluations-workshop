@@ -1,5 +1,5 @@
 version: 0.2
-# Built on CodeBuild (ARM_CONTAINER). Context = the task's environment/ dir + P2 layer + hidden tests (see build_context in p2_v2.py).
+# Built on CodeBuild (ARM_CONTAINER). Context: harbor_env/agentcore_env.py env_dir_context.
 phases:
   pre_build:
     commands:

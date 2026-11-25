@@ -1,0 +1,7 @@
+#!/bin/bash
+# as-agent without the proxy: only for a separate verifier with network_mode = "public".
+[ "$(cat /run/fw.status 2>/dev/null | grep -v '^$')" = OK ] || { echo "firewall not ready" >&2; exit 111; }
+mapfile -t E < <(cat /opt/firewall/task.env /run/fw/extra.env 2>/dev/null | grep -v '^$')
+exec setpriv --reuid=agent --regid=agent --init-groups --no-new-privs \
+  env -i "${E[@]}" USER=agent LOGNAME=agent SHELL=/bin/bash \
+  bash -c "$1"

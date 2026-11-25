@@ -1,6 +1,6 @@
 #!/bin/bash
 # Root-owned bootstrap, run once at container start by /opt/shim/main.py (as root).
-# The microVM gives root no CAP_NET_ADMIN, so nft/iptables cannot load (see agentcore/README.md).
+# The microVM gives root no CAP_NET_ADMIN, so nft/iptables cannot load.
 # Design instead: the agent runs in an EMPTY network namespace (only lo) that is owned by a user namespace
 # (so root can bring lo up without CAP_NET_ADMIN). The only way out is a relay on lo:3128 in that netns,
 # which forwards to a unix socket served by the allowlist proxy (user `proxy`) in the main netns.

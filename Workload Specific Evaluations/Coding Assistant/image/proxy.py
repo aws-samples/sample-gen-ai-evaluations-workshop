@@ -3,8 +3,8 @@
 import asyncio, ipaddress, os, socket, sys, time
 
 # NOTE: the real mantle host is bedrock-mantle.us-east-1.api.aws (the .amazonaws.com name does not resolve); keep both.
-# P2: the allowlist is the root-owned file /run/fw/allow.txt, re-read on every CONNECT. Empty or missing = deny all (fail closed).
-# The runner switches phases by rewriting it: agent phase = bedrock-mantle only, verifier phase = bedrock-runtime only.
+# The allowlist is the root-owned file /run/fw/allow.txt, re-read on every CONNECT. Empty or missing = deny all (fail closed).
+# The environment rewrites it at each phase switch (the task's allowed_hosts of that phase).
 ALLOW_FILE = "/run/fw/allow.txt"
 
 
@@ -40,10 +40,12 @@ async def pipe(r, w):
 
 async def handle(cr, cw):
     global active
+    counted = False
     try:
         if active >= MAXCONN:
             raise PermissionError("too many")
         active += 1
+        counted = True
         head = await asyncio.wait_for(cr.readuntil(b"\r\n\r\n"), 10)
         line = head.split(b"\r\n", 1)[0].decode("latin1")
         parts = line.split(" ")
@@ -75,7 +77,8 @@ async def handle(cr, cw):
             pass
         log("ERR", type(e).__name__, str(e)[:80])
     finally:
-        active = max(0, active - 1)
+        if counted:
+            active -= 1
         try:
             cw.close()
         except Exception:
