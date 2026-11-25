@@ -1,0 +1,19 @@
+# How the repository's tests run inside a task image. One profile per repository; every key is under
+# [coding]. This one is for the walkthrough's sample, pallets/itsdangerous at the base of PR #378.
+# Change it for your repository: the image, the install command, the test command, the run globs.
+[coding]
+# The task image's base. The ECR Public mirror of a Docker Hub image avoids Docker Hub's pull limit on CodeBuild.
+image = "public.ecr.aws/docker/library/python:3.12-bookworm"
+# Runs at build time in /work/repo (the agent and the grader have no internet later).
+install = "pip install --no-cache-dir -r requirements/tests.txt && pip install --no-cache-dir --no-deps -e ."
+# The test command: {files} are the hidden test files, {junit} the JUnit XML report the grader reads.
+command = "python -m pytest -p no:cacheprovider -o junit_family=xunit1 --junitxml={junit} {files}"
+# The command as the agent's instruction shows it.
+display_command = "python -m pytest {files}"
+# Which changed test files the command runs.
+run = ["tests/**/test_*.py"]
+# The agents' own tools, installed at build time. Codex and Claude Code need Node.js.
+agent_setup = [
+  "apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*",
+  "npm install -g @openai/codex@0.162.1 @anthropic-ai/claude-code@2.1.327",
+]
