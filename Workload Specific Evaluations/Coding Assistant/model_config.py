@@ -1,40 +1,13 @@
-"""
-Centralised Bedrock model IDs for all Coding Assistant notebooks.
+"""Bedrock model IDs of the judges.
 
-Edit this file to change models across every notebook in this module,
-then restart your notebook kernel and re-run from the top.
-
-Notebooks import this file with:
-
-    from model_config import CODEX_MODEL_ID, CLAUDE_CODE_MODEL_ID, JUDGE_MODEL_ID, VERIFIER_MODEL_ID
-
-The judge models also reach the Harbor tasks. The notebooks put JUDGE_MODEL_ID and
-VERIFIER_MODEL_ID in the environment, and each task.toml passes them to its verifier
-([verifier.env]). Each task.toml also has a default, so a task still runs without the
-notebooks (for example, with `harbor run` in a terminal). The verifier records the
-model that it used.
+`harbor_env/setup.py bootstrap` gives the grader role these models. Each task.toml passes
+JUDGE_MODEL_ID / VERIFIER_MODEL_ID from your shell to its verifier, with the same IDs as defaults:
+if you change a model here, export the same ID when you run `harbor run`, and run `bootstrap` again.
+The agent's model is Harbor's `-m`, not set here.
 """
 
-# ---------------------------------------------------------------------------
-# Agent under test
-# ---------------------------------------------------------------------------
-
-# Codex on Amazon Bedrock, through the Mantle endpoint (bedrock-mantle.<region>.api.aws).
-# Notebooks 01, 02, and 03.
-CODEX_MODEL_ID = "openai.gpt-6-sol"
-
-# Claude Code on Amazon Bedrock, through bedrock-runtime.<region>.amazonaws.com. The optional
-# "Swap the agent" cells of notebooks 02 and 03 run it on the same tasks.
-CLAUDE_CODE_MODEL_ID = "us.anthropic.claude-sonnet-5-5"
-
-# ---------------------------------------------------------------------------
-# Judges (they run in the Harbor verifier and call bedrock-runtime.<region>.amazonaws.com)
-# ---------------------------------------------------------------------------
-
-# PR review tasks (notebook 02): decides if an agent finding and an oracle finding
-# describe the same defect.
+# PR-review tasks: decides if an agent finding and an oracle finding describe the same defect.
 JUDGE_MODEL_ID = "us.anthropic.claude-haiku-5-5"
 
-# Coding tasks (notebook 03): the validation agent, the validation judge, the task
-# rubric judge, and the taste judge.
+# Coding tasks: the validation agent, the validation judge, the rubric judge, and the taste judge.
 VERIFIER_MODEL_ID = "us.anthropic.claude-haiku-5-5"

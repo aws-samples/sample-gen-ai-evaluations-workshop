@@ -1,0 +1,12 @@
+#!/bin/bash
+# Run one shell command line as the unprivileged user `agent`, inside the empty netns, with the proxy configured.
+# Environment: the image's task env (/opt/firewall/task.env: PATH, HOME, VIRTUAL_ENV, ... baked at build time from the
+# task Dockerfile's ENV) plus /run/fw/extra.env (written by root per phase: scoped AWS credentials, CODEX_HOME, ...).
+# Fails closed: refuses to run if start.sh did not finish OK.
+[ "$(cat /run/fw.status 2>/dev/null | grep -v '^$')" = OK ] || { echo "firewall not ready" >&2; exit 111; }
+mapfile -t E < <(cat /opt/firewall/task.env /run/fw/extra.env 2>/dev/null | grep -v '^$')
+exec nsenter --net=/run/fw/agent.net -- setpriv --reuid=agent --regid=agent --init-groups --no-new-privs \
+  env -i "${E[@]}" USER=agent LOGNAME=agent SHELL=/bin/bash \
+  HTTPS_PROXY=http://127.0.0.1:3128 https_proxy=http://127.0.0.1:3128 \
+  HTTP_PROXY=http://127.0.0.1:3128 http_proxy=http://127.0.0.1:3128 \
+  bash -c "$1"

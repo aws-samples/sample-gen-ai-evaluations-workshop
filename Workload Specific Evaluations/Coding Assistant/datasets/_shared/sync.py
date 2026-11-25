@@ -1,7 +1,7 @@
 """Copy the shared verifier files into each Harbor task, or check that the copies match.
 
-Harbor builds or uploads each task from its own directory: a separate verifier (notebook 02) is built
-from `tests/` as the Docker build context, and a shared verifier (notebook 03) gets `tests/` uploaded
+Harbor builds or uploads each task from its own directory: a separate verifier (the PR-review tasks) is built
+from `tests/` as the Docker build context, and a shared verifier (the coding tasks) gets `tests/` uploaded
 into the agent's container. Neither can reach a file outside the task directory, and a symbolic link
 that points outside it does not survive the copy. Thus each task keeps a full copy of its verifier
 files, and this directory is the one place where you edit them:

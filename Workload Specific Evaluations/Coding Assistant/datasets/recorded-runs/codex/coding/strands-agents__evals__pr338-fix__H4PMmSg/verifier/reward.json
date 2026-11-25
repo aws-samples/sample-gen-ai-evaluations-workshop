@@ -1,1 +1,0 @@
-{"reward": 1.0, "tasteful_solve": 1.0, "correct": 1.0, "verifiers_pass": 1.0, "fail_to_pass": 1.0, "pass_to_pass": 1.0, "existing_suite": 1.0, "validation_score": 1.0, "rubric_score": 1.0, "relative_taste": 1.0, "practice_alignment": 1.0, "patch_bloat": 1.0, "agent_tests_added": 12.0, "agent_tests_reproduce_bug": 1.0}

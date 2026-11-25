@@ -1,0 +1,15 @@
+version: 0.2
+# Built on CodeBuild (ARM_CONTAINER). Context: harbor_env/agentcore_env.py env_dir_context.
+phases:
+  pre_build:
+    commands:
+      - REG=${REPO_URI%%/*}
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REG
+  build:
+    commands:
+      - docker build --progress=plain -t $REPO_URI:$TAG . > /tmp/build.out 2>&1 || (tail -60 /tmp/build.out; exit 1)
+      - grep -E " passed| failed|codex-cli|task.env|^#[0-9]+ DONE [0-9.]+s" /tmp/build.out | tail -60
+  post_build:
+    commands:
+      - docker push $REPO_URI:$TAG
+      - docker image inspect $REPO_URI:$TAG --format 'size_bytes={{.Size}} arch={{.Architecture}}'
