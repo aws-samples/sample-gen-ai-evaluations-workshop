@@ -46,6 +46,7 @@ As an alternative to working through the Jupyter notebooks directly, you can use
   - DSPy: optimize prompts automatically with BootstrapFewShot and measure improvement with custom metrics.
   - MLflow: track and compare evaluation experiments using MLflow with Amazon Bedrock.
   - DeepEval: evaluate LLM applications with pytest-style metrics for RAG, agents, multi-turn, and safety, plus custom G-Eval for any criteria.
+  - Bedrock Evaluations: run managed LLM-as-a-judge evaluation jobs in Amazon Bedrock on your own responses, with built-in and custom metrics, and validate the managed judge against ground truth.
 
 - #### [Industry Specific Evaluations](Industry%20Specific%20Evaluations/)
 These modules apply the same foundational evaluation techniques to domain-specific workloads. Generic patterns teach you how to evaluate. Industry-specific modules teach you what to look for — the failure modes, data shapes, and compliance requirements unique to a vertical.
