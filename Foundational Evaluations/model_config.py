@@ -21,9 +21,8 @@ A module that keeps its own model_config.py (for prompts or a model-comparison
 set) should read DEFAULT_MODEL_ID and JUDGE_MODEL_ID from this file instead of
 repeating the IDs.
 
-Request parameters: Claude Sonnet 5 and Claude Opus 5 reject ``temperature`` and
-``top_p`` with a ValidationException, so notebooks that use these models must not
-send them.
+Request parameters: Claude Sonnet 5 rejects ``temperature`` and ``top_p`` with a
+ValidationException, so notebooks that use these models must not send them.
 """
 
 # ---------------------------------------------------------------------------
@@ -35,13 +34,15 @@ send them.
 # Model card: https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
 DEFAULT_MODEL_ID = "us.anthropic.claude-sonnet-5"
 
-# Judge model — LLM-as-judge evaluations. It is deliberately a different, stronger
-# model than DEFAULT_MODEL_ID: a model that grades its own output tends to favour
-# it (self-preference bias), and a judge should be at least as capable as the
-# model it grades. Claude Opus 5 (US cross-region inference profile).
-# To trade judge quality for cost, set this to DEFAULT_MODEL_ID, and validate the
-# judge against human labels first (02-quality-metrics/03_Evaluating_your_Judge.ipynb).
-JUDGE_MODEL_ID = "us.anthropic.claude-opus-5"
+# Judge model — LLM-as-judge evaluations. It defaults to DEFAULT_MODEL_ID to keep
+# workshop costs low, and it is a separate setting so you can change the judge
+# without changing the model under evaluation. A different or stronger judge is not
+# automatically better: self-preference bias shows up on some workloads and not on
+# others. Measure it. Validate the judge against human labels
+# (02-quality-metrics/03_Evaluating_your_Judge.ipynb), then change the judge prompt
+# or this model only if the results show you need to. A cheaper judge, for example
+# HAIKU_MODEL_ID, is worth testing the same way.
+JUDGE_MODEL_ID = DEFAULT_MODEL_ID
 
 # Small, fast model used as the "model under evaluation" in 04-agentic-metrics
 # (deliberately weak so the evaluation has failures to find).
@@ -82,5 +83,4 @@ MODEL_NAMES = {
     NOVA_PRO_MODEL_ID: "Nova Pro",
     HAIKU_MODEL_ID: "Claude Haiku 4.5",
     DEFAULT_MODEL_ID: "Claude Sonnet 5",
-    JUDGE_MODEL_ID: "Claude Opus 5",
 }
