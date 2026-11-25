@@ -1,7 +1,0 @@
-{"Version": "2012-10-17", "Statement": [
- {"Sid": "MantleInference", "Effect": "Allow", "Action": ["bedrock-mantle:CreateInference"], "Resource": "*"},
- {"Sid": "RuntimeInferenceThreeModels", "Effect": "Allow", "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
-  "Resource": ["arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-5-5*", "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-5-5*",
-               "arn:aws:bedrock:*::foundation-model/openai.gpt-6-sol*",
-               "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-haiku-5-5", "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-sonnet-5-5"]}
-]}
