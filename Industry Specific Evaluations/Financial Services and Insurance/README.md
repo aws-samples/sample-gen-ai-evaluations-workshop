@@ -27,7 +27,7 @@ The golden sets (the labelled test cases) in the notebooks are small, with 6 to 
 The notebooks call Amazon Bedrock. Your AWS credentials need permission to invoke these models in `us-east-1`:
 
 * `us.amazon.nova-2-lite-v1:0` (Amazon Nova 2 Lite, agent under test in all three notebooks)
-* `us.anthropic.claude-sonnet-5` (Claude Sonnet 5, judge in all three notebooks; `JUDGE_MODEL_ID` in `Foundational Evaluations/model_config.py`)
+* `us.anthropic.claude-haiku-4-5-20251001-v1:0` (Claude Haiku 4.5, judge in all three notebooks; `JUDGE_MODEL_ID` in `Foundational Evaluations/model_config.py`)
 
 The notebooks read the region from `AWS_REGION` and use `us-east-1` when it is not set. They create no AWS resources.
 

@@ -34,16 +34,6 @@ ValidationException, so notebooks that use these models must not send them.
 # Model card: https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
 DEFAULT_MODEL_ID = "us.anthropic.claude-sonnet-5"
 
-# Judge model — LLM-as-judge evaluations. It defaults to DEFAULT_MODEL_ID to keep
-# workshop costs low, and it is a separate setting so you can change the judge
-# without changing the model under evaluation. A different or stronger judge is not
-# automatically better: self-preference bias shows up on some workloads and not on
-# others. Measure it. Validate the judge against human labels
-# (02-quality-metrics/03_Evaluating_your_Judge.ipynb), then change the judge prompt
-# or this model only if the results show you need to. A cheaper judge, for example
-# HAIKU_MODEL_ID, is worth testing the same way.
-JUDGE_MODEL_ID = DEFAULT_MODEL_ID
-
 # Small, fast model used as the "model under evaluation" in 04-agentic-metrics
 # (deliberately weak so the evaluation has failures to find).
 CHATBOT_MODEL_ID = "us.amazon.nova-micro-v1:0"
@@ -54,6 +44,15 @@ CHATBOT_MODEL_ID = "us.amazon.nova-micro-v1:0"
 NOVA_2_LITE_MODEL_ID = "us.amazon.nova-2-lite-v1:0"
 NOVA_PRO_MODEL_ID = "us.amazon.nova-pro-v1:0"
 HAIKU_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# Judge model — LLM-as-judge evaluations. Claude Haiku 4.5 by default, to keep
+# workshop costs low. It is a separate setting so you can change the judge without
+# changing the model under evaluation. A bigger or different judge is not
+# automatically better: self-preference bias shows up on some workloads and not on
+# others. Measure it. Validate the judge against human labels
+# (02-quality-metrics/03_Evaluating_your_Judge.ipynb), then change the judge prompt
+# or this model (for example to DEFAULT_MODEL_ID) only if the results show you need to.
+JUDGE_MODEL_ID = HAIKU_MODEL_ID
 
 # ---------------------------------------------------------------------------
 # Model comparison sets
