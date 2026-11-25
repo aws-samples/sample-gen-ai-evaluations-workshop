@@ -1,9 +1,1 @@
-jobs/
-__pycache__/
-*.pyc
-
-# Python, Jupyter and local settings
-.venv/
 .ipynb_checkpoints/
-.env
-.agents/

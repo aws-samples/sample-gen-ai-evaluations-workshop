@@ -47,3 +47,24 @@ def test_teardown_matches_only_its_own_prefix(monkeypatch):
     assert setup.own_log_group("/aws/bedrock-agentcore/runtimes/evals_hb_evalspr371fix_a446eed6c6a-AbC123xYz9-DEFAULT")
     assert not setup.own_log_group("/aws/codebuild/evals-hb-build2")
     assert not setup.own_log_group("/aws/bedrock-agentcore/runtimes/evals_hb_2_evalspr371fix_a446eed6c6a-AbC123xYz9-DEFAULT")
+
+
+class FakeBedrock:
+    def get_inference_profile(self, inferenceProfileIdentifier):
+        if inferenceProfileIdentifier.startswith("us."):
+            return {"inferenceProfileArn": PROFILE, "models": [{"modelArn": MODEL}]}
+        raise setup.ClientError({"Error": {"Code": "ResourceNotFoundException"}}, "GetInferenceProfile")
+
+    def get_foundation_model(self, modelIdentifier):
+        if modelIdentifier == "moonshotai.kimi-k2.5":
+            return {"modelDetails": {"modelArn": "arn:aws:bedrock:us-east-1::foundation-model/moonshotai.kimi-k2.5"}}
+        raise setup.ClientError({"Error": {"Code": "ValidationException"}}, "GetFoundationModel")
+
+
+def test_model_arns_of_a_profile_and_of_an_on_demand_model(monkeypatch):
+    monkeypatch.undo()
+    monkeypatch.setattr(setup.aws, "bedrock", FakeBedrock(), raising=False)
+    assert setup.model_arns("us.amazon.nova-2-lite-v1:0") == [PROFILE, MODEL]
+    assert setup.model_arns("moonshotai.kimi-k2.5") == ["arn:aws:bedrock:us-east-1::foundation-model/moonshotai.kimi-k2.5"]
+    with pytest.raises(setup.ClientError):
+        setup.model_arns("no.such-model")
