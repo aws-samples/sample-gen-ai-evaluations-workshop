@@ -140,9 +140,9 @@ cost as a function of load.
 
 **Evaluate coding agents on PR review and bug fixing**
 
-Rolls a real repository back to the parent commit of a PR and seals it so the agent cannot find the answer, then grades the agent against the real outcome: the PR review for review tasks, the merged patch and its hidden tests for bug-fix tasks. Runs Codex on Amazon Bedrock as the agent under test, with tasks in the Harbor format on local Docker. Notebook 02 evaluates a PR review agent on one reject and one approve datapoint from awslabs/mcp. Notebook 03 evaluates a coding agent on two bug fixes from strands-agents/evals, graded as Senior SWE-Bench does it. Notebook 04 replays recorded runs, so you can examine results with no Docker, no AWS, and no tokens.
+Rolls a real repository back to the parent commit of a PR and seals it so the agent cannot find the answer, then grades the agent against the real outcome: the PR review for review tasks, the merged patch and its hidden tests for bug-fix tasks. Harbor runs the agent under test (Codex, Claude Code, OpenCode, or another Harbor agent, with any Amazon Bedrock model), and each trial runs in its own Amazon Bedrock AgentCore Runtime session behind a firewall. Two PR-review datapoints (one reject, one approve) come from awslabs/mcp, and two bug fixes from strands-agents/evals are graded as Senior SWE-Bench does it.
 
-Key topics: sealed, rolled-back task repositories, oracles (PR review and merged patch), hidden tests, validation agent, task rubric, taste judge, patch bloat, leakage and network-egress checks, Harbor task format, Codex on Amazon Bedrock.
+Key topics: sealed, rolled-back task repositories, oracles (PR review and merged patch), hidden tests, validation agent, task rubric, taste judge, patch bloat, leakage and network-egress checks, Harbor task format, Amazon Bedrock AgentCore Runtime.
 
 ---
 

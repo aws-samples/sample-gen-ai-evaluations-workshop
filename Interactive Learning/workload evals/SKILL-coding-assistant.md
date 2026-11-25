@@ -9,15 +9,15 @@ A coding agent works on a full repository, not a prompt. To evaluate it, you nee
 
 The module has two paths:
 
-- **Path A (no Docker, no AWS):** reason over the prepared task files (`instruction.md`, `oracle.json`, `oracle.patch`, `rubric.toml`, `validation_spec.toml`) and over a sample `reward_details.json`. Every code block in this file is Path A. For real agent outputs, use the recorded runs in `Workload Specific Evaluations/Coding Assistant/datasets/recorded-runs/` (Codex and Claude Code, with trajectories and verifier files) and the notebook `04 Replay recorded runs (no Docker).ipynb`.
-- **Path B (optional, hands-on):** run the oracle, Codex, and optionally Claude Code in Harbor on Docker with the notebooks of the module. See Section 5.
+- **Path A (no Docker, no AWS):** reason over the prepared task files (`instruction.md`, `oracle.json`, `oracle.patch`, `rubric.toml`, `validation_spec.toml`) and over a sample `reward_details.json`. Every code block in this file is Path A. For real agent outputs, use Path B.
+- **Path B (optional, hands-on):** run the oracle, Codex, Claude Code, or OpenCode in Harbor on Amazon Bedrock AgentCore Runtime with the module's README (Quick start). See Section 5.
 
 ## Prerequisites
 
 - Python 3.11 or later (for `tomllib`). Path A needs nothing else.
-- Run the code from the repository root. The module is in `Workload Specific Evaluations/Coding Assistant/docker/`.
+- Run the code from the repository root. The module is in `Workload Specific Evaluations/Coding Assistant/`.
 - Completed SKILL-quality (binary LLM judges) and SKILL-agentic (agent trajectories), or equivalent understanding.
-- Path B only: Docker with approximately 15 GB of free disk space, Python 3.12, Harbor, the Codex CLI, and AWS credentials with Amazon Bedrock access in `us-east-1`.
+- Path B only: Python 3.12, `uv`, Harbor 0.26.0, and AWS credentials in `us-east-1` that may create IAM roles, ECR, S3, CodeBuild, and AgentCore runtimes (see the module's README, Permissions). No Docker.
 
 ## Learning Objectives
 
@@ -39,7 +39,7 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-MODULE = Path("Workload Specific Evaluations/Coding Assistant/docker")
+MODULE = Path("Workload Specific Evaluations/Coding Assistant")
 assert MODULE.is_dir(), "Run this from the repository root."
 
 PR_TASKS = MODULE / "datasets/awslabs-mcp-pr-review/tasks"
@@ -170,12 +170,7 @@ for task in (ROOT_FIX, HISTORY_FIX):
     print(f"{task.name}: {len(needles)} needles, leaks: {leakage_scan(task, needles) or 'none'}")
 ```
 
-**Git seal (Path B, needs Docker):** after the image is built, this must print `1 0 0` for a coding task (one commit, no remote, clean tree) and `1 0 <n>` with `n > 0` for a PR review task (the change is applied as uncommitted edits).
-
-```bash
-docker run --rm eval-strands-agents__evals__pr371-fix sh -c \
-  'echo "$(git log --all --oneline | wc -l) $(git remote | wc -l) $(git status --porcelain | wc -l)"'
-```
+**Git seal (Path B):** run the probe agent (`-a harbor_env.probe_agent:ProbeAgent`, the module's README, How it works) on a coding task. From inside the agent's seat it must print `repo commits=1 remotes=[] ... reflog=0` (one commit, no remote, no history to dig in), and it shows that `/tests` and `/solution` are not visible.
 
 **Tutor questions:** Ask the learner what a leakage scan cannot find (for example, a public blog post about the fix that the allowlist would block anyway, or a test name that hints at the cause). Then ask why a passing `task.toml` check is not proof that the network is sealed at run time.
 
@@ -242,7 +237,7 @@ for task in (REJECT, APPROVE):
         print(f"{task.name:<32} {name:<18}", *strict_review_score(read_json(task / "tests" / "oracle.json"), findings))
 ```
 
-**Tutor questions:** Ask the learner to predict each of the six rows before running the cell. Then ask: on the approve task, the silent agent is correct, so why must its precision be undefined and not 0 or 1? (In the module, `score.py` leaves an undefined precision out of `reward.json`, because Harbor accepts only numbers there, and writes it as `null` in `reward_details.json`. The dataset metric skips it.) Finally, ask which dataset metric catches the "blocks everything" agent: block recall, or false block rate?
+**Tutor questions:** Ask the learner to predict each of the six rows before running the cell. Then ask: on the approve task, the silent agent is correct, so why must its precision be undefined and not 0 or 1? (In the module, `score.py` leaves an undefined precision out of `reward.json`, because Harbor accepts only numbers there, and writes it as `null` in `reward_details.json`.) Finally, ask which metric over many trials catches the "blocks everything" agent: block recall, or false block rate?
 
 ## Section 4: Grading a Code Fix With Binary Gates
 
@@ -366,7 +361,7 @@ print("oracle:", calibration_ok("oracle", oracle_run), " no-op:", calibration_ok
 | The scorer | A correct finding is one line outside the span; a hidden test checks one design | Widen the span; rewrite the test on the public API |
 | The environment | A tool is missing in the image | Repair the Dockerfile and rebuild |
 
-**Path B (optional, needs Docker and AWS):** open the notebooks in `Workload Specific Evaluations/Coding Assistant/docker/` in order. Notebook 01 does the setup checks. Notebooks 02 and 03 build the images (an image that exists is skipped), check the seal, run the oracle, and run Codex. The helpers are in `coding_eval.py`. The verifier files that every task shares are in `datasets/_shared/`; after you edit one, run `python datasets/_shared/sync.py` from the module directory. To check the module code without Docker, run `python -m pytest tests_local` there.
+**Path B (optional, needs AWS):** follow the Quick start of `Workload Specific Evaluations/Coding Assistant/README.md`: bootstrap, build the images, run the oracle and a no-op agent, then Codex, Claude Code, or OpenCode, and read the results with `harbor_env/summary.py`. The verifier files that every task shares are in `datasets/_shared/`; after you edit one, run `python datasets/_shared/sync.py` from the module directory.
 
 **Tutor questions:** Ask the learner what the no-op `fail_to_pass = 0.17` above means, and which file they would open first. Then ask how many trials per task they need before they call a difference between two agents real, with two tasks and pass@1.
 
@@ -407,7 +402,7 @@ For a cross-module integrative challenge, see `CHALLENGE-capstone.md`.
 
 **This module does NOT cover:**
 - Making datapoints at scale with `eval-harvest` (the module uses prepared datapoints)
-- Running trials on Amazon EC2 or Lambda MicroVMs instead of local Docker
+- Running the tasks in Harbor's built-in Docker environment (grading of coding tasks is not sealed there)
 - Feature tasks, where the interface is not known before the agent builds it
 
 **Next steps:**

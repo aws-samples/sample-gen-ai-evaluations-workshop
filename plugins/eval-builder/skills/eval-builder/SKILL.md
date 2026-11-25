@@ -126,11 +126,11 @@ that is not in this table, consider it too.
 
 Multiple modules can apply to one workload. Foundational modules 01–03 **always** apply.
 
-**Coding Assistant workloads.** The module runs the agent in sealed Harbor tasks on Docker and
+**Coding Assistant workloads.** The module runs the agent in sealed Harbor tasks on AgentCore Runtime and
 grades against an oracle (the merged patch, hidden tests, or labeled PR review comments). For a
 PR review or code generation workload, mirror its oracle-based grading: compare the agent's
 verdict and comments against labeled known issues, and check fixes with tests. Propose the full
-Harbor/Docker setup only if the user wants it and Docker is available.
+Harbor/AgentCore setup only if the user wants it and can create AWS resources.
 
 ## Flow overview
 
