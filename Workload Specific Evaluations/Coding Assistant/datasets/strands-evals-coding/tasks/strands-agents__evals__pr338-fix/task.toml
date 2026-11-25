@@ -11,15 +11,15 @@ timeout_sec = 3600.0
 
 # The verifier runs in the agent's container (Harbor's default shared mode) after the agent stops. Its
 # phase gets a different network policy: only the Bedrock runtime endpoint, for the validation agent and
-# the judges. It gets the AWS credentials of the host shell; the agent never sees them.
+# the judges, with the grader role's credentials (judge models only). The untrusted grading stage runs the
+# agent's code with them (README, Known limits). In Harbor's Docker environment they are the host shell's keys.
 [verifier]
 timeout_sec = 2400.0
 network_mode = "allowlist"
 allowed_hosts = ["bedrock-runtime.us-east-1.amazonaws.com"]
 
 [verifier.env]
-# The model of the validation agent and the judges: VERIFIER_MODEL_ID from model_config.py (the notebook
-# puts it in the environment), or this default when the variable is not set.
+# The model of the validation agent and the judges: VERIFIER_MODEL_ID from the shell, or this default.
 VERIFIER_MODEL_ID = "${VERIFIER_MODEL_ID:-us.anthropic.claude-haiku-5-5}"
 AWS_ACCESS_KEY_ID = "${AWS_ACCESS_KEY_ID:-}"
 AWS_SECRET_ACCESS_KEY = "${AWS_SECRET_ACCESS_KEY:-}"

@@ -26,8 +26,7 @@ Two honesty properties are deliberate:
 Precision is *undefined* (``None``) when the agent submits no findings: there is nothing to be
 precise about. This is the correct answer on an approve task, so a ``0.0`` there would read as bad
 precision. Harbor accepts only numbers in ``reward.json``, so an undefined key is left out of
-``reward.json`` and written as ``null`` in ``reward_details.json``. The dataset ``metric.py`` skips
-an undefined precision instead of counting it as 0.
+``reward.json`` and written as ``null`` in ``reward_details.json``.
 
 This file is *data* the CLI writes into each task; the CLI never imports or runs it. It runs under
 Harbor at eval time, where the judge reaches a model; in CI it is exercised with a recorded judge.
@@ -43,7 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any  # JSON parsed from disk is genuinely arbitrary until narrowed to the shapes below.
 
-#: The reward object's keys, the set the dataset ``metric.py`` averages. Every key is meaningful
+#: The reward object's keys. Every key is meaningful
 #: under a mean: coverage/precision are ratios in [0, 1] and the counts are per-trial tallies. The
 #: precision keys are undefined when the agent submits no findings (see ``UNDEFINED_WHEN_EMPTY``).
 REWARD_KEYS: tuple[str, ...] = (
@@ -60,6 +59,10 @@ REWARD_KEYS: tuple[str, ...] = (
     "credited_high",
     "credited_medium",
     "credited_low",
+    "agent_blocks",
+    "expected_blocks",
+    "passed",
+    "submitted",
 )
 
 #: Only high-severity findings block a merge (FR-14); "required" coverage is measured over them.
@@ -71,6 +74,8 @@ _SEVERITIES = ("high", "medium", "low")
 REQUIRED_ENDPOINT_SCHEME = "https://"
 
 _ORACLE_PATH = Path("/tests/oracle.json")
+#: Optional: {"expected_verdict": "approve" | "block"}. Without it, the oracle decides: a required finding means block.
+_VERDICT_PATH = Path("/tests/verdict.json")
 _JUDGE_CONFIG_PATH = Path("/tests/judge.toml")
 _REWARD_PATH = Path("/logs/verifier/reward.json")
 _REWARD_DETAILS_PATH = Path("/logs/verifier/reward_details.json")
@@ -195,8 +200,8 @@ class LiveJudge:
     model is ``JUDGE_MODEL_ID``, or the default in ``judge.toml``; ``temperature = 0`` is the determinism
     lever (Bedrock ``Converse`` has no ``seed``).
 
-    The temperature is sent only if the model accepts it, as in the reward stack of notebook 03
-    (``lib/bedrock.py``): some models (for example Claude Haiku 5.5) reject the parameter, and then the
+    The temperature is sent only if the model accepts it, as in the coding tasks'
+    ``lib/bedrock.py``: some models (for example Claude Haiku 5.5) reject the parameter, and then the
     judge uses the model's default for this and every later call. ``call_log`` counts the calls and
     records the rejection, so ``judge.json`` reports the temperature that was really sent.
     """
@@ -315,7 +320,7 @@ class Score:
 
     @classmethod
     def compute_reward(
-        cls, oracle: list[OracleFinding], agent: list[AgentFinding], judge: Judge
+        cls, oracle: list[OracleFinding], agent: list[AgentFinding], judge: Judge, expected_block: bool | None = None
     ) -> dict[str, float | None]:
         """The reward object: coverage and precision kept separate, per-severity counts, uncredited.
 
@@ -357,6 +362,12 @@ class Score:
         for severity in _SEVERITIES:
             reward[f"oracle_{severity}"] = float(sum(finding.severity == severity for finding in oracle))
             reward[f"credited_{severity}"] = float(sum(finding.severity == severity for finding in credited_oracle))
+        # pass: the verdict matches, and a block also catches every required finding
+        agent_blocks = any(finding.severity.lower() == _BLOCKING_SEVERITY for finding in agent)
+        expected = bool(required) if expected_block is None else expected_block
+        reward["agent_blocks"] = float(agent_blocks)
+        reward["expected_blocks"] = float(expected)
+        reward["passed"] = float(agent_blocks == expected and (not expected or reward["coverage_required"] == 1.0))
         return reward
 
     @classmethod
@@ -495,20 +506,36 @@ def judge_record(judge: Judge) -> dict[str, Any]:
             "votes": None, "exact_matches": 0, "decisions": []}
 
 
+def load_expected_block(path: Path) -> bool | None:
+    """The task's expected verdict from ``verdict.json`` (True = block), or None if the file is absent."""
+    if not path.is_file():
+        return None
+    verdict = json.loads(path.read_text(encoding="utf-8")).get("expected_verdict")
+    if verdict not in ("approve", "block"):
+        raise ValueError(f"{path}: expected_verdict must be approve or block, not {verdict!r}")
+    return verdict == "block"
+
+
 def main() -> None:
     """Score the agent's submission against the oracle and write ``reward.json`` (Harbor reads it)."""
     oracle = load_oracle(_ORACLE_PATH)
     findings_path = Path(os.environ.get(_AGENT_FINDINGS_ENV, str(_DEFAULT_AGENT_FINDINGS)))
+    submitted = findings_path.is_file()
     agent = load_agent_findings(findings_path)
     judge = select_judge()
     _REWARD_PATH.parent.mkdir(parents=True, exist_ok=True)
-    reward = Score.compute_reward(oracle, agent, judge)
+    expected_block = load_expected_block(_VERDICT_PATH)
+    reward = Score.compute_reward(oracle, agent, judge, expected_block)
+    reward["submitted"] = float(submitted)
+    if not submitted:  # no findings file is no review, not an approval
+        reward["passed"] = 0.0
     _JUDGE_RECORD_PATH.write_text(json.dumps(judge_record(judge)), encoding="utf-8")
     # Harbor rejects a reward.json value that is not a number, so an undefined key is left out here.
     # reward_details.json keeps every key, with null for an undefined one.
     defined = {key: value for key, value in reward.items() if value is not None}
     _REWARD_PATH.write_text(json.dumps(defined, sort_keys=True), encoding="utf-8")
-    _REWARD_DETAILS_PATH.write_text(json.dumps(reward, sort_keys=True), encoding="utf-8")
+    source = "oracle" if expected_block is None else "verdict.json"
+    _REWARD_DETAILS_PATH.write_text(json.dumps({**reward, "expected_verdict_source": source}, sort_keys=True), encoding="utf-8")
 
 
 if __name__ == "__main__":

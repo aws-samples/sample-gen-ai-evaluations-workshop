@@ -16,5 +16,6 @@ Then give an overall verdict: **approve** the change, or **request changes**. Re
 when, and only when, the change contains at least one blocking (high-severity) defect.
 
 Write your findings as a JSON array to `/logs/artifacts/findings.json`, each entry an object with
-`path`, `line`, `statement`, and `severity`. Judge the change on its own merits: do not assume a
+`path`, `line`, `statement`, and `severity`. If you find no defects, write an empty array (`[]`): a missing
+file counts as no review. Judge the change on its own merits: do not assume a
 defect is present, and do not assume the change is correct.

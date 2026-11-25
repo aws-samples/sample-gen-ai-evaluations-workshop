@@ -12,7 +12,7 @@
 [judge]
 provider = "bedrock"
 model = "us.anthropic.claude-haiku-5-5"
-# Sent only if the model accepts it, as in notebook 03 (lib/bedrock.py): some models (for example
+# Sent only if the model accepts it, as in the coding tasks' lib/bedrock.py: some models (for example
 # Claude Haiku 5.5) reject the parameter, and then the model default is used. judge.json records
 # temperature_configured (this value), temperature (the value that was sent: null if the model
 # rejected it, or if there was no judge call), and calls (0 when the agent submits no findings).

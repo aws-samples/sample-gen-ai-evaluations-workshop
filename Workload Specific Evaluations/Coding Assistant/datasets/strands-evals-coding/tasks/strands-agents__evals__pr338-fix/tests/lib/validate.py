@@ -154,7 +154,7 @@ def judge(results: dict, final: bool) -> dict:
                          'submit_review', JUDGE_SCHEMA)
     note = 'This is the final review: decide accept or discard only.' if final else ''
     verdict = convo.ask(f'# Stories and procedures\n{stories_text()}\n\n# Test scripts\n{scripts}\n\n'
-                        f'# Results\n{results_text(results)}\n\nThe developer patch is /logs/verifier/agent.patch. {note}')
+                        f'# Results\n{results_text(results)}\n\nThe developer patch is {LOGS}/agent.patch. {note}')
     if final and verdict['decision'] == 'revise':
         verdict['decision'] = 'accept' if min(verdict['scores'].values()) >= 1 else 'discard'
     return {**verdict, 'usage': convo.usage}
@@ -182,7 +182,7 @@ def main() -> None:
 
     patch = (LOGS / 'agent.patch').read_text()
     stat = (LOGS / 'agent.stat').read_text().strip()
-    diff_note = (f'The change touches these files:\n```\n{stat}\n```\nThe full diff is in /logs/verifier/agent.patch.'
+    diff_note = (f'The change touches these files:\n```\n{stat}\n```\nThe full diff is in {LOGS}/agent.patch.'
                  if patch.strip() else 'The developer made NO change. Write the tests anyway; they must fail naturally.')
     agent = Conversation('validation_agent', SYSTEM, [bash_tool(), write_tool(), *read_only_tools([REPO, LOGS, TESTS / 'validate'])],
                          'finish', {'type': 'object', 'properties': {'notes': {'type': 'string'}}})
