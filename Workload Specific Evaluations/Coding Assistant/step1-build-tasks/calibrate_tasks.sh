@@ -1,6 +1,6 @@
 #!/bin/bash
 # Step 1, calibration: run each new task with Harbor's nop agent (changes nothing) and its oracle agent
-# (applies the real change) on AgentCore, then let eval-harvest compare the two runs: a test that fails
+# (applies the real change) on AgentCore, then let coding_tasks.py compare the two runs: a test that fails
 # without the change and passes with it is fail-to-pass; a test that passes in both is pass-to-pass.
 # Then run nop and oracle once more: a usable task scores 0 with nop and 1 with oracle.
 #
@@ -10,8 +10,6 @@
 # `harbor_env/setup.py bootstrap`). Run from the Coding Assistant folder.
 set -euo pipefail
 [ $# -ge 1 ] || { sed -n '7p' "$0" | sed 's/^# *//' >&2; exit 2; }
-EVAL_HARVEST=${EVAL_HARVEST:-git+https://github.com/aws-samples/sample-code-eval-harvester}
-eval_harvest() { uvx --quiet --python 3.12 --from "$EVAL_HARVEST" eval-harvest "$@"; }
 export PYTHONPATH=$PWD AWS_REGION=${AWS_REGION:-us-east-1}
 unset AWS_BEARER_TOKEN_BEDROCK
 E=harbor_env.agentcore_env:AgentCoreEnvironment
@@ -32,7 +30,8 @@ for TASK in "$@"; do
   # reports these two trials without one. That is expected.
   run "$TASK" nop "$NAME-cal-nop"
   run "$TASK" oracle "$NAME-cal-oracle"
-  eval_harvest calibrate "$TASK" --nop "$JOBS/$NAME-cal-nop" --oracle "$JOBS/$NAME-cal-oracle" || { echo "   not a usable task"; continue; }
+  .venv/bin/python step1-build-tasks/coding_tasks.py calibrate "$TASK" --nop "$JOBS/$NAME-cal-nop" --oracle "$JOBS/$NAME-cal-oracle" \
+    || { echo "   not a usable task"; continue; }
   run "$TASK" nop "$NAME-nop"
   run "$TASK" oracle "$NAME-oracle"
   .venv/bin/python step1-build-tasks/check_gate.py "$JOBS/$NAME-nop" "$JOBS/$NAME-oracle"

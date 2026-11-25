@@ -10,7 +10,7 @@ There are two kinds of task:
 | kind | the agent... | graded by | how to build it |
 |---|---|---|---|
 | **PR review** | reviews a change and reports defects | the review the change really got | [eval-harvest](https://github.com/aws-samples/sample-code-eval-harvester)'s review workflow (`survey`, `capture`, `emit`), driven by a coding agent |
-| **Coding** | makes a merged pull request's change, from the commit before it | the tests that pull request added or changed | `eval-harvest code`, with the scripts in this folder |
+| **Coding** | makes a merged pull request's change, from the commit before it | the tests that pull request added or changed | the scripts in this folder (`coding_tasks.py`, standard-library Python) |
 
 ## Coding tasks
 
@@ -22,9 +22,10 @@ step1-build-tasks/build_coding_tasks.sh https://github.com/pallets/itsdangerous.
 step1-build-tasks/calibrate_tasks.sh step1-build-tasks/work/dataset/tasks/pallets__itsdangerous__pr378-code
 ```
 
-The scripts run eval-harvest with `uvx`, from the repository `EVAL_HARVEST` names (default: aws-samples). Coding-task
-support is in [aws-samples/sample-code-eval-harvester#16](https://github.com/aws-samples/sample-code-eval-harvester/pull/16);
-until it is merged, set `EVAL_HARVEST` to that pull request's branch.
+Everything Step 1 needs for coding tasks is in this folder: `coding_tasks.py` builds and calibrates the
+tasks, and `task_template/` holds what every task carries (its Dockerfile, the staged `test.sh`, the
+grader, the oracle's `solve.sh`). Nothing is installed from another repository. You need `git`, a Python
+3.11 or later (Step 2's `.venv` is used when it exists), and for calibration Step 2's AgentCore setup.
 
 `calibrate_tasks.sh` ends with a gate: Harbor's `nop` agent (changes nothing) must score 0 and its
 `oracle` agent (applies the real change) must score 1, both graded in stages. A task that passes the
@@ -59,7 +60,9 @@ task's own files. So no file the agent can write becomes its score.
    | `tests` | optional: globs of the test side, if yours is not in `tests/`, `test/`, `spec/` or `*_test.*` files |
    | `agent_setup` | the agents' own tools, installed at build time |
 
-   The full list is in eval-harvest's `man/eval-harvest-code.md`.
+   The other keys: `display_command` (the command as the instruction shows it), `workdir` (where the
+   command runs, relative to the repository root), `timeout_sec`, `env`, and `allowed_hosts` (what the
+   agent may reach; default: the Bedrock endpoints of Codex and Claude Code).
 2. Pick merged pull requests that change code and its tests together. The script skips the others
    with a reason:
 
@@ -76,3 +79,15 @@ task's own files. So no file the agent can write becomes its score.
 
 Each task builds one image on CodeBuild (several minutes the first time). Calibration runs four short
 trials per task (nop and oracle, twice), with no model calls.
+
+### Files
+
+| file | what it does |
+|---|---|
+| `build_coding_tasks.sh` | clones the repository and runs `coding_tasks.py build` for each pull request |
+| `calibrate_tasks.sh` | builds the images, runs nop and oracle on AgentCore, runs `coding_tasks.py calibrate`, then the gate |
+| `coding_tasks.py` | `build`: the task from a merged pull request; `calibrate`: the fail-to-pass and pass-to-pass tests from Harbor's runs |
+| `check_gate.py` | the gate: nop 0, oracle 1, both graded `staged` |
+| `task_template/` | copied into every task: `Dockerfile.tmpl`, `test.sh` (the `--stage` contract `harbor_env` grades with), `grader.py` (standard library, any `python3` from 3.7), `solve.sh` |
+| `coding-profile.toml` | the sample repository's profile |
+| `tests/` | offline tests (no AWS): `.venv/bin/python -m pytest -q step1-build-tasks/tests` |

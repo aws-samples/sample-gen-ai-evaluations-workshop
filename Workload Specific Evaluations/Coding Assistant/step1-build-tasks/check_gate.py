@@ -19,7 +19,8 @@ def trials(job_dir: Path) -> list[dict]:
     for path in sorted(job_dir.glob("*/result.json")):
         result = json.loads(path.read_text())
         events = path.parent / "agentcore.jsonl"
-        modes = [json.loads(line).get("mode") for line in events.read_text().splitlines() if '"grader_mode"' in line] if events.exists() else []
+        lines = events.read_text().splitlines() if events.exists() else []
+        modes = [json.loads(line).get("mode") for line in lines if '"grader_mode"' in line]
         reward = ((result.get("verifier_result") or {}).get("rewards") or {}).get("reward")
         found.append({"trial": path.parent.name, "reward": reward, "grading": modes[-1] if modes else "unknown"})
     return found
@@ -35,7 +36,8 @@ def main(nop_dir: str, oracle_dir: str) -> int:
         for row in rows:
             good = row["reward"] == want and row["grading"] == "staged"
             ok &= good
-            print(f"   {label:<6} reward {row['reward']}  grading {row['grading']}  {'ok' if good else f'expected reward {want}, staged'}")
+            verdict = "ok" if good else f"expected reward {want}, staged"
+            print(f"   {label:<6} reward {row['reward']}  grading {row['grading']}  {verdict}")
     print("   usable task" if ok else "   NOT usable: leave it out of the dataset")
     return 0 if ok else 1
 

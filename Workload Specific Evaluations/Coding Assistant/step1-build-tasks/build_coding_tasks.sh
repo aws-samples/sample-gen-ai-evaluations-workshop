@@ -1,31 +1,29 @@
 #!/bin/bash
-# Step 1: coding tasks from a repository's merged pull requests, with eval-harvest.
+# Step 1: coding tasks from a repository's merged pull requests.
 #
 #   step1-build-tasks/build_coding_tasks.sh <git URL or local clone> <PR number> [<PR number> ...]
 #
-# For each pull request, eval-harvest writes one Harbor task: the repository at the commit before the
-# change, the tests the pull request added or changed (hidden from the agent until grading), and the
-# change itself as the reference solution. The tasks grade in stages (tests/test.sh --stage), the way
-# Step 2 runs every coding task. Run from the Coding Assistant folder.
+# For each pull request, coding_tasks.py (in this folder, standard-library Python) writes one Harbor task:
+# the repository at the commit before the change, the tests the pull request added or changed (hidden from
+# the agent until grading), and the change itself as the reference solution. The tasks grade in stages
+# (tests/test.sh --stage), the way harbor_env runs every coding task. Run from the Coding Assistant folder.
 #
 # Settings (environment variables):
-#   PROFILE      how the repository's tests run (default: step1-build-tasks/coding-profile.toml)
-#   DATASET      where the tasks go (default: step1-build-tasks/work/dataset); they land in $DATASET/tasks/
-#   EVAL_HARVEST where eval-harvest comes from (default: the aws-samples repository)
+#   PROFILE   how the repository's tests run (default: step1-build-tasks/coding-profile.toml)
+#   DATASET   where the tasks go (default: step1-build-tasks/work/dataset); they land in $DATASET/tasks/
+#   PYTHON    a Python 3.11 or later (default: Step 2's .venv/bin/python, else python3)
 set -euo pipefail
-[ $# -ge 2 ] || { sed -n '3,4p' "$0" | sed 's/^# *//' >&2; exit 2; }
+[ $# -ge 2 ] || { sed -n '4p' "$0" | sed 's/^# *//' >&2; exit 2; }
 SOURCE=$1
 shift
 PROFILE=${PROFILE:-step1-build-tasks/coding-profile.toml}
 DATASET=${DATASET:-step1-build-tasks/work/dataset}
-EVAL_HARVEST=${EVAL_HARVEST:-git+https://github.com/aws-samples/sample-code-eval-harvester}
-eval_harvest() { uvx --quiet --python 3.12 --from "$EVAL_HARVEST" eval-harvest "$@"; }
+PYTHON=${PYTHON:-$( [ -x .venv/bin/python ] && echo .venv/bin/python || echo python3 )}
+"$PYTHON" -c 'import sys; sys.exit(sys.version_info < (3, 11))' \
+  || { echo "needs Python 3.11 or later (tomllib): make Step 2's .venv, or set PYTHON" >&2; exit 2; }
 
-mkdir -p "$DATASET"
-cp "$PROFILE" "$DATASET/coding-profile.toml"
-
-# The repository: a local clone as it is, or a fresh clone of a URL (eval-harvest reads git history
-# and never fetches).
+# The repository: a local clone as it is, or a fresh clone of a URL (the builder reads git history and
+# never calls the GitHub API).
 if [ -d "$SOURCE/.git" ]; then
   CLONE=$SOURCE
 else
@@ -33,12 +31,11 @@ else
   [ -d "$CLONE/.git" ] || git clone --quiet "$SOURCE" "$CLONE"
 fi
 
-for PR in "$@"; do
-  echo "== PR #$PR"
-  # A pull request that cannot be a coding task (no test change, only tests, no runnable test file)
-  # is refused with the reason; the others still run.
-  eval_harvest code --pr "$PR" --clone "$CLONE" --dataset "$DATASET" || echo "   skipped: see the reason above"
-done
+ARGS=()
+for PR in "$@"; do ARGS+=(--pr "$PR"); done
+# A pull request that cannot be a coding task (no test change, only tests, no runnable test file) is
+# refused with the reason; the others are still written.
+"$PYTHON" step1-build-tasks/coding_tasks.py build --clone "$CLONE" --profile "$PROFILE" --out "$DATASET" "${ARGS[@]}" || true
 echo
 echo "tasks in $DATASET/tasks:"
 ls "$DATASET/tasks" 2>/dev/null | sed 's/^/  /'
