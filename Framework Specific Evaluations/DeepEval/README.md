@@ -44,7 +44,7 @@ The model IDs are set in [`Foundational Evaluations/model_config.py`](../../Foun
 |---|---|
 | Candidate #1 | `NOVA_2_LITE_MODEL_ID` (Amazon Nova 2 Lite) |
 | Candidate #2 | `HAIKU_MODEL_ID` (Claude Haiku 4.5) |
-| Judge | `JUDGE_MODEL_ID` (Claude Sonnet 5 by default) |
+| Judge | `JUDGE_MODEL_ID` (Claude Haiku 4.5 by default) |
 
 ## Prerequisites
 
